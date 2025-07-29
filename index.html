@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web3 Interactive Demo</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="bg" id="bg"></div>
+    <button class="toggle" onclick="toggleSidebar()">☰ Widgets</button>
+    <button class="wallet-btn" id="walletBtn" onclick="connectWallet()">Connect Wallet</button>
+    <button class="save-btn" onclick="saveLayout()">💾 Save Layout</button>
+    
+    <div class="sidebar" id="sidebar">
+        <div class="section">
+            <h3>🎨 Background</h3>
+            <div class="file-upload">
+                <input type="file" id="bgFile" accept="image/*">
+                <label for="bgFile" class="file-btn">📁 Upload Image</label>
+            </div>
+            <input type="text" class="input" id="bgUrl" placeholder="Or enter image URL">
+            <button class="btn" onclick="setBg()">Set Background</button>
+            <div class="presets">
+                <div class="preset" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);" onclick="setPreset('linear-gradient(135deg, #667eea 0%, #764ba2 100%)')"></div>
+                <div class="preset" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);" onclick="setPreset('linear-gradient(135deg, #f093fb 0%, #f5576c 100%)')"></div>
+                <div class="preset" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);" onclick="setPreset('linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)')"></div>
+                <div class="preset" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);" onclick="setPreset('linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)')"></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>📹 Videos</h3>
+            <div class="item" draggable="true" data-widget="youtube">🎥 YouTube</div>
+            <div class="item" draggable="true" data-widget="video">📺 Video Upload</div>
+        </div>
+
+        <div class="section">
+            <h3>💰 Crypto</h3>
+            <div class="item" draggable="true" data-widget="crypto">₿ Tips</div>
+        </div>
+
+        <div class="section">
+            <h3>📱 Social</h3>
+            <div class="item" draggable="true" data-widget="twitter">🐦 Twitter</div>
+            <div class="item" draggable="true" data-widget="instagram">📸 Instagram</div>
+            <div class="item" draggable="true" data-widget="discord">💬 Discord</div>
+        </div>
+    </div>
+
+    <div class="canvas" id="canvas"></div>
+
+    <!-- API Configuration -->
+    <script src="config/api-keys.js"></script>
+    
+    <!-- Core JavaScript Modules -->
+    <script src="js/api/wallet.js"></script>
+    <script src="js/api/twitter.js"></script>
+    <script src="js/api/instagram.js"></script>
+    <script src="js/api/storage.js"></script>
+    
+    <!-- Components -->
+    <script src="js/components/widgets.js"></script>
+    <script src="js/components/customization.js"></script>
+    <script src="js/components/layout.js"></script>
+    
+    <!-- Main Application -->
+    <script src="js/app.js"></script>
+</body>
+</html>

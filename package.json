@@ -1,0 +1,39 @@
+{
+    "name": "web3-interactive-demo",
+    "version": "1.0.0",
+    "description": "A Web3 interactive demo with drag-and-drop widgets, crypto payments, and social media integration",
+    "main": "index.html",
+    "scripts": {
+      "dev": "live-server --port=3000 --host=localhost",
+      "build": "npm run copy-files",
+      "copy-files": "mkdir -p dist && cp -r *.html css js assets config dist/",
+      "deploy": "npm run build && vercel --prod",
+      "test": "echo \"No tests specified\" && exit 0"
+    },
+    "keywords": [
+      "web3",
+      "crypto",
+      "social-media",
+      "drag-and-drop",
+      "metamask",
+      "twitter-api",
+      "instagram-api",
+      "youtube-api"
+    ],
+    "author": "Your Name",
+    "license": "MIT",
+    "devDependencies": {
+      "live-server": "^1.2.2"
+    },
+    "dependencies": {
+      "ethers": "^6.8.0"
+    },
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/yourusername/web3-interactive-demo.git"
+    },
+    "homepage": "https://github.com/yourusername/web3-interactive-demo#readme",
+    "engines": {
+      "node": ">=16.0.0"
+    }
+  }
