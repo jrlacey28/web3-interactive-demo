@@ -13,7 +13,7 @@ class TwitterManager {
     // ========================================
     async getUserTweets(username, count = 5) {
         try {
-            if (this.useMockData || this.bearerToken === 'YOUR_TWITTER_BEARER_TOKEN') {
+            if (this.useMockData || this.bearerToken === 'BEARER_TOKEN') {
                 return this.getMockTweets(username, count);
             }
 
