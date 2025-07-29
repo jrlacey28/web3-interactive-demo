@@ -252,7 +252,7 @@ body {
 }
 
 .close { 
-    background: #ffffff00; 
+    background: rgba(255, 255, 255, 0.2); 
     border: none; 
     color: rgb(255, 255, 255); 
     width: 25px; 
@@ -757,11 +757,13 @@ iframe, video {
     justify-content: space-between;
     align-items: center;
     z-index: 10;
-    background: rgba(0,0,0,0.8);
+    /* Remove background for transparency */
+    background: transparent;
     border-radius: 8px 8px 0 0;
     padding: 8px 16px;
     color: #fff;
     box-sizing: border-box;
+    gap: 12px; /* Add gap between title and controls */
 }
 
 .widget {
