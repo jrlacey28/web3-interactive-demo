@@ -344,8 +344,8 @@ body {
 }
 
 .tip-btn { 
-    background: linear-gradient(135deg, #ffffff, #ffffff); 
-    color: #000; 
+    background: linear-gradient(135deg, #ffffff00, #ffffff00); 
+    color: #ffffff; 
     border: none; 
     padding: 12px; 
     border-radius: 8px; 
