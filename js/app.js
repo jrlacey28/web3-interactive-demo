@@ -343,7 +343,7 @@ function createWidget(type, x, y) {
                     <input style="width:100%;padding:8px;margin:10px 0" id="user${counter}" placeholder="Enter Twitter username" value="">
                     <button class="btn" onclick="loadTwitter(${counter})" style="color:#333">Load Real Feed</button>
                     <div id="feed${counter}">Enter a username and click "Load Real Feed"</div>
-                    <div style="font-size:12px;color:#666;margin-top:10px">Note: Real Twitter API integration requires authentication</div>
+                    <div style="font-size:12px;color:#666;margin-top:10px">Real Twitter API integration active! 🚀</div>
                 </div>
             `;
             break;
@@ -635,69 +635,21 @@ function loadTwitter(id) {
         </div>
     `;
     
-    // Try to use real Twitter API if available and configured
-    if (typeof twitterManager !== 'undefined' && 
-        API_CONFIG && 
-        API_CONFIG.TWITTER && 
-        API_CONFIG.TWITTER.BEARER_TOKEN && 
-        API_CONFIG.TWITTER.BEARER_TOKEN !== 'YOUR_TWITTER_BEARER_TOKEN' &&
-        API_CONFIG.TWITTER.BEARER_TOKEN !== 'your_twitter_bearer_token_here' &&
-        !API_CONFIG.USE_MOCK_DATA) {
-        
-        twitterManager.getUserTweets(user, 5).then(tweets => {
+    // Call your Vercel API route directly
+    fetch(`/api/twitter/${user}?count=5`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`API error: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(tweets => {
             displayTweets(id, tweets);
-        }).catch(error => {
+        })
+        .catch(error => {
             console.error('Twitter API error:', error);
-            displayMockTweets(id, user);
+            document.getElementById(`feed${id}`).innerHTML = `<div style="color:#ff4757;padding:20px">Failed to load tweets. Please try again.</div>`;
         });
-    } else {
-        // Use enhanced mock data that looks more realistic
-        setTimeout(() => {
-            displayMockTweets(id, user);
-        }, 1000); // Simulate API delay
-    }
-}
-
-function displayMockTweets(widgetId, username) {
-    const mockTweets = [
-        {
-            id: '1',
-            text: `🚀 Just launched our new Web3 interactive demo! The future of social media is here. Drag & drop widgets, crypto tips, real-time feeds. This is what the next generation of social platforms will look like! #Web3 #Crypto #Innovation`,
-            created_at: new Date(Date.now() - 2 * 60 * 60 * 1000),
-            author: { name: username.charAt(0).toUpperCase() + username.slice(1), username: username },
-            metrics: { retweets: 42, likes: 128, replies: 15 }
-        },
-        {
-            id: '2', 
-            text: `Building in public is the way 💪 Here's what we learned this week about drag-and-drop interfaces and MetaMask integration. The developer community feedback has been incredible! Shoutout to everyone testing the demo.`,
-            created_at: new Date(Date.now() - 8 * 60 * 60 * 1000),
-            author: { name: username.charAt(0).toUpperCase() + username.slice(1), username: username },
-            metrics: { retweets: 23, likes: 89, replies: 7 }
-        },
-        {
-            id: '3',
-            text: `The intersection of crypto payments and social media is fascinating. Real-time tips, NFT integration, decentralized storage... We're just scratching the surface of what's possible 🌐`,
-            created_at: new Date(Date.now() - 24 * 60 * 60 * 1000),
-            author: { name: username.charAt(0).toUpperCase() + username.slice(1), username: username },
-            metrics: { retweets: 67, likes: 234, replies: 28 }
-        },
-        {
-            id: '4',
-            text: `⚡ Pro tip: Try the Arbitrum integration for lightning-fast crypto tips! Layer 2 solutions are game-changers for micro-transactions. ~95% lower fees and instant confirmations!`,
-            created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-            author: { name: username.charAt(0).toUpperCase() + username.slice(1), username: username },
-            metrics: { retweets: 31, likes: 156, replies: 12 }
-        },
-        {
-            id: '5',
-            text: `🧹 Clean mode activated! Click the clean button to remove widget borders for a sleeker look. Sometimes less is more ✨ #UXDesign #CleanUI`,
-            created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-            author: { name: username.charAt(0).toUpperCase() + username.slice(1), username: username },
-            metrics: { retweets: 18, likes: 73, replies: 5 }
-        }
-    ];
-    
-    displayTweets(widgetId, mockTweets);
 }
 
 function displayTweets(widgetId, tweets) {
