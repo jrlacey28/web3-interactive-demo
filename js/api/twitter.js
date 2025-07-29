@@ -13,22 +13,23 @@ class TwitterManager {
     // ========================================
     async getUserTweets(username, count = 5) {
         try {
-            if (this.useMockData || this.bearerToken === 'BEARER_TOKEN') {
+            if (this.useMockData) {
                 return this.getMockTweets(username, count);
             }
-
-            // Step 1: Get user ID from username
-            const userId = await this.getUserId(username);
-            if (!userId) {
-                throw new Error('User not found');
+    
+            // Call your Vercel API route instead of Twitter directly
+            const response = await fetch(`/api/twitter/${username}?count=${count}`);
+            
+            if (!response.ok) {
+                throw new Error(`API error: ${response.status}`);
             }
-
-            // Step 2: Get user's tweets
-            const tweets = await this.fetchUserTweets(userId, count);
-            return this.formatTweets(tweets);
-
+    
+            const tweets = await response.json();
+            return tweets;
+    
         } catch (error) {
             console.error('Error fetching tweets:', error);
+            // Fallback to mock data if API fails
             return this.getMockTweets(username, count);
         }
     }
