@@ -12,25 +12,25 @@ let walletConnected = false;
 
 window.addEventListener('resize', function() {
     // Adjust widgets that are outside viewport after resize
-    document.querySelectorAll('.widget').forEach(widget => {
-        const rect = widget.getBoundingClientRect();
+    document.querySelectorAll('.widget-wrapper').forEach(wrapper => {
+        const rect = wrapper.getBoundingClientRect();
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight;
         
         // If widget is outside viewport, bring it back in
         if (rect.right > viewportWidth) {
-            widget.style.left = Math.max(0, viewportWidth - rect.width - 20) + 'px';
+            wrapper.style.left = Math.max(0, viewportWidth - rect.width - 20) + 'px';
         }
         if (rect.bottom > viewportHeight) {
-            widget.style.top = Math.max(0, viewportHeight - rect.height - 20) + 'px';
+            wrapper.style.top = Math.max(0, viewportHeight - rect.height - 20) + 'px';
         }
         
         // Adjust widget size if it's too large for new viewport
         if (rect.width > viewportWidth - 40) {
-            widget.style.width = (viewportWidth - 40) + 'px';
+            wrapper.style.width = (viewportWidth - 40) + 'px';
         }
         if (rect.height > viewportHeight - 40) {
-            widget.style.height = (viewportHeight - 40) + 'px';
+            wrapper.style.height = (viewportHeight - 40) + 'px';
         }
     });
 });
@@ -182,14 +182,14 @@ function showToast(message, type = 'info') {
 
 function saveLayout() {
     const widgets = [];
-    document.querySelectorAll('.widget').forEach(widget => {
+    document.querySelectorAll('.widget-wrapper').forEach(wrapper => {
         widgets.push({
-            id: widget.id,
-            type: widget.dataset.type,
-            x: widget.style.left,
-            y: widget.style.top,
-            width: widget.style.width,
-            height: widget.style.height
+            id: wrapper.id,
+            type: wrapper.querySelector('.widget').dataset.type,
+            x: wrapper.style.left,
+            y: wrapper.style.top,
+            width: wrapper.style.width,
+            height: wrapper.style.height
         });
     });
     
@@ -275,12 +275,17 @@ document.addEventListener('drop', (e) => {
 
 function createWidget(type, x, y) {
     counter++;
+    // Create wrapper
+    const wrapper = document.createElement('div');
+    wrapper.className = 'widget-wrapper';
+    wrapper.style.left = Math.max(0, x) + 'px';
+    wrapper.style.top = Math.max(0, y) + 'px';
+    wrapper.style.position = 'absolute';
+    // Create widget
     const widget = document.createElement('div');
     widget.className = 'widget glow';
     widget.id = `w${counter}`;
     widget.dataset.type = type;
-    widget.style.left = Math.max(0, x) + 'px';
-    widget.style.top = Math.max(0, y) + 'px';
 
     let content = '';
     let title = '';
@@ -368,14 +373,18 @@ function createWidget(type, x, y) {
             break;
     }
 
-    widget.innerHTML = `
-        <div class="header">
-            <span>${title}</span>
-            <div class="header-controls">
-                <button class="style-btn" onclick="toggleStylePanel('${widget.id}')" title="Customize">🎨</button>
-                <button class="close" onclick="remove('${widget.id}')">×</button>
-            </div>
+    // Create header (now outside widget)
+    const header = document.createElement('div');
+    header.className = 'widget-header';
+    header.innerHTML = `
+        <span>${title}</span>
+        <div class="header-controls">
+            <button class="style-btn" onclick="toggleStylePanel('${widget.id}')" title="Customize">🎨</button>
+            <button class="close" onclick="remove('${widget.id}')">×</button>
         </div>
+    `;
+    // Widget content
+    widget.innerHTML = `
         <div class="content">
             ${content}
             <div class="style-panel" id="style-panel-${widget.id}">
@@ -410,10 +419,12 @@ function createWidget(type, x, y) {
             </div>
         </div>
     `;
-
-    document.getElementById('canvas').appendChild(widget);
-    makeWidgetDraggable(widget);
-    
+    // Append header and widget to wrapper
+    wrapper.appendChild(header);
+    wrapper.appendChild(widget);
+    // Add to canvas
+    document.getElementById('canvas').appendChild(wrapper);
+    makeWidgetDraggable(wrapper, header);
     // Auto-enable clean mode for new widgets
     enableCleanModeByDefault(widget);
 }
@@ -422,8 +433,7 @@ function createWidget(type, x, y) {
 // WIDGET DRAGGING FUNCTIONALITY
 // ========================================
 
-function makeWidgetDraggable(widget) {
-    const header = widget.querySelector('.header');
+function makeWidgetDraggable(wrapper, header) {
     let isDragging = false, startX, startY, startLeft, startTop;
 
     header.addEventListener('mousedown', function(e) {
@@ -432,19 +442,19 @@ function makeWidgetDraggable(widget) {
         isDragging = true;
         startX = e.clientX;
         startY = e.clientY;
-        startLeft = parseInt(widget.style.left) || 0;
-        startTop = parseInt(widget.style.top) || 0;
-        widget.style.zIndex = '1001';
+        startLeft = parseInt(wrapper.style.left) || 0;
+        startTop = parseInt(wrapper.style.top) || 0;
+        wrapper.style.zIndex = '1001';
 
         const handleMouseMove = (e) => {
             if (!isDragging) return;
-            widget.style.left = Math.max(0, startLeft + e.clientX - startX) + 'px';
-            widget.style.top = Math.max(0, startTop + e.clientY - startY) + 'px';
+            wrapper.style.left = Math.max(0, startLeft + e.clientX - startX) + 'px';
+            wrapper.style.top = Math.max(0, startTop + e.clientY - startY) + 'px';
         };
 
         const handleMouseUp = () => {
             isDragging = false;
-            widget.style.zIndex = '';
+            wrapper.style.zIndex = '';
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
         };

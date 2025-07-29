@@ -252,9 +252,9 @@ body {
 }
 
 .close { 
-    background: #ffffff; 
+    background: #ffffff00; 
     border: none; 
-    color: rgba(255, 255, 255, 0); 
+    color: rgb(255, 255, 255); 
     width: 25px; 
     height: 25px; 
     border-radius: 50%; 
@@ -344,8 +344,8 @@ body {
 }
 
 .tip-btn { 
-    background: linear-gradient(135deg, #ffffff00, #ffffff00); 
-    color: #ffffff; 
+    background: linear-gradient(135deg, #ffffff, #ffffff); 
+    color: #000; 
     border: none; 
     padding: 12px; 
     border-radius: 8px; 
@@ -719,8 +719,8 @@ iframe, video {
 }
 
 @keyframes glow { 
-    from { box-shadow: 0 0 20px rgba(0,212,255,0.5); } 
-    to { box-shadow: 0 0 30px rgba(0,212,255,0.8); } 
+    from { box-shadow: 0 0 0px rgba(0,212,255,0.5); } 
+    to { box-shadow: 0 0 0px rgba(0,212,255,0.8); } 
 }
 
 /* Responsive Design */
@@ -739,4 +739,32 @@ iframe, video {
         padding: 10px 14px;
         font-size: 14px;
     }
+}
+
+/* Widget Wrapper and Header (for external header controls) */
+.widget-wrapper {
+    position: absolute;
+    display: inline-block;
+    /* Let JS set left/top for wrapper instead of widget */
+}
+
+.widget-header {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10;
+    background: rgba(0,0,0,0.8);
+    border-radius: 8px 8px 0 0;
+    padding: 8px 16px;
+    color: #fff;
+    box-sizing: border-box;
+}
+
+.widget {
+    border-radius: 0 0 15px 15px;
+    /* Remove .header styles from inside widget */
 }
