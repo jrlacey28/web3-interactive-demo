@@ -7,6 +7,35 @@ let dragged = null;
 let walletConnected = false;
 
 // ========================================
+// RESPONSIVE WINDOW HANDLING
+// ========================================
+
+window.addEventListener('resize', function() {
+    // Adjust widgets that are outside viewport after resize
+    document.querySelectorAll('.widget').forEach(widget => {
+        const rect = widget.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        
+        // If widget is outside viewport, bring it back in
+        if (rect.right > viewportWidth) {
+            widget.style.left = Math.max(0, viewportWidth - rect.width - 20) + 'px';
+        }
+        if (rect.bottom > viewportHeight) {
+            widget.style.top = Math.max(0, viewportHeight - rect.height - 20) + 'px';
+        }
+        
+        // Adjust widget size if it's too large for new viewport
+        if (rect.width > viewportWidth - 40) {
+            widget.style.width = (viewportWidth - 40) + 'px';
+        }
+        if (rect.height > viewportHeight - 40) {
+            widget.style.height = (viewportHeight - 40) + 'px';
+        }
+    });
+});
+
+// ========================================
 // CORE APPLICATION FUNCTIONS
 // ========================================
 
@@ -384,6 +413,9 @@ function createWidget(type, x, y) {
 
     document.getElementById('canvas').appendChild(widget);
     makeWidgetDraggable(widget);
+    
+    // Auto-enable clean mode for new widgets
+    enableCleanModeByDefault(widget);
 }
 
 // ========================================
@@ -426,10 +458,15 @@ function remove(id) {
     document.getElementById(id).remove();
 }
 
-// Clean mode toggle
+// Clean mode toggle - auto-enable for new widgets
 function toggleCleanMode(widgetId) {
     const widget = document.getElementById(widgetId);
     widget.classList.toggle('clean-mode');
+}
+
+// Auto-enable clean mode for new widgets
+function enableCleanModeByDefault(widget) {
+    widget.classList.add('clean-mode');
 }
 
 // ========================================
@@ -592,7 +629,10 @@ function loadTwitter(id) {
     if (typeof twitterManager !== 'undefined' && 
         API_CONFIG && 
         API_CONFIG.TWITTER && 
-        API_CONFIG.TWITTER.BEARER_TOKEN !== 'YOUR_TWITTER_BEARER_TOKEN') {
+        API_CONFIG.TWITTER.BEARER_TOKEN && 
+        API_CONFIG.TWITTER.BEARER_TOKEN !== 'YOUR_TWITTER_BEARER_TOKEN' &&
+        API_CONFIG.TWITTER.BEARER_TOKEN !== 'your_twitter_bearer_token_here' &&
+        !API_CONFIG.USE_MOCK_DATA) {
         
         twitterManager.getUserTweets(user, 5).then(tweets => {
             displayTweets(id, tweets);
@@ -612,37 +652,37 @@ function displayMockTweets(widgetId, username) {
     const mockTweets = [
         {
             id: '1',
-            text: `Just launched our new Web3 interactive demo! 🚀 The future of social media is here. Drag & drop widgets, crypto tips, real-time feeds. Check it out! #Web3 #Crypto #Innovation`,
+            text: `🚀 Just launched our new Web3 interactive demo! The future of social media is here. Drag & drop widgets, crypto tips, real-time feeds. This is what the next generation of social platforms will look like! #Web3 #Crypto #Innovation`,
             created_at: new Date(Date.now() - 2 * 60 * 60 * 1000),
-            author: { name: username, username: username },
+            author: { name: username.charAt(0).toUpperCase() + username.slice(1), username: username },
             metrics: { retweets: 42, likes: 128, replies: 15 }
         },
         {
             id: '2', 
-            text: `Building in public is the way 💪 Here's what we learned this week about drag-and-drop interfaces and MetaMask integration. The developer community feedback has been incredible!`,
+            text: `Building in public is the way 💪 Here's what we learned this week about drag-and-drop interfaces and MetaMask integration. The developer community feedback has been incredible! Shoutout to everyone testing the demo.`,
             created_at: new Date(Date.now() - 8 * 60 * 60 * 1000),
-            author: { name: username, username: username },
+            author: { name: username.charAt(0).toUpperCase() + username.slice(1), username: username },
             metrics: { retweets: 23, likes: 89, replies: 7 }
         },
         {
             id: '3',
-            text: `The intersection of crypto payments and social media is fascinating. Real-time tips, NFT integration, decentralized storage... We're just scratching the surface 🌐`,
+            text: `The intersection of crypto payments and social media is fascinating. Real-time tips, NFT integration, decentralized storage... We're just scratching the surface of what's possible 🌐`,
             created_at: new Date(Date.now() - 24 * 60 * 60 * 1000),
-            author: { name: username, username: username },
+            author: { name: username.charAt(0).toUpperCase() + username.slice(1), username: username },
             metrics: { retweets: 67, likes: 234, replies: 28 }
         },
         {
             id: '4',
-            text: `Reminder: This is demo data! To see real tweets, you need Twitter API access. But isn't this mock feed looking pretty realistic? 😉 #MockData #Demo`,
+            text: `⚡ Pro tip: Try the Arbitrum integration for lightning-fast crypto tips! Layer 2 solutions are game-changers for micro-transactions. ~95% lower fees and instant confirmations!`,
             created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-            author: { name: username, username: username },
-            metrics: { retweets: 12, likes: 45, replies: 8 }
+            author: { name: username.charAt(0).toUpperCase() + username.slice(1), username: username },
+            metrics: { retweets: 31, likes: 156, replies: 12 }
         },
         {
             id: '5',
-            text: `Pro tip: Click the 🧹 button to enable clean mode and remove the widget border for a sleeker look! ✨`,
+            text: `🧹 Clean mode activated! Click the clean button to remove widget borders for a sleeker look. Sometimes less is more ✨ #UXDesign #CleanUI`,
             created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-            author: { name: username, username: username },
+            author: { name: username.charAt(0).toUpperCase() + username.slice(1), username: username },
             metrics: { retweets: 18, likes: 73, replies: 5 }
         }
     ];
