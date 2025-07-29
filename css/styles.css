@@ -200,9 +200,9 @@ body {
 }
 
 .close { 
-    background: #ff4757; 
+    background: #ffffff; 
     border: none; 
-    color: white; 
+    color: rgba(255, 255, 255, 0); 
     width: 25px; 
     height: 25px; 
     border-radius: 50%; 
@@ -252,9 +252,9 @@ body {
 }
 
 .close { 
-    background: #ff4757; 
+    background: #ffffff; 
     border: none; 
-    color: white; 
+    color: rgba(255, 255, 255, 0); 
     width: 25px; 
     height: 25px; 
     border-radius: 50%; 
@@ -344,7 +344,7 @@ body {
 }
 
 .tip-btn { 
-    background: linear-gradient(135deg, #ffd700, #ffb700); 
+    background: linear-gradient(135deg, #ffffff, #ffffff); 
     color: #000; 
     border: none; 
     padding: 12px; 
@@ -362,7 +362,7 @@ body {
 .amount { 
     flex: 1; 
     padding: 10px; 
-    border: 2px solid #ffd700; 
+    border: 2px solid #fefefe; 
     border-radius: 8px; 
     background: rgba(255,255,255,0.1); 
     color: white; 
@@ -437,43 +437,35 @@ body {
     align-items: center; 
 }
 
-/* Floating controls - OUTSIDE the widget */
+/* Floating controls for clean mode */
 .floating-controls {
     position: absolute;
-    top: -15px;
-    right: -15px;
+    top: 10px;
+    right: 10px;
     display: none;
-    gap: 8px;
+    gap: 5px;
     z-index: 1003;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(10px);
-    border-radius: 20px;
-    padding: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.widget:hover .floating-controls,
 .widget.clean-mode:hover .floating-controls {
     display: flex;
 }
 
 .floating-btn {
-    background: transparent;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
     border: none;
     color: white;
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 12px;
     transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .floating-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.9);
     transform: scale(1.1);
 }
 .widget.clean-mode {
@@ -570,7 +562,7 @@ body {
     width: 100%;
     height: 100%;
     min-height: 200px;
-    object-fit: contain;
+    object-fit: cover;
 }
 
 /* Make sure video containers take full height */

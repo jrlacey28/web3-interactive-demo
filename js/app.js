@@ -7,45 +7,32 @@ let dragged = null;
 let walletConnected = false;
 
 // ========================================
-// RESPONSIVE WINDOW HANDLING - Proportional Scaling
+// RESPONSIVE WINDOW HANDLING
 // ========================================
 
-let initialViewport = {
-    width: window.innerWidth,
-    height: window.innerHeight
-};
-
 window.addEventListener('resize', function() {
-    const currentViewport = {
-        width: window.innerWidth,
-        height: window.innerHeight
-    };
-    
-    const scaleX = currentViewport.width / initialViewport.width;
-    const scaleY = currentViewport.height / initialViewport.height;
-    const averageScale = (scaleX + scaleY) / 2;
-    
-    // Apply proportional scaling to all widgets
+    // Adjust widgets that are outside viewport after resize
     document.querySelectorAll('.widget').forEach(widget => {
-        const currentLeft = parseInt(widget.style.left) || 0;
-        const currentTop = parseInt(widget.style.top) || 0;
-        const currentWidth = parseInt(widget.style.width) || (widget.offsetWidth);
-        const currentHeight = parseInt(widget.style.height) || (widget.offsetHeight);
+        const rect = widget.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
         
-        // Scale position and size proportionally
-        widget.style.left = Math.max(0, Math.min(currentLeft * scaleX, currentViewport.width - 50)) + 'px';
-        widget.style.top = Math.max(0, Math.min(currentTop * scaleY, currentViewport.height - 50)) + 'px';
+        // If widget is outside viewport, bring it back in
+        if (rect.right > viewportWidth) {
+            widget.style.left = Math.max(0, viewportWidth - rect.width - 20) + 'px';
+        }
+        if (rect.bottom > viewportHeight) {
+            widget.style.top = Math.max(0, viewportHeight - rect.height - 20) + 'px';
+        }
         
-        // Scale size with bounds checking
-        const newWidth = Math.max(280, Math.min(currentWidth * averageScale, currentViewport.width - 40));
-        const newHeight = Math.max(180, Math.min(currentHeight * averageScale, currentViewport.height - 40));
-        
-        widget.style.width = newWidth + 'px';
-        widget.style.height = newHeight + 'px';
+        // Adjust widget size if it's too large for new viewport
+        if (rect.width > viewportWidth - 40) {
+            widget.style.width = (viewportWidth - 40) + 'px';
+        }
+        if (rect.height > viewportHeight - 40) {
+            widget.style.height = (viewportHeight - 40) + 'px';
+        }
     });
-    
-    // Update initial viewport for next resize
-    initialViewport = currentViewport;
 });
 
 // ========================================
@@ -328,17 +315,17 @@ function createWidget(type, x, y) {
         case 'crypto':
             title = 'Tips';
             content = `
-                <div class="crypto-donation">
+                <div style="text-align:center">
                     <div class="tip-grid">
                         <button class="tip-btn" onclick="tip(1,${counter})">$1</button>
                         <button class="tip-btn" onclick="tip(5,${counter})">$5</button>
                         <button class="tip-btn" onclick="tip(10,${counter})">$10</button>
                     </div>
                     <div class="custom-tip">
-                        <input class="amount-input" id="amt${counter}" placeholder="Custom amount">
-                        <button class="send-tip-btn" onclick="customTip(${counter})">Send</button>
+                        <input class="amount" id="amt${counter}" placeholder="Custom amount">
+                        <button class="send" onclick="customTip(${counter})">Send</button>
                     </div>
-                    <input class="message-input" id="msg${counter}" placeholder="Add a message (optional)">
+                    <input class="input" id="msg${counter}" placeholder="Add a message (optional)" style="margin-top:10px">
                     <div id="result${counter}"></div>
                 </div>
             `;
@@ -502,15 +489,9 @@ function updateButtonStyle(widgetId) {
     const buttonColor = widget.querySelector('.btn-color').value;
     const textColor = widget.querySelector('.btn-text-color').value;
     
-    // Update all button types in the widget
-    widget.querySelectorAll('.btn, .tip-btn, .send-tip-btn, .load-btn').forEach(btn => {
+    widget.querySelectorAll('.btn, .tip-btn, .send').forEach(btn => {
         btn.style.background = `linear-gradient(135deg, ${buttonColor}, ${buttonColor}dd)`;
         btn.style.color = textColor;
-    });
-    
-    // Update input borders to match
-    widget.querySelectorAll('.amount-input, .message-input').forEach(input => {
-        input.style.borderColor = buttonColor;
     });
 }
 
