@@ -27,8 +27,21 @@ async function connectWallet() {
             const shortAddress = accounts[0] ? 
                 `${accounts[0].slice(0, 6)}...${accounts[0].slice(-4)}` : '';
             
+            // Get current network
+            const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+            const networkName = getNetworkName(chainId);
+            
             btn.textContent = `✅ ${shortAddress}`;
             btn.classList.add('connected');
+            btn.title = `Connected to ${networkName}`;
+            
+            // Show Arbitrum switch prompt if not on Arbitrum
+            if (chainId !== '0xa4b1' && chainId !== '0x66eed') {
+                setTimeout(() => {
+                    showArbitrumSwitchModal();
+                }, 1000);
+            }
+            
         } catch (error) {
             alert('Failed to connect wallet: ' + error.message);
         }
@@ -36,6 +49,106 @@ async function connectWallet() {
         alert('MetaMask is not installed. Please install MetaMask to connect your wallet.');
         window.open('https://metamask.io/download/', '_blank');
     }
+}
+
+function getNetworkName(chainId) {
+    const networks = {
+        '0x1': 'Ethereum Mainnet',
+        '0x5': 'Goerli Testnet',
+        '0x89': 'Polygon Mainnet',
+        '0xa4b1': 'Arbitrum One',
+        '0x66eed': 'Arbitrum Goerli'
+    };
+    return networks[chainId] || 'Unknown Network';
+}
+
+function showArbitrumSwitchModal() {
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+        background: rgba(0,0,0,0.8); z-index: 10000; display: flex; 
+        align-items: center; justify-content: center;
+    `;
+    modal.innerHTML = `
+        <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 450px;">
+            <h3 style="color: #2D374B; margin-bottom: 15px;">⚡ Switch to Arbitrum</h3>
+            <p style="margin: 15px 0; color: #666;">For faster and cheaper crypto tips, switch to Arbitrum network</p>
+            <div style="margin: 20px 0; padding: 15px; background: #f8f9ff; border-radius: 8px; text-align: left;">
+                <strong>Arbitrum Benefits:</strong><br>
+                • ~95% lower gas fees<br>
+                • Near-instant transactions<br>
+                • Same ETH, better experience<br>
+                • Perfect for micro-tips!
+            </div>
+            <button id="switchToArbitrum" 
+                    style="background: #2D374B; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; margin: 10px;">
+                Switch to Arbitrum One
+            </button>
+            <button onclick="this.parentElement.parentElement.remove()" 
+                    style="background: #ccc; color: black; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; margin: 10px;">
+                Maybe Later
+            </button>
+        </div>
+    `;
+    
+    modal.querySelector('#switchToArbitrum').onclick = async () => {
+        try {
+            // Try to switch to Arbitrum One
+            await window.ethereum.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: '0xa4b1' }],
+            });
+            modal.remove();
+            showToast('✅ Switched to Arbitrum One!', 'success');
+        } catch (switchError) {
+            // If Arbitrum isn't added, add it
+            if (switchError.code === 4902) {
+                try {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{
+                            chainId: '0xa4b1',
+                            chainName: 'Arbitrum One',
+                            nativeCurrency: {
+                                name: 'Ethereum',
+                                symbol: 'ETH',
+                                decimals: 18
+                            },
+                            rpcUrls: ['https://arb1.arbitrum.io/rpc'],
+                            blockExplorerUrls: ['https://arbiscan.io/']
+                        }]
+                    });
+                    modal.remove();
+                    showToast('✅ Added Arbitrum network!', 'success');
+                } catch (addError) {
+                    showToast('❌ Failed to add Arbitrum network', 'error');
+                }
+            } else {
+                showToast('❌ Failed to switch networks', 'error');
+            }
+        }
+    };
+    
+    document.body.appendChild(modal);
+}
+
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    const bgColor = type === 'success' ? '#00ff88' : type === 'error' ? '#ff4757' : '#00d4ff';
+    toast.style.cssText = `
+        position: fixed; top: 20px; right: 20px; background: ${bgColor}; 
+        color: white; padding: 15px 20px; border-radius: 8px; z-index: 10000;
+        font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    `;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100px)';
+        toast.style.transition = 'all 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
 }
 
 function saveLayout() {
@@ -425,9 +538,16 @@ function tip(amount, id) {
         alert('Please connect your wallet first!');
         return;
     }
-    const msg = document.getElementById(`msg${id}`).value;
-    const message = msg ? ` with message: "${msg}"` : '';
-    document.getElementById(`result${id}`).innerHTML = `<div class="success">Sent $${amount} tip${message}! 🚀</div>`;
+    
+    // Check if on Arbitrum for better UX message
+    window.ethereum.request({ method: 'eth_chainId' }).then(chainId => {
+        const isArbitrum = chainId === '0xa4b1' || chainId === '0x66eed';
+        const msg = document.getElementById(`msg${id}`).value;
+        const message = msg ? ` with message: "${msg}"` : '';
+        const networkInfo = isArbitrum ? ' (⚡ Fast & cheap on Arbitrum!)' : ' (Consider switching to Arbitrum for lower fees)';
+        
+        document.getElementById(`result${id}`).innerHTML = `<div class="success">Sent ${amount} tip${message}! 🚀${networkInfo}</div>`;
+    });
 }
 
 function customTip(id) {
@@ -435,10 +555,18 @@ function customTip(id) {
         alert('Please connect your wallet first!');
         return;
     }
+    
     const amount = document.getElementById(`amt${id}`).value;
-    const msg = document.getElementById(`msg${id}`).value;
-    const message = msg ? ` with message: "${msg}"` : '';
-    if (amount) document.getElementById(`result${id}`).innerHTML = `<div class="success">Sent $${amount} tip${message}! 🚀</div>`;
+    if (!amount) return;
+    
+    window.ethereum.request({ method: 'eth_chainId' }).then(chainId => {
+        const isArbitrum = chainId === '0xa4b1' || chainId === '0x66eed';
+        const msg = document.getElementById(`msg${id}`).value;
+        const message = msg ? ` with message: "${msg}"` : '';
+        const networkInfo = isArbitrum ? ' (⚡ Fast & cheap on Arbitrum!)' : ' (Consider switching to Arbitrum for lower fees)';
+        
+        document.getElementById(`result${id}`).innerHTML = `<div class="success">Sent ${amount} tip${message}! 🚀${networkInfo}</div>`;
+    });
 }
 
 // ========================================

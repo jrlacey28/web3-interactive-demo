@@ -250,15 +250,143 @@ class WalletManager {
     getNetworkName(chainId = this.chainId) {
         const networks = {
             '0x1': 'Ethereum Mainnet',
-            '0x3': 'Ropsten Testnet',
-            '0x4': 'Rinkeby Testnet',
             '0x5': 'Goerli Testnet',
             '0x89': 'Polygon Mainnet',
-            '0x13881': 'Polygon Mumbai Testnet',
+            '0x13881': 'Polygon Mumbai',
             '0xa': 'Optimism Mainnet',
-            '0xa4b1': 'Arbitrum One'
+            '0xa4b1': 'Arbitrum One',
+            '0x66eed': 'Arbitrum Goerli'
         };
         return networks[chainId] || 'Unknown Network';
+    }
+
+    // ========================================
+    // ARBITRUM NETWORK MANAGEMENT
+    // ========================================
+    async switchToArbitrum() {
+        try {
+            // Try to switch to Arbitrum One
+            await window.ethereum.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: '0xa4b1' }],
+            });
+            return true;
+        } catch (switchError) {
+            // If Arbitrum isn't added to MetaMask, add it
+            if (switchError.code === 4902) {
+                return await this.addArbitrumNetwork();
+            }
+            throw switchError;
+        }
+    }
+
+    async addArbitrumNetwork() {
+        try {
+            await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                    chainId: '0xa4b1',
+                    chainName: 'Arbitrum One',
+                    nativeCurrency: {
+                        name: 'Ethereum',
+                        symbol: 'ETH',
+                        decimals: 18
+                    },
+                    rpcUrls: ['https://arb1.arbitrum.io/rpc'],
+                    blockExplorerUrls: ['https://arbiscan.io/']
+                }]
+            });
+            return true;
+        } catch (addError) {
+            console.error('Failed to add Arbitrum network:', addError);
+            return false;
+        }
+    }
+
+    async switchToArbitrumTestnet() {
+        try {
+            await window.ethereum.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: '0x66eed' }],
+            });
+            return true;
+        } catch (switchError) {
+            if (switchError.code === 4902) {
+                return await this.addArbitrumTestnet();
+            }
+            throw switchError;
+        }
+    }
+
+    async addArbitrumTestnet() {
+        try {
+            await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                    chainId: '0x66eed',
+                    chainName: 'Arbitrum Goerli',
+                    nativeCurrency: {
+                        name: 'Ethereum',
+                        symbol: 'ETH',
+                        decimals: 18
+                    },
+                    rpcUrls: ['https://goerli-rollup.arbitrum.io/rpc'],
+                    blockExplorerUrls: ['https://goerli.arbiscan.io/']
+                }]
+            });
+            return true;
+        } catch (addError) {
+            console.error('Failed to add Arbitrum testnet:', addError);
+            return false;
+        }
+    }
+
+    isArbitrumNetwork() {
+        return this.chainId === '0xa4b1' || this.chainId === '0x66eed';
+    }
+
+    async promptArbitrumSwitch() {
+        if (!this.isArbitrumNetwork()) {
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                background: rgba(0,0,0,0.8); z-index: 10000; display: flex; 
+                align-items: center; justify-content: center;
+            `;
+            modal.innerHTML = `
+                <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 450px;">
+                    <h3 style="color: #2D374B; margin-bottom: 15px;">⚡ Switch to Arbitrum</h3>
+                    <p style="margin: 15px 0; color: #666;">For faster and cheaper transactions, switch to Arbitrum network</p>
+                    <div style="margin: 20px 0; padding: 15px; background: #f8f9ff; border-radius: 8px;">
+                        <strong>Benefits:</strong><br>
+                        • ~95% lower gas fees<br>
+                        • Near-instant transactions<br>
+                        • Full Ethereum compatibility
+                    </div>
+                    <button onclick="this.switchToArbitrum()" 
+                            style="background: #2D374B; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; margin: 10px;">
+                        Switch to Arbitrum
+                    </button>
+                    <button onclick="this.parentElement.parentElement.remove()" 
+                            style="background: #ccc; color: black; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; margin: 10px;">
+                        Continue on ${this.getNetworkName()}
+                    </button>
+                </div>
+            `;
+            
+            // Add switch functionality to the button
+            modal.querySelector('button').onclick = async () => {
+                const success = await this.switchToArbitrum();
+                if (success) {
+                    modal.remove();
+                    this.showToast('✅ Switched to Arbitrum!', 'success');
+                } else {
+                    this.showToast('❌ Failed to switch networks', 'error');
+                }
+            };
+            
+            document.body.appendChild(modal);
+        }
     }
 
     // ========================================
