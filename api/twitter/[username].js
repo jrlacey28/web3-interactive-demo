@@ -3,7 +3,7 @@
 
 // Import your API config
 // Import your API config
-import API_CONFIG from '../../api-keys.js';
+const API_CONFIG = require('../../config/api-keys.js');
   
   export default async function handler(req, res) {
     // Only allow GET requests
