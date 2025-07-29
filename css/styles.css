@@ -166,6 +166,37 @@ body {
     background: rgba(0,0,0,0.85); 
 }
 
+/* VIDEO WIDGET FIXES - PREVENTS DRAGGING BELOW VIDEO */
+.widget[data-type="youtube"],
+.widget[data-type="video"] {
+    aspect-ratio: 16/9;
+    min-width: 320px;
+    min-height: 180px;
+    max-height: 80vh;
+    overflow: hidden; /* This prevents content from showing outside the widget */
+    resize: both;
+}
+
+/* Ensure video content fills the entire widget */
+.widget[data-type="youtube"] .content,
+.widget[data-type="video"] .content {
+    height: 100%;
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Make sure iframes and videos fill available space */
+.widget[data-type="youtube"] iframe,
+.widget[data-type="video"] video {
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-radius: 0;
+    flex: 1;
+}
+
 .header { 
     background: linear-gradient(135deg, #00d4ff, #0099cc); 
     color: white; 
@@ -175,7 +206,11 @@ body {
     justify-content: space-between; 
     align-items: center; 
     font-weight: bold; 
-    cursor: move; 
+    cursor: move !important; /* FIXED - ENSURES MOVE CURSOR */
+}
+
+.header:hover {
+    cursor: move !important; /* FIXED - ENSURES MOVE CURSOR ON HOVER */
 }
 
 .header-controls { 
@@ -227,7 +262,7 @@ body {
     justify-content: space-between; 
     align-items: center; 
     font-weight: bold; 
-    cursor: move; 
+    cursor: move !important; /* FIXED - DUPLICATE REMOVED BUT CURSOR FIXED */
 }
 
 .header-controls { 
@@ -548,6 +583,21 @@ body {
     border-radius: 8px;
 }
 
+/* Clean mode video fixes */
+.widget.clean-mode[data-type="youtube"],
+.widget.clean-mode[data-type="video"] {
+    padding: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+.widget.clean-mode.video-loaded iframe,
+.widget.clean-mode.video-loaded video {
+    border-radius: 8px;
+    height: 100%;
+}
+
 /* Fix YouTube aspect ratio */
 .video-loaded iframe {
     width: 100%;
@@ -573,6 +623,20 @@ body {
     height: 100%;
 }
 
+/* Hide upload section when video is loaded */
+.video-loaded .upload-section {
+    display: none;
+}
+
+/* Position video overlay properly */
+.video-loaded .video-overlay {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 10;
+    display: block;
+}
+
 /* Toggle for clean mode */
 .clean-toggle {
     background: rgba(255, 255, 255, 0.2);
@@ -585,6 +649,7 @@ body {
     font-size: 12px;
     margin-right: 5px;
 }
+
 iframe, video { 
     width: 100%; 
     height: 100%; 
@@ -762,6 +827,22 @@ iframe, video {
     color: #fff;
     box-sizing: border-box;
     gap: 12px; /* Add gap between title and controls */
+    cursor: move !important; /* FIXED - ENSURES MOVE CURSOR FOR WIDGET HEADER */
+}
+
+.widget-header:hover {
+    cursor: move !important; /* FIXED - ENSURES MOVE CURSOR ON HOVER FOR WIDGET HEADER */
+}
+
+/* Force all widget header elements to use move cursor */
+.widget-header * {
+    cursor: move;
+}
+
+/* Exception: buttons should still be clickable */
+.widget-header .style-btn,
+.widget-header .close {
+    cursor: pointer !important;
 }
 
 .widget {
