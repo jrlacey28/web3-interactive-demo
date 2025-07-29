@@ -4,7 +4,7 @@
 // Import your API config
 const API_CONFIG = {
     TWITTER: {
-      BEARER_TOKEN: 'YOUR_TWITTER_BEARER_TOKEN_HERE'
+      BEARER_TOKEN: 'BEARER_TOKEN'
     }
   };
   
@@ -20,7 +20,7 @@ const API_CONFIG = {
     // Use the bearer token directly (since api-keys.js is in your server environment)
     const BEARER_TOKEN = API_CONFIG.TWITTER.BEARER_TOKEN;
   
-    if (!BEARER_TOKEN || BEARER_TOKEN === 'YOUR_TWITTER_BEARER_TOKEN') {
+    if (!BEARER_TOKEN || BEARER_TOKEN === 'BEARER_TOKEN') {
       return res.status(500).json({ error: 'Twitter bearer token not configured' });
     }
   
