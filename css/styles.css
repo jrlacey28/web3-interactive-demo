@@ -560,7 +560,7 @@ body {
     width: 100%;
     height: 100%;
     min-height: 200px;
-    object-fit: none;
+    object-fit: cover;
 }
 
 /* Make sure video containers take full height */
@@ -773,12 +773,6 @@ iframe, video {
 .widget[data-type="youtube"],
 .widget[data-type="video"] {
     aspect-ratio: 16/9;
-    min-width: 320px;
-    min-height: 180px;
-    max-width: 100vw;
-    max-height: 80vh;
-    resize: both;
-    overflow: hidden;
 }
 
 /* Tip buttons: solid white background, no transparency */
