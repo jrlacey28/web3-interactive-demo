@@ -2,11 +2,8 @@
 // Updated to use your API_CONFIG from api-keys.js
 
 // Import your API config
-const API_CONFIG = {
-    TWITTER: {
-      BEARER_TOKEN: 'BEARER_TOKEN'
-    }
-  };
+// Import your API config
+import API_CONFIG from '../../api-keys.js';
   
   export default async function handler(req, res) {
     // Only allow GET requests
