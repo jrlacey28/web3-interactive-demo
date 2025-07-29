@@ -313,6 +313,12 @@ function remove(id) {
     document.getElementById(id).remove();
 }
 
+// Clean mode toggle
+function toggleCleanMode(widgetId) {
+    const widget = document.getElementById(widgetId);
+    widget.classList.toggle('clean-mode');
+}
+
 // ========================================
 // WIDGET CUSTOMIZATION
 // ========================================
@@ -446,38 +452,74 @@ function loadTwitter(id) {
         return;
     }
     
-    // Use Twitter API manager if available, otherwise show mock data
-    if (typeof twitterManager !== 'undefined' && !API_CONFIG.USE_MOCK_DATA) {
+    // Show loading state
+    document.getElementById(`feed${id}`).innerHTML = `
+        <div class="loading">
+            <div class="spinner"></div>
+            Loading @${user}'s tweets...
+        </div>
+    `;
+    
+    // Try to use real Twitter API if available and configured
+    if (typeof twitterManager !== 'undefined' && 
+        API_CONFIG && 
+        API_CONFIG.TWITTER && 
+        API_CONFIG.TWITTER.BEARER_TOKEN !== 'YOUR_TWITTER_BEARER_TOKEN') {
+        
         twitterManager.getUserTweets(user, 5).then(tweets => {
             displayTweets(id, tweets);
+        }).catch(error => {
+            console.error('Twitter API error:', error);
+            displayMockTweets(id, user);
         });
     } else {
-        // Mock data for demo
-        const mockTweets = [
-            {
-                id: '1',
-                text: `Just launched our new Web3 interactive demo! 🚀 The future of social media is here. #Web3 #Crypto`,
-                created_at: new Date(Date.now() - 2 * 60 * 60 * 1000),
-                author: { name: user, username: user },
-                metrics: { retweets: 42, likes: 128, replies: 15 }
-            },
-            {
-                id: '2',
-                text: `Building in public is the way 💪 Here's what we learned this week about drag-and-drop interfaces...`,
-                created_at: new Date(Date.now() - 8 * 60 * 60 * 1000),
-                author: { name: user, username: user },
-                metrics: { retweets: 23, likes: 89, replies: 7 }
-            },
-            {
-                id: '3',
-                text: `The intersection of crypto payments and social media is fascinating. Real-time tips, NFT integration... 🌐`,
-                created_at: new Date(Date.now() - 24 * 60 * 60 * 1000),
-                author: { name: user, username: user },
-                metrics: { retweets: 67, likes: 234, replies: 28 }
-            }
-        ];
-        displayTweets(id, mockTweets);
+        // Use enhanced mock data that looks more realistic
+        setTimeout(() => {
+            displayMockTweets(id, user);
+        }, 1000); // Simulate API delay
     }
+}
+
+function displayMockTweets(widgetId, username) {
+    const mockTweets = [
+        {
+            id: '1',
+            text: `Just launched our new Web3 interactive demo! 🚀 The future of social media is here. Drag & drop widgets, crypto tips, real-time feeds. Check it out! #Web3 #Crypto #Innovation`,
+            created_at: new Date(Date.now() - 2 * 60 * 60 * 1000),
+            author: { name: username, username: username },
+            metrics: { retweets: 42, likes: 128, replies: 15 }
+        },
+        {
+            id: '2', 
+            text: `Building in public is the way 💪 Here's what we learned this week about drag-and-drop interfaces and MetaMask integration. The developer community feedback has been incredible!`,
+            created_at: new Date(Date.now() - 8 * 60 * 60 * 1000),
+            author: { name: username, username: username },
+            metrics: { retweets: 23, likes: 89, replies: 7 }
+        },
+        {
+            id: '3',
+            text: `The intersection of crypto payments and social media is fascinating. Real-time tips, NFT integration, decentralized storage... We're just scratching the surface 🌐`,
+            created_at: new Date(Date.now() - 24 * 60 * 60 * 1000),
+            author: { name: username, username: username },
+            metrics: { retweets: 67, likes: 234, replies: 28 }
+        },
+        {
+            id: '4',
+            text: `Reminder: This is demo data! To see real tweets, you need Twitter API access. But isn't this mock feed looking pretty realistic? 😉 #MockData #Demo`,
+            created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+            author: { name: username, username: username },
+            metrics: { retweets: 12, likes: 45, replies: 8 }
+        },
+        {
+            id: '5',
+            text: `Pro tip: Click the 🧹 button to enable clean mode and remove the widget border for a sleeker look! ✨`,
+            created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+            author: { name: username, username: username },
+            metrics: { retweets: 18, likes: 73, replies: 5 }
+        }
+    ];
+    
+    displayTweets(widgetId, mockTweets);
 }
 
 function displayTweets(widgetId, tweets) {

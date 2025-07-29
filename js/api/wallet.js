@@ -37,10 +37,12 @@ class WalletManager {
     async connectWallet() {
         try {
             if (typeof window.ethereum === 'undefined') {
-                throw new Error('MetaMask is not installed');
+                // Show inline modal instead of redirecting
+                this.showMetaMaskInstallModal();
+                return { success: false, error: 'MetaMask not installed' };
             }
 
-            // Request account access
+            // Request account access - this opens MetaMask popup, doesn't redirect
             const accounts = await window.ethereum.request({
                 method: 'eth_requestAccounts'
             });
@@ -56,12 +58,68 @@ class WalletManager {
 
                 console.log('Wallet connected:', this.currentAccount);
                 this.updateWalletUI();
+                this.showConnectionSuccess();
                 return { success: true, account: this.currentAccount };
             }
         } catch (error) {
+            if (error.code === 4001) {
+                // User rejected request
+                this.showConnectionError('Connection cancelled by user');
+            } else {
+                this.showConnectionError('Failed to connect: ' + error.message);
+            }
             console.error('Failed to connect wallet:', error);
             return { success: false, error: error.message };
         }
+    }
+
+    showMetaMaskInstallModal() {
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.8); z-index: 10000; display: flex; 
+            align-items: center; justify-content: center;
+        `;
+        modal.innerHTML = `
+            <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 400px;">
+                <h3>MetaMask Required</h3>
+                <p style="margin: 15px 0;">You need MetaMask to connect your wallet</p>
+                <button onclick="window.open('https://metamask.io/download/', '_blank')" 
+                        style="background: #f6851b; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; margin: 10px;">
+                    Install MetaMask
+                </button>
+                <button onclick="this.parentElement.parentElement.remove()" 
+                        style="background: #ccc; color: black; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; margin: 10px;">
+                    Cancel
+                </button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    showConnectionSuccess() {
+        this.showToast('✅ Wallet connected successfully!', 'success');
+    }
+
+    showConnectionError(message) {
+        this.showToast('❌ ' + message, 'error');
+    }
+
+    showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        const bgColor = type === 'success' ? '#00ff88' : type === 'error' ? '#ff4757' : '#00d4ff';
+        toast.style.cssText = `
+            position: fixed; top: 20px; right: 20px; background: ${bgColor}; 
+            color: white; padding: 15px 20px; border-radius: 8px; z-index: 10000;
+            font-weight: bold; animation: slideIn 0.3s ease;
+        `;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
     }
 
     async checkConnection() {
