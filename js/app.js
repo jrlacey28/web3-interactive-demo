@@ -7,6 +7,61 @@ let dragged = null;
 let walletConnected = false;
 
 // ========================================
+// 16:9 ASPECT RATIO ENFORCEMENT FOR VIDEOS
+// ========================================
+
+function enforce16to9AspectRatio() {
+    const videoWidgets = document.querySelectorAll('.widget[data-type="youtube"], .widget[data-type="video"]');
+    
+    videoWidgets.forEach(widget => {
+        // Use ResizeObserver to watch for size changes
+        const resizeObserver = new ResizeObserver(entries => {
+            for (let entry of entries) {
+                const { width } = entry.contentRect;
+                const correctHeight = Math.round((width * 9) / 16);
+                
+                // Only update if height is significantly different to avoid infinite loops
+                const currentHeight = widget.offsetHeight;
+                if (Math.abs(currentHeight - correctHeight) > 2) {
+                    widget.style.height = correctHeight + 'px';
+                }
+            }
+        });
+        
+        resizeObserver.observe(widget);
+        
+        // Also handle manual style changes
+        const mutationObserver = new MutationObserver(mutations => {
+            mutations.forEach(mutation => {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                    const width = widget.offsetWidth;
+                    const correctHeight = Math.round((width * 9) / 16);
+                    const currentHeight = widget.offsetHeight;
+                    
+                    if (Math.abs(currentHeight - correctHeight) > 2) {
+                        widget.style.height = correctHeight + 'px';
+                    }
+                }
+            });
+        });
+        
+        mutationObserver.observe(widget, {
+            attributes: true,
+            attributeFilter: ['style']
+        });
+        
+        // Set initial correct ratio
+        const initialWidth = widget.offsetWidth;
+        const initialCorrectHeight = Math.round((initialWidth * 9) / 16);
+        widget.style.height = initialCorrectHeight + 'px';
+    });
+}
+
+function initVideoAspectRatio() {
+    enforce16to9AspectRatio();
+}
+
+// ========================================
 // RESPONSIVE WINDOW HANDLING
 // ========================================
 
@@ -229,6 +284,9 @@ document.addEventListener('DOMContentLoaded', function() {
             reader.readAsDataURL(file);
         }
     });
+    
+    // Initialize 16:9 aspect ratio for any existing video widgets
+    initVideoAspectRatio();
 });
 
 function setBg() {
@@ -438,6 +496,14 @@ function createWidget(type, x, y) {
     makeWidgetDraggable(wrapper, header);
     // Auto-enable clean mode for new widgets
     enableCleanModeByDefault(widget);
+    
+    // Initialize 16:9 aspect ratio for video widgets
+    if (type === 'youtube' || type === 'video') {
+        // Small delay to ensure DOM is ready
+        setTimeout(() => {
+            initVideoAspectRatio();
+        }, 100);
+    }
 }
 
 // ========================================
@@ -555,6 +621,10 @@ function loadYT(id) {
         if (videoId) {
             content.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}" allowfullscreen></iframe>`;
             widget.classList.add('video-loaded');
+            // Enforce 16:9 after video loads
+            setTimeout(() => {
+                initVideoAspectRatio();
+            }, 100);
         } else {
             content.innerHTML = '<div style="color:#ff4757;padding:20px;text-align:center">Invalid YouTube URL</div>';
         }
@@ -581,6 +651,10 @@ function loadVid(id) {
         const url = URL.createObjectURL(file);
         content.innerHTML = `<video controls><source src="${url}"></video>`;
         widget.classList.add('video-loaded');
+        // Enforce 16:9 after video loads
+        setTimeout(() => {
+            initVideoAspectRatio();
+        }, 100);
     }
 }
 
@@ -805,6 +879,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Could implement layout restoration here
         console.log('Saved layout found:', savedLayout);
     }
+    
+    // Initialize 16:9 aspect ratio enforcement
+    initVideoAspectRatio();
 });
 
 // Close style panels when clicking outside
