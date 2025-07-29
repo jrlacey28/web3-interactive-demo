@@ -339,11 +339,22 @@ function createWidget(type, x, y) {
         case 'twitter':
             title = 'Twitter';
             content = `
-                <div class="social">
-                    <input style="width:100%;padding:8px;margin:10px 0" id="user${counter}" placeholder="Enter Twitter username" value="">
-                    <button class="btn" onclick="loadTwitter(${counter})" style="color:#333">Load Real Feed</button>
-                    <div id="feed${counter}">Enter a username and click "Load Real Feed"</div>
-                    <div style="font-size:12px;color:#666;margin-top:10px">Real Twitter API integration active! 🚀</div>
+                <div class="twitter-feed">
+                    <div class="twitter-header">
+                        <div class="twitter-user-info" id="userInfo${counter}" style="display: none;">
+                            <div class="twitter-avatar" id="userAvatar${counter}">T</div>
+                            <div class="twitter-user-details">
+                                <h4 id="userName${counter}">Twitter User</h4>
+                                <div class="twitter-username" id="userHandle${counter}">@username</div>
+                            </div>
+                        </div>
+                        <input class="twitter-input" id="user${counter}" placeholder="Enter Twitter username" value="">
+                        <button class="twitter-load-btn" onclick="loadTwitter(${counter})">Load Real Feed</button>
+                    </div>
+                    <div id="feed${counter}" class="twitter-empty">Enter a username and click "Load Real Feed"</div>
+                    <div style="font-size:12px;color:#657786;padding:10px 20px;border-top:1px solid #e1e8ed;background:#f7f9fa;">
+                        Real Twitter API integration active! 🚀
+                    </div>
                 </div>
             `;
             break;
@@ -465,7 +476,10 @@ function makeWidgetDraggable(wrapper, header) {
 }
 
 function remove(id) {
-    document.getElementById(id).remove();
+    const widget = document.getElementById(id);
+    if (widget && widget.closest('.widget-wrapper')) {
+        widget.closest('.widget-wrapper').remove();
+    }
 }
 
 // Clean mode toggle - auto-enable for new widgets
@@ -491,7 +505,11 @@ function updateWidgetStyle(widgetId) {
     
     widget.style.background = `${bgColor}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`;
     widget.style.borderColor = borderColor;
-    widget.querySelector('.header').style.background = `linear-gradient(135deg, ${borderColor}, ${borderColor}dd)`;
+    
+    const header = widget.closest('.widget-wrapper').querySelector('.widget-header');
+    if (header) {
+        header.style.background = `linear-gradient(135deg, ${borderColor}, ${borderColor}dd)`;
+    }
 }
 
 function updateButtonStyle(widgetId) {
@@ -499,7 +517,7 @@ function updateButtonStyle(widgetId) {
     const buttonColor = widget.querySelector('.btn-color').value;
     const textColor = widget.querySelector('.btn-text-color').value;
     
-    widget.querySelectorAll('.btn, .tip-btn, .send').forEach(btn => {
+    widget.querySelectorAll('.btn, .tip-btn, .send, .twitter-load-btn').forEach(btn => {
         btn.style.background = `linear-gradient(135deg, ${buttonColor}, ${buttonColor}dd)`;
         btn.style.color = textColor;
     });
@@ -617,66 +635,143 @@ function customTip(id) {
 }
 
 // ========================================
-// SOCIAL MEDIA FUNCTIONS
+// ENHANCED SOCIAL MEDIA FUNCTIONS
 // ========================================
 
+// Enhanced loadTwitter function
 function loadTwitter(id) {
     const user = document.getElementById(`user${id}`).value.trim();
     if (!user) {
-        document.getElementById(`feed${id}`).innerHTML = '<div style="color:#ff4757;padding:20px">Please enter a username</div>';
+        document.getElementById(`feed${id}`).innerHTML = '<div class="twitter-error">Please enter a username</div>';
         return;
     }
     
     // Show loading state
     document.getElementById(`feed${id}`).innerHTML = `
-        <div class="loading">
-            <div class="spinner"></div>
+        <div class="twitter-loading">
+            <div class="twitter-spinner"></div>
             Loading @${user}'s tweets...
         </div>
     `;
     
-    // Call your Vercel API route directly
-    fetch(`/api/twitter/${user}?count=5`)
+    // Hide user info initially
+    const userInfo = document.getElementById(`userInfo${id}`);
+    if (userInfo) userInfo.style.display = 'none';
+    
+    // Call your API
+    fetch(`/api/twitter/${user}?count=10`)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`API error: ${response.status}`);
             }
             return response.json();
         })
-        .then(tweets => {
-            displayTweets(id, tweets);
+        .then(data => {
+            displayEnhancedTweets(id, data.tweets || data, { username: user, ...data.user });
         })
         .catch(error => {
             console.error('Twitter API error:', error);
-            document.getElementById(`feed${id}`).innerHTML = `<div style="color:#ff4757;padding:20px">Failed to load tweets. Please try again.</div>`;
+            document.getElementById(`feed${id}`).innerHTML = `
+                <div class="twitter-error">
+                    Failed to load tweets for @${user}. Please try again or check if the username exists.
+                </div>
+            `;
         });
 }
 
-function displayTweets(widgetId, tweets) {
+// Enhanced tweet display function
+function displayEnhancedTweets(widgetId, tweets, userInfo) {
+    // Show user info in header
+    const userInfoDiv = document.getElementById(`userInfo${widgetId}`);
+    const userAvatar = document.getElementById(`userAvatar${widgetId}`);
+    const userName = document.getElementById(`userName${widgetId}`);
+    const userHandle = document.getElementById(`userHandle${widgetId}`);
+    
+    if (userInfoDiv && userAvatar && userName && userHandle) {
+        // Set user avatar (first letter if no profile pic available)
+        userAvatar.textContent = userInfo.username.charAt(0).toUpperCase();
+        userAvatar.style.background = `linear-gradient(135deg, hsl(${userInfo.username.charCodeAt(0) * 5}, 70%, 50%), hsl(${userInfo.username.charCodeAt(0) * 7}, 70%, 40%))`;
+        
+        // Set user info
+        userName.textContent = userInfo.name || userInfo.username;
+        userHandle.textContent = `@${userInfo.username}`;
+        
+        // Show user info
+        userInfoDiv.style.display = 'flex';
+    }
+    
+    // Display tweets
+    if (!tweets || tweets.length === 0) {
+        document.getElementById(`feed${widgetId}`).innerHTML = `
+            <div class="twitter-empty">
+                No tweets found for @${userInfo.username}
+            </div>
+        `;
+        return;
+    }
+    
     let html = '';
     tweets.forEach(tweet => {
-        const timeAgo = formatTimeAgo(tweet.created_at);
+        const timeAgo = formatTimeAgo(new Date(tweet.created_at));
+        const tweetAvatar = tweet.author?.username?.charAt(0).toUpperCase() || 'T';
+        const avatarColor = `hsl(${(tweet.author?.username?.charCodeAt(0) || 84) * 5}, 70%, 50%)`;
+        
         html += `
             <div class="tweet">
                 <div class="tweet-header">
-                    <div class="avatar">${tweet.author.username[0].toUpperCase()}</div>
-                    <div>
-                        <h4>@${tweet.author.username}</h4>
-                        <span>${timeAgo}</span>
+                    <div class="tweet-avatar" style="background: linear-gradient(135deg, ${avatarColor}, ${avatarColor}dd);">
+                        ${tweetAvatar}
+                    </div>
+                    <div class="tweet-user-info">
+                        <h4>${tweet.author?.name || tweet.author?.username || 'Twitter User'}</h4>
+                        <div class="tweet-meta">
+                            <span class="tweet-username">@${tweet.author?.username || 'username'}</span>
+                            <span class="tweet-separator">·</span>
+                            <span class="tweet-time">${timeAgo}</span>
+                        </div>
                     </div>
                 </div>
-                <div class="tweet-content">${tweet.text}</div>
+                <div class="tweet-content">${formatTweetText(tweet.text)}</div>
                 <div class="tweet-stats">
-                    <span>💬 ${tweet.metrics.replies}</span>
-                    <span>🔄 ${tweet.metrics.retweets}</span>
-                    <span>❤️ ${tweet.metrics.likes}</span>
+                    <div class="tweet-stat">
+                        <span class="tweet-stat-icon">💬</span>
+                        <span>${formatNumber(tweet.public_metrics?.reply_count || tweet.metrics?.replies || 0)}</span>
+                    </div>
+                    <div class="tweet-stat">
+                        <span class="tweet-stat-icon">🔄</span>
+                        <span>${formatNumber(tweet.public_metrics?.retweet_count || tweet.metrics?.retweets || 0)}</span>
+                    </div>
+                    <div class="tweet-stat">
+                        <span class="tweet-stat-icon">❤️</span>
+                        <span>${formatNumber(tweet.public_metrics?.like_count || tweet.metrics?.likes || 0)}</span>
+                    </div>
                 </div>
             </div>
         `;
     });
+    
     document.getElementById(`feed${widgetId}`).innerHTML = html;
 }
 
+// Helper function to format tweet text (handles mentions, hashtags, links)
+function formatTweetText(text) {
+    return text
+        .replace(/@(\w+)/g, '<span style="color: #1da1f2;">@$1</span>')
+        .replace(/#(\w+)/g, '<span style="color: #1da1f2;">#$1</span>')
+        .replace(/(https?:\/\/[^\s]+)/g, '<span style="color: #1da1f2;">$1</span>');
+}
+
+// Helper function to format numbers (1234 -> 1.2K)
+function formatNumber(num) {
+    if (num >= 1000000) {
+        return (num / 1000000).toFixed(1) + 'M';
+    } else if (num >= 1000) {
+        return (num / 1000).toFixed(1) + 'K';
+    }
+    return num.toString();
+}
+
+// Enhanced formatTimeAgo function
 function formatTimeAgo(date) {
     const now = new Date();
     const diffInSeconds = Math.floor((now - date) / 1000);
@@ -684,7 +779,9 @@ function formatTimeAgo(date) {
     if (diffInSeconds < 60) return `${diffInSeconds}s`;
     if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m`;
     if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h`;
-    return `${Math.floor(diffInSeconds / 86400)}d`;
+    if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)}d`;
+    
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 function loadIG(id) {
