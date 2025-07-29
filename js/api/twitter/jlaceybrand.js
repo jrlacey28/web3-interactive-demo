@@ -1,7 +1,14 @@
 // File: api/twitter/[username].js
-// Place this in your project's /api/twitter/ folder
+// Updated to use your API_CONFIG from api-keys.js
 
-export default async function handler(req, res) {
+// Import your API config
+const API_CONFIG = {
+    TWITTER: {
+      BEARER_TOKEN: 'AAAAAAAAAAAAAAAAAAAAALww3QEAAAAA1303jBVjAu2U%2BSs1PLL7le4aACs%3D0mSOxLRqKnWSeFrRDIipcUJjOuq3qxR8xFJNqWVikUxEafAx24'
+    }
+  };
+  
+  export default async function handler(req, res) {
     // Only allow GET requests
     if (req.method !== 'GET') {
       return res.status(405).json({ error: 'Method not allowed' });
@@ -10,8 +17,12 @@ export default async function handler(req, res) {
     const { username } = req.query;
     const count = req.query.count || 5;
   
-    // Get Twitter Bearer Token from environment variables (secure)
-    const BEARER_TOKEN = process.env.TWITTER_BEARER_TOKEN;
+    // Use the bearer token directly (since api-keys.js is in your server environment)
+    const BEARER_TOKEN = API_CONFIG.TWITTER.BEARER_TOKEN;
+  
+    if (!BEARER_TOKEN || BEARER_TOKEN === 'YOUR_TWITTER_BEARER_TOKEN') {
+      return res.status(500).json({ error: 'Twitter bearer token not configured' });
+    }
   
     try {
       // Step 1: Get user ID from username
