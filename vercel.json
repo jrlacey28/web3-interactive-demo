@@ -1,6 +1,14 @@
 {
-    "buildCommand": null,
-    "devCommand": null,
-    "installCommand": null,
-    "framework": null
-  }
+  "version": 2,
+  "buildCommand": "",
+  "outputDirectory": ".",
+  "installCommand": "npm install",
+  "framework": null,
+  "functions": {},
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
