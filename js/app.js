@@ -5,34 +5,38 @@
 let counter = 0;
 let dragged = null;
 let walletConnected = false;
+const SNAP = 20;
+const isViewer = window.location.search.includes('viewer');
+let lastViewportWidth = window.innerWidth;
+let lastViewportHeight = window.innerHeight;
 
 // ========================================
 // RESPONSIVE WINDOW HANDLING
 // ========================================
 
 window.addEventListener('resize', function() {
-    // Adjust widgets that are outside viewport after resize
+    const newW = window.innerWidth;
+    const newH = window.innerHeight;
+    const scaleX = newW / lastViewportWidth;
+    const scaleY = newH / lastViewportHeight;
+
     document.querySelectorAll('.widget-wrapper').forEach(wrapper => {
+        const left = parseFloat(wrapper.style.left || 0) * scaleX;
+        const top = parseFloat(wrapper.style.top || 0) * scaleY;
+        const width = parseFloat(wrapper.style.width || wrapper.offsetWidth) * scaleX;
+        const height = parseFloat(wrapper.style.height || wrapper.offsetHeight) * scaleY;
+        wrapper.style.left = left + 'px';
+        wrapper.style.top = top + 'px';
+        wrapper.style.width = width + 'px';
+        wrapper.style.height = height + 'px';
+
         const rect = wrapper.getBoundingClientRect();
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
-        
-        // If widget is outside viewport, bring it back in
-        if (rect.right > viewportWidth) {
-            wrapper.style.left = Math.max(0, viewportWidth - rect.width - 20) + 'px';
-        }
-        if (rect.bottom > viewportHeight) {
-            wrapper.style.top = Math.max(0, viewportHeight - rect.height - 20) + 'px';
-        }
-        
-        // Adjust widget size if it's too large for new viewport
-        if (rect.width > viewportWidth - 40) {
-            wrapper.style.width = (viewportWidth - 40) + 'px';
-        }
-        if (rect.height > viewportHeight - 40) {
-            wrapper.style.height = (viewportHeight - 40) + 'px';
-        }
+        if (rect.right > newW) wrapper.style.left = Math.max(0, newW - rect.width) + 'px';
+        if (rect.bottom > newH) wrapper.style.top = Math.max(0, newH - rect.height) + 'px';
     });
+
+    lastViewportWidth = newW;
+    lastViewportHeight = newH;
 });
 
 // ========================================
@@ -278,6 +282,8 @@ function createWidget(type, x, y) {
     // Create wrapper
     const wrapper = document.createElement('div');
     wrapper.className = 'widget-wrapper';
+    wrapper.id = `wrap${counter}`;
+    wrapper.dataset.type = type;
     wrapper.style.left = Math.max(0, x) + 'px';
     wrapper.style.top = Math.max(0, y) + 'px';
     wrapper.style.position = 'absolute';
@@ -435,7 +441,22 @@ function createWidget(type, x, y) {
     wrapper.appendChild(widget);
     // Add to canvas
     document.getElementById('canvas').appendChild(wrapper);
-    makeWidgetDraggable(wrapper, header);
+
+    // Set initial size based on rendered widget
+    const rect = widget.getBoundingClientRect();
+    wrapper.style.width = rect.width + 'px';
+    wrapper.style.height = rect.height + 'px';
+
+    if (!isViewer) {
+        makeWidgetDraggable(wrapper, header);
+    } else {
+        widget.style.resize = 'none';
+    }
+
+    if (type === 'youtube' || type === 'video') {
+        setupAspectRatio(wrapper);
+    }
+
     // Auto-enable clean mode for new widgets
     enableCleanModeByDefault(widget);
 }
@@ -459,8 +480,10 @@ function makeWidgetDraggable(wrapper, header) {
 
         const handleMouseMove = (e) => {
             if (!isDragging) return;
-            wrapper.style.left = Math.max(0, startLeft + e.clientX - startX) + 'px';
-            wrapper.style.top = Math.max(0, startTop + e.clientY - startY) + 'px';
+            const newLeft = startLeft + e.clientX - startX;
+            const newTop = startTop + e.clientY - startY;
+            wrapper.style.left = Math.round(Math.max(0, newLeft) / SNAP) * SNAP + 'px';
+            wrapper.style.top = Math.round(Math.max(0, newTop) / SNAP) * SNAP + 'px';
         };
 
         const handleMouseUp = () => {
@@ -491,6 +514,36 @@ function toggleCleanMode(widgetId) {
 // Auto-enable clean mode for new widgets
 function enableCleanModeByDefault(widget) {
     widget.classList.add('clean-mode');
+}
+
+function setupAspectRatio(wrapper) {
+    const ratio = 16 / 9;
+    const ro = new ResizeObserver(entries => {
+        for (const entry of entries) {
+            const w = entry.contentRect.width;
+            const snappedW = Math.round(w / SNAP) * SNAP;
+            const h = Math.round(snappedW / ratio / SNAP) * SNAP;
+            wrapper.style.width = snappedW + 'px';
+            wrapper.style.height = h + 'px';
+        }
+    });
+    ro.observe(wrapper);
+}
+
+function setPreview(mode) {
+    const canvas = document.getElementById('canvas');
+    canvas.classList.remove('preview-desktop', 'preview-tablet', 'preview-mobile');
+    canvas.classList.add(`preview-${mode}`);
+    document.querySelectorAll('.preview-btn').forEach(btn => btn.classList.remove('active'));
+    const active = document.getElementById(`preview-${mode}`);
+    if (active) active.classList.add('active');
+}
+
+function publishPage() {
+    saveLayout();
+    const url = new URL(window.location.href);
+    url.searchParams.set('mode', 'viewer');
+    window.open(url.toString(), '_blank');
 }
 
 // ========================================
@@ -794,17 +847,29 @@ function loadIG(id) {
 
 // Initialize with demo widget when page loads
 document.addEventListener('DOMContentLoaded', function() {
-    // Create a demo crypto widget after a short delay
-    setTimeout(() => {
-        createWidget('crypto', 100, 100);
-    }, 1000);
-    
-    // Load saved layout if it exists
+    if (isViewer) {
+        document.body.classList.add('viewer-mode');
+    }
     const savedLayout = localStorage.getItem('web3DemoLayout');
     if (savedLayout) {
-        // Could implement layout restoration here
-        console.log('Saved layout found:', savedLayout);
+        const layout = JSON.parse(savedLayout);
+        document.getElementById('bg').style.background = layout.background;
+        layout.widgets.forEach(w => {
+            createWidget(w.type, parseInt(w.x), parseInt(w.y));
+            const wrapper = document.getElementById('canvas').lastElementChild;
+            wrapper.id = w.id;
+            wrapper.style.width = w.width;
+            wrapper.style.height = w.height;
+            wrapper.style.left = w.x;
+            wrapper.style.top = w.y;
+        });
+    } else {
+        // Create a demo crypto widget after a short delay
+        setTimeout(() => {
+            createWidget('crypto', 100, 100);
+        }, 1000);
     }
+    setPreview('desktop');
 });
 
 // Close style panels when clicking outside

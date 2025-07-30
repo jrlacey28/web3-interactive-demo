@@ -11,6 +11,12 @@
     <button class="toggle" onclick="toggleSidebar()">☰ Widgets</button>
     <button class="wallet-btn" id="walletBtn" onclick="connectWallet()">Connect Wallet</button>
     <button class="save-btn" onclick="saveLayout()">💾 Save Layout</button>
+    <button class="publish-btn" onclick="publishPage()">🚀 Publish</button>
+    <div class="preview-controls">
+        <button id="preview-desktop" class="preview-btn active" onclick="setPreview('desktop')">Web</button>
+        <button id="preview-tablet" class="preview-btn" onclick="setPreview('tablet')">Tablet</button>
+        <button id="preview-mobile" class="preview-btn" onclick="setPreview('mobile')">Mobile</button>
+    </div>
     
     <div class="sidebar" id="sidebar">
         <div class="section">
