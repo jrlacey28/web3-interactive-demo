@@ -22,6 +22,116 @@ let snapEnabled = true;
 // SNAP FUNCTIONALITY
 // ========================================
 
+// Enhanced resize observer for snap-on-resize
+let resizeObserver = null;
+
+// Initialize resize observer for snap functionality
+function initializeResizeSnap() {
+    if (window.ResizeObserver) {
+        resizeObserver = new ResizeObserver(entries => {
+            entries.forEach(entry => {
+                const wrapper = entry.target;
+                if (wrapper.classList.contains('widget-wrapper') && wrapper.classList.contains('resizing')) {
+                    const rect = wrapper.getBoundingClientRect();
+                    const snapResult = calculateResizeSnapPosition(wrapper, rect.left, rect.top, rect.width, rect.height);
+                    
+                    if (snapResult.snappedWidth || snapResult.snappedHeight) {
+                        wrapper.style.width = snapResult.width + 'px';
+                        wrapper.style.height = snapResult.height + 'px';
+                        wrapper.style.boxShadow = '0 0 20px rgba(0, 212, 255, 0.8)';
+                    } else {
+                        wrapper.style.boxShadow = '';
+                        hideSnapIndicators();
+                    }
+                }
+            });
+        });
+    }
+}
+
+// Calculate snap positions during resize
+function calculateResizeSnapPosition(draggedWrapper, currentX, currentY, currentWidth, currentHeight) {
+    if (!snapEnabled) {
+        hideSnapIndicators();
+        return { 
+            width: currentWidth, 
+            height: currentHeight, 
+            snappedWidth: false, 
+            snappedHeight: false 
+        };
+    }
+
+    const otherWidgets = getWidgetPositions(draggedWrapper);
+    
+    let snapWidth = currentWidth;
+    let snapHeight = currentHeight;
+    let snappedToWidth = false;
+    let snappedToHeight = false;
+    
+    let closestWidthDistance = SNAP_THRESHOLD;
+    let closestHeightDistance = SNAP_THRESHOLD;
+    let verticalSnapLine = null;
+    let horizontalSnapLine = null;
+    
+    otherWidgets.forEach(widget => {
+        // Width snapping - align right edges
+        const rightEdgeDistance = Math.abs((currentX + currentWidth) - widget.right);
+        if (rightEdgeDistance < closestWidthDistance) {
+            closestWidthDistance = rightEdgeDistance;
+            snapWidth = widget.right - currentX;
+            verticalSnapLine = widget.right;
+            snappedToWidth = true;
+        }
+        
+        // Width snapping - match other widget widths
+        const widthMatchDistance = Math.abs(currentWidth - widget.width);
+        if (widthMatchDistance < closestWidthDistance) {
+            closestWidthDistance = widthMatchDistance;
+            snapWidth = widget.width;
+            snappedToWidth = true;
+        }
+        
+        // Height snapping - align bottom edges
+        const bottomEdgeDistance = Math.abs((currentY + currentHeight) - widget.bottom);
+        if (bottomEdgeDistance < closestHeightDistance) {
+            closestHeightDistance = bottomEdgeDistance;
+            snapHeight = widget.bottom - currentY;
+            horizontalSnapLine = widget.bottom;
+            snappedToHeight = true;
+        }
+        
+        // Height snapping - match other widget heights
+        const heightMatchDistance = Math.abs(currentHeight - widget.height);
+        if (heightMatchDistance < closestHeightDistance) {
+            closestHeightDistance = heightMatchDistance;
+            snapHeight = widget.height;
+            snappedToHeight = true;
+        }
+    });
+    
+    // Show snap indicators
+    if (snappedToWidth && verticalSnapLine !== null) {
+        showVerticalSnapIndicator(verticalSnapLine);
+    }
+    if (snappedToHeight && horizontalSnapLine !== null) {
+        showHorizontalSnapIndicator(horizontalSnapLine);
+    }
+    
+    // Ensure widgets don't exceed viewport
+    const maxWidth = window.innerWidth - currentX;
+    const maxHeight = window.innerHeight - currentY;
+    
+    snapWidth = Math.max(200, Math.min(snapWidth, maxWidth)); // Min width 200px
+    snapHeight = Math.max(150, Math.min(snapHeight, maxHeight)); // Min height 150px
+    
+    return {
+        width: snapWidth,
+        height: snapHeight,
+        snappedWidth: snappedToWidth,
+        snappedHeight: snappedToHeight
+    };
+}
+
 // Create snap indicator lines
 function createSnapIndicators() {
     // Vertical snap line
@@ -711,8 +821,92 @@ function createWidget(type, x, y) {
     // Add to canvas
     document.getElementById('canvas').appendChild(wrapper);
     makeWidgetDraggable(wrapper, header);
+    enableResizeSnap(wrapper); // Add resize snap functionality
     // Auto-enable clean mode for new widgets
     enableCleanModeByDefault(widget);
+}
+
+// Enable resize snapping for widgets
+function enableResizeSnap(wrapper) {
+    // Add resize handles if they don't exist
+    if (!wrapper.querySelector('.resize-handle')) {
+        const resizeHandle = document.createElement('div');
+        resizeHandle.className = 'resize-handle';
+        resizeHandle.style.cssText = `
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(-45deg, transparent 0%, transparent 30%, #00d4ff 30%, #00d4ff 40%, transparent 40%, transparent 60%, #00d4ff 60%, #00d4ff 70%, transparent 70%);
+            cursor: se-resize;
+            opacity: 0.7;
+            z-index: 10;
+        `;
+        wrapper.appendChild(resizeHandle);
+        
+        let isResizing = false;
+        let startX, startY, startWidth, startHeight;
+        
+        resizeHandle.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            isResizing = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            startWidth = parseInt(wrapper.offsetWidth, 10);
+            startHeight = parseInt(wrapper.offsetHeight, 10);
+            
+            wrapper.classList.add('resizing');
+            wrapper.style.zIndex = '1001';
+            
+            if (resizeObserver) {
+                resizeObserver.observe(wrapper);
+            }
+            
+            const handleMouseMove = (e) => {
+                if (!isResizing) return;
+                
+                const newWidth = startWidth + e.clientX - startX;
+                const newHeight = startHeight + e.clientY - startY;
+                
+                // Apply minimum sizes
+                const minWidth = wrapper.querySelector('.widget').dataset.type === 'youtube' || 
+                               wrapper.querySelector('.widget').dataset.type === 'video' ? 320 : 200;
+                const minHeight = wrapper.querySelector('.widget').dataset.type === 'youtube' || 
+                                wrapper.querySelector('.widget').dataset.type === 'video' ? 180 : 150;
+                
+                wrapper.style.width = Math.max(minWidth, newWidth) + 'px';
+                wrapper.style.height = Math.max(minHeight, newHeight) + 'px';
+                
+                // Maintain aspect ratio for video widgets
+                if (wrapper.querySelector('.widget').dataset.type === 'youtube' || 
+                    wrapper.querySelector('.widget').dataset.type === 'video') {
+                    const aspectRatio = 16 / 9;
+                    const calculatedHeight = Math.max(minWidth, newWidth) / aspectRatio;
+                    wrapper.style.height = Math.max(minHeight, calculatedHeight) + 'px';
+                }
+            };
+            
+            const handleMouseUp = () => {
+                isResizing = false;
+                wrapper.classList.remove('resizing');
+                wrapper.style.zIndex = '';
+                wrapper.style.boxShadow = '';
+                hideSnapIndicators();
+                
+                if (resizeObserver) {
+                    resizeObserver.unobserve(wrapper);
+                }
+                
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+            };
+            
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+        });
+    }
 }
 
 // ========================================
@@ -1096,8 +1290,8 @@ function createSnapToggleButton() {
     snapToggle.title = 'Toggle Snap (Currently ON)';
     snapToggle.style.cssText = `
         position: fixed;
-        top: 20px;
-        left: 80px;
+        top: 80px;
+        left: 20px;
         background: rgba(0, 212, 255, 0.2);
         backdrop-filter: blur(10px);
         border: 1px solid rgba(0, 212, 255, 0.3);
@@ -1147,6 +1341,7 @@ document.addEventListener('DOMContentLoaded', function() {
     createSnapIndicators();
     addSnapCSS();
     createSnapToggleButton();
+    initializeResizeSnap(); // Initialize resize snap functionality
     
     // Create a demo crypto widget after a short delay
     setTimeout(() => {
