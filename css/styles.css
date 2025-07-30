@@ -1162,19 +1162,22 @@ iframe, video {
     100% { opacity: 0.8; transform: scale(1); }
 }
 
-/* Resize handle styles - REMOVED CUSTOM HANDLES */
-.widget-wrapper {
-    resize: both;
-    overflow: hidden;
-    min-width: 200px;
-    min-height: 150px;
+/* Resize handle styles */
+.resize-handle {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(-45deg, transparent 0%, transparent 30%, #00d4ff 30%, #00d4ff 40%, transparent 40%, transparent 60%, #00d4ff 60%, #00d4ff 70%, transparent 70%);
+    cursor: se-resize;
+    opacity: 0.7;
+    z-index: 10;
+    transition: opacity 0.2s ease;
 }
 
-.widget-wrapper[data-widget-type="youtube"],
-.widget-wrapper[data-widget-type="video"] {
-    min-width: 320px;
-    min-height: 180px;
-    resize: both;
+.resize-handle:hover {
+    opacity: 1;
 }
 
 .widget-wrapper.resizing {
