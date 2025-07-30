@@ -1,10 +1,283 @@
-// Web3 Interactive Demo - Main Application Logic
+// Web3 Interactive Demo - Main Application Logic with Snap Function
 // This file contains all the core functionality for widget management,
 // drag and drop, UI interactions, and layout management
 
 let counter = 0;
 let dragged = null;
 let walletConnected = false;
+
+// Snap configuration
+const SNAP_THRESHOLD = 20; // Distance in pixels for snapping
+const SNAP_GRID_SIZE = 10; // Grid size for grid snapping (optional)
+
+// Visual snap indicators
+let snapIndicators = {
+    vertical: null,
+    horizontal: null
+};
+
+let snapEnabled = true;
+
+// ========================================
+// SNAP FUNCTIONALITY
+// ========================================
+
+// Create snap indicator lines
+function createSnapIndicators() {
+    // Vertical snap line
+    const verticalLine = document.createElement('div');
+    verticalLine.style.cssText = `
+        position: fixed;
+        width: 2px;
+        background: #00d4ff;
+        box-shadow: 0 0 10px #00d4ff;
+        opacity: 0.8;
+        pointer-events: none;
+        z-index: 9999;
+        display: none;
+        top: 0;
+        height: 100vh;
+    `;
+    verticalLine.id = 'snap-vertical';
+    document.body.appendChild(verticalLine);
+    snapIndicators.vertical = verticalLine;
+
+    // Horizontal snap line
+    const horizontalLine = document.createElement('div');
+    horizontalLine.style.cssText = `
+        position: fixed;
+        height: 2px;
+        background: #00d4ff;
+        box-shadow: 0 0 10px #00d4ff;
+        opacity: 0.8;
+        pointer-events: none;
+        z-index: 9999;
+        display: none;
+        left: 0;
+        width: 100vw;
+    `;
+    horizontalLine.id = 'snap-horizontal';
+    document.body.appendChild(horizontalLine);
+    snapIndicators.horizontal = horizontalLine;
+}
+
+// Hide snap indicators
+function hideSnapIndicators() {
+    if (snapIndicators.vertical) snapIndicators.vertical.style.display = 'none';
+    if (snapIndicators.horizontal) snapIndicators.horizontal.style.display = 'none';
+}
+
+// Show vertical snap indicator
+function showVerticalSnapIndicator(x) {
+    if (snapIndicators.vertical) {
+        snapIndicators.vertical.style.left = x + 'px';
+        snapIndicators.vertical.style.display = 'block';
+    }
+}
+
+// Show horizontal snap indicator
+function showHorizontalSnapIndicator(y) {
+    if (snapIndicators.horizontal) {
+        snapIndicators.horizontal.style.top = y + 'px';
+        snapIndicators.horizontal.style.display = 'block';
+    }
+}
+
+// Get all widget positions and dimensions
+function getWidgetPositions(excludeWrapper = null) {
+    const widgets = [];
+    document.querySelectorAll('.widget-wrapper').forEach(wrapper => {
+        if (wrapper === excludeWrapper) return;
+        
+        const rect = wrapper.getBoundingClientRect();
+        const computedStyle = window.getComputedStyle(wrapper);
+        
+        widgets.push({
+            element: wrapper,
+            left: parseInt(wrapper.style.left) || 0,
+            top: parseInt(wrapper.style.top) || 0,
+            right: (parseInt(wrapper.style.left) || 0) + rect.width,
+            bottom: (parseInt(wrapper.style.top) || 0) + rect.height,
+            centerX: (parseInt(wrapper.style.left) || 0) + rect.width / 2,
+            centerY: (parseInt(wrapper.style.top) || 0) + rect.height / 2,
+            width: rect.width,
+            height: rect.height
+        });
+    });
+    return widgets;
+}
+
+// Calculate snap positions
+function calculateSnapPosition(draggedWrapper, currentX, currentY) {
+    if (!snapEnabled) {
+        hideSnapIndicators();
+        return { x: currentX, y: currentY, snappedX: false, snappedY: false };
+    }
+
+    const otherWidgets = getWidgetPositions(draggedWrapper);
+    const draggedRect = draggedWrapper.getBoundingClientRect();
+    
+    const draggedRight = currentX + draggedRect.width;
+    const draggedBottom = currentY + draggedRect.height;
+    const draggedCenterX = currentX + draggedRect.width / 2;
+    const draggedCenterY = currentY + draggedRect.height / 2;
+    
+    let snapX = currentX;
+    let snapY = currentY;
+    let snappedToVertical = false;
+    let snappedToHorizontal = false;
+    
+    // Find closest snap positions
+    let closestVerticalDistance = SNAP_THRESHOLD;
+    let closestHorizontalDistance = SNAP_THRESHOLD;
+    let verticalSnapLine = null;
+    let horizontalSnapLine = null;
+    
+    otherWidgets.forEach(widget => {
+        // Vertical alignment checks
+        const leftToLeftDistance = Math.abs(currentX - widget.left);
+        const rightToRightDistance = Math.abs(draggedRight - widget.right);
+        const centerTocenterXDistance = Math.abs(draggedCenterX - widget.centerX);
+        const leftToRightDistance = Math.abs(currentX - widget.right);
+        const rightToLeftDistance = Math.abs(draggedRight - widget.left);
+        
+        // Check for left-to-left alignment
+        if (leftToLeftDistance < closestVerticalDistance) {
+            closestVerticalDistance = leftToLeftDistance;
+            snapX = widget.left;
+            verticalSnapLine = widget.left;
+            snappedToVertical = true;
+        }
+        
+        // Check for right-to-right alignment
+        if (rightToRightDistance < closestVerticalDistance) {
+            closestVerticalDistance = rightToRightDistance;
+            snapX = widget.right - draggedRect.width;
+            verticalSnapLine = widget.right;
+            snappedToVertical = true;
+        }
+        
+        // Check for center-to-center alignment (X)
+        if (centerTocenterXDistance < closestVerticalDistance) {
+            closestVerticalDistance = centerTocenterXDistance;
+            snapX = widget.centerX - draggedRect.width / 2;
+            verticalSnapLine = widget.centerX;
+            snappedToVertical = true;
+        }
+        
+        // Check for left-to-right alignment (spacing)
+        if (leftToRightDistance < closestVerticalDistance) {
+            closestVerticalDistance = leftToRightDistance;
+            snapX = widget.right;
+            verticalSnapLine = widget.right;
+            snappedToVertical = true;
+        }
+        
+        // Check for right-to-left alignment (spacing)
+        if (rightToLeftDistance < closestVerticalDistance) {
+            closestVerticalDistance = rightToLeftDistance;
+            snapX = widget.left - draggedRect.width;
+            verticalSnapLine = widget.left;
+            snappedToVertical = true;
+        }
+        
+        // Horizontal alignment checks
+        const topToTopDistance = Math.abs(currentY - widget.top);
+        const bottomToBottomDistance = Math.abs(draggedBottom - widget.bottom);
+        const centerToCenterYDistance = Math.abs(draggedCenterY - widget.centerY);
+        const topToBottomDistance = Math.abs(currentY - widget.bottom);
+        const bottomToTopDistance = Math.abs(draggedBottom - widget.top);
+        
+        // Check for top-to-top alignment
+        if (topToTopDistance < closestHorizontalDistance) {
+            closestHorizontalDistance = topToTopDistance;
+            snapY = widget.top;
+            horizontalSnapLine = widget.top;
+            snappedToHorizontal = true;
+        }
+        
+        // Check for bottom-to-bottom alignment
+        if (bottomToBottomDistance < closestHorizontalDistance) {
+            closestHorizontalDistance = bottomToBottomDistance;
+            snapY = widget.bottom - draggedRect.height;
+            horizontalSnapLine = widget.bottom;
+            snappedToHorizontal = true;
+        }
+        
+        // Check for center-to-center alignment (Y)
+        if (centerToCenterYDistance < closestHorizontalDistance) {
+            closestHorizontalDistance = centerToCenterYDistance;
+            snapY = widget.centerY - draggedRect.height / 2;
+            horizontalSnapLine = widget.centerY;
+            snappedToHorizontal = true;
+        }
+        
+        // Check for top-to-bottom alignment (spacing)
+        if (topToBottomDistance < closestHorizontalDistance) {
+            closestHorizontalDistance = topToBottomDistance;
+            snapY = widget.bottom;
+            horizontalSnapLine = widget.bottom;
+            snappedToHorizontal = true;
+        }
+        
+        // Check for bottom-to-top alignment (spacing)
+        if (bottomToTopDistance < closestHorizontalDistance) {
+            closestHorizontalDistance = bottomToTopDistance;
+            snapY = widget.top - draggedRect.height;
+            horizontalSnapLine = widget.top;
+            snappedToHorizontal = true;
+        }
+    });
+    
+    // Show snap indicators
+    if (snappedToVertical && verticalSnapLine !== null) {
+        showVerticalSnapIndicator(verticalSnapLine);
+    }
+    if (snappedToHorizontal && horizontalSnapLine !== null) {
+        showHorizontalSnapIndicator(horizontalSnapLine);
+    }
+    
+    // Ensure widgets don't go outside viewport
+    const maxX = window.innerWidth - draggedRect.width;
+    const maxY = window.innerHeight - draggedRect.height;
+    
+    snapX = Math.max(0, Math.min(snapX, maxX));
+    snapY = Math.max(0, Math.min(snapY, maxY));
+    
+    return {
+        x: snapX,
+        y: snapY,
+        snappedX: snappedToVertical,
+        snappedY: snappedToHorizontal
+    };
+}
+
+// Add CSS for snap functionality
+function addSnapCSS() {
+    const style = document.createElement('style');
+    style.textContent = `
+        .widget-wrapper.dragging {
+            opacity: 0.9;
+            transform: scale(1.02);
+            transition: none;
+        }
+        
+        .widget-wrapper {
+            transition: transform 0.1s ease;
+        }
+        
+        /* Snap indicator animations */
+        #snap-vertical, #snap-horizontal {
+            animation: snapPulse 0.3s ease-in-out;
+        }
+        
+        @keyframes snapPulse {
+            0% { opacity: 0; transform: scale(0.8); }
+            100% { opacity: 0.8; transform: scale(1); }
+        }
+    `;
+    document.head.appendChild(style);
+}
 
 // ========================================
 // RESPONSIVE WINDOW HANDLING
@@ -281,6 +554,8 @@ function createWidget(type, x, y) {
     wrapper.style.left = Math.max(0, x) + 'px';
     wrapper.style.top = Math.max(0, y) + 'px';
     wrapper.style.position = 'absolute';
+    wrapper.id = `wrapper${counter}`;
+    
     // Create widget
     const widget = document.createElement('div');
     widget.className = 'widget glow';
@@ -441,7 +716,7 @@ function createWidget(type, x, y) {
 }
 
 // ========================================
-// WIDGET DRAGGING FUNCTIONALITY
+// WIDGET DRAGGING FUNCTIONALITY WITH SNAP
 // ========================================
 
 function makeWidgetDraggable(wrapper, header) {
@@ -456,16 +731,39 @@ function makeWidgetDraggable(wrapper, header) {
         startLeft = parseInt(wrapper.style.left) || 0;
         startTop = parseInt(wrapper.style.top) || 0;
         wrapper.style.zIndex = '1001';
+        
+        // Add dragging class for visual feedback
+        wrapper.classList.add('dragging');
 
         const handleMouseMove = (e) => {
             if (!isDragging) return;
-            wrapper.style.left = Math.max(0, startLeft + e.clientX - startX) + 'px';
-            wrapper.style.top = Math.max(0, startTop + e.clientY - startY) + 'px';
+            
+            const newX = startLeft + e.clientX - startX;
+            const newY = startTop + e.clientY - startY;
+            
+            // Calculate snap position
+            const snapResult = calculateSnapPosition(wrapper, newX, newY);
+            
+            // Apply position (snapped or original)
+            wrapper.style.left = snapResult.x + 'px';
+            wrapper.style.top = snapResult.y + 'px';
+            
+            // Visual feedback for snapping
+            if (snapResult.snappedX || snapResult.snappedY) {
+                wrapper.style.boxShadow = '0 0 20px rgba(0, 212, 255, 0.8)';
+            } else {
+                wrapper.style.boxShadow = '';
+                hideSnapIndicators();
+            }
         };
 
         const handleMouseUp = () => {
             isDragging = false;
             wrapper.style.zIndex = '';
+            wrapper.style.boxShadow = '';
+            wrapper.classList.remove('dragging');
+            hideSnapIndicators();
+            
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
         };
@@ -789,11 +1087,67 @@ function loadIG(id) {
 }
 
 // ========================================
+// SNAP TOGGLE BUTTON INITIALIZATION
+// ========================================
+
+function createSnapToggleButton() {
+    const snapToggle = document.createElement('button');
+    snapToggle.innerHTML = '🧲';
+    snapToggle.title = 'Toggle Snap (Currently ON)';
+    snapToggle.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 80px;
+        background: rgba(0, 212, 255, 0.2);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(0, 212, 255, 0.3);
+        color: #00d4ff;
+        padding: 12px 16px;
+        border-radius: 12px;
+        cursor: pointer;
+        z-index: 1001;
+        font-size: 16px;
+        transition: all 0.3s ease;
+    `;
+    
+    snapToggle.addEventListener('click', function() {
+        snapEnabled = !snapEnabled;
+        if (snapEnabled) {
+            snapToggle.style.background = 'rgba(0, 212, 255, 0.2)';
+            snapToggle.style.borderColor = 'rgba(0, 212, 255, 0.3)';
+            snapToggle.style.color = '#00d4ff';
+            snapToggle.title = 'Toggle Snap (Currently ON)';
+        } else {
+            snapToggle.style.background = 'rgba(255, 255, 255, 0.2)';
+            snapToggle.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+            snapToggle.style.color = 'white';
+            snapToggle.title = 'Toggle Snap (Currently OFF)';
+            hideSnapIndicators();
+        }
+    });
+    
+    snapToggle.addEventListener('mouseenter', function() {
+        this.style.transform = 'translateY(-2px)';
+    });
+    
+    snapToggle.addEventListener('mouseleave', function() {
+        this.style.transform = 'translateY(0)';
+    });
+    
+    document.body.appendChild(snapToggle);
+}
+
+// ========================================
 // INITIALIZATION
 // ========================================
 
 // Initialize with demo widget when page loads
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize snap functionality
+    createSnapIndicators();
+    addSnapCSS();
+    createSnapToggleButton();
+    
     // Create a demo crypto widget after a short delay
     setTimeout(() => {
         createWidget('crypto', 100, 100);
