@@ -423,7 +423,34 @@ window.addEventListener('resize', function() {
 // ========================================
 
 function toggleSidebar() {
-    document.getElementById('sidebar').classList.toggle('open');
+    const sidebar = document.getElementById('sidebar');
+    const toggle = document.querySelector('.toggle');
+    const snapToggle = document.querySelector('.snap-toggle');
+    
+    sidebar.classList.toggle('open');
+    
+    // Hide/show toggle and snap buttons when sidebar opens/closes
+    if (sidebar.classList.contains('open')) {
+        toggle.style.opacity = '0';
+        toggle.style.pointerEvents = 'none';
+        toggle.style.transform = 'translateX(-20px)';
+        
+        if (snapToggle) {
+            snapToggle.style.opacity = '0';
+            snapToggle.style.pointerEvents = 'none';
+            snapToggle.style.transform = 'translateX(-20px)';
+        }
+    } else {
+        toggle.style.opacity = '1';
+        toggle.style.pointerEvents = 'auto';
+        toggle.style.transform = 'translateX(0)';
+        
+        if (snapToggle) {
+            snapToggle.style.opacity = '1';
+            snapToggle.style.pointerEvents = 'auto';
+            snapToggle.style.transform = 'translateX(0)';
+        }
+    }
 }
 
 async function connectWallet() {
@@ -597,30 +624,27 @@ function saveLayout() {
 }
 
 // ========================================
-// BACKGROUND MANAGEMENT
+// BACKGROUND MANAGEMENT - SIMPLIFIED
 // ========================================
 
 document.addEventListener('DOMContentLoaded', function() {
     // Background file upload handler
-    document.getElementById('bgFile').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                document.getElementById('bg').style.backgroundImage = `url(${e.target.result})`;
-            };
-            reader.readAsDataURL(file);
-        }
-    });
+    const bgFileInput = document.getElementById('bgFile');
+    if (bgFileInput) {
+        bgFileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('bg').style.backgroundImage = `url(${e.target.result})`;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
 });
 
-function setBg() {
-    const url = document.getElementById('bgUrl').value;
-    if (url) {
-        document.getElementById('bg').style.backgroundImage = `url(${url})`;
-    }
-}
-
+// Simplified preset function - no URL input needed
 function setPreset(gradient) {
     const bg = document.getElementById('bg');
     bg.style.background = gradient;
@@ -1286,46 +1310,20 @@ function loadIG(id) {
 
 function createSnapToggleButton() {
     const snapToggle = document.createElement('button');
+    snapToggle.className = 'snap-toggle';
     snapToggle.innerHTML = '🧲';
     snapToggle.title = 'Toggle Snap (Currently ON)';
-    snapToggle.style.cssText = `
-        position: fixed;
-        top: 80px;
-        left: 20px;
-        background: rgba(0, 212, 255, 0.2);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(0, 212, 255, 0.3);
-        color: #00d4ff;
-        padding: 12px 16px;
-        border-radius: 12px;
-        cursor: pointer;
-        z-index: 1001;
-        font-size: 16px;
-        transition: all 0.3s ease;
-    `;
     
     snapToggle.addEventListener('click', function() {
         snapEnabled = !snapEnabled;
         if (snapEnabled) {
-            snapToggle.style.background = 'rgba(0, 212, 255, 0.2)';
-            snapToggle.style.borderColor = 'rgba(0, 212, 255, 0.3)';
-            snapToggle.style.color = '#00d4ff';
+            snapToggle.classList.remove('disabled');
             snapToggle.title = 'Toggle Snap (Currently ON)';
         } else {
-            snapToggle.style.background = 'rgba(255, 255, 255, 0.2)';
-            snapToggle.style.borderColor = 'rgba(255, 255, 255, 0.3)';
-            snapToggle.style.color = 'white';
+            snapToggle.classList.add('disabled');
             snapToggle.title = 'Toggle Snap (Currently OFF)';
             hideSnapIndicators();
         }
-    });
-    
-    snapToggle.addEventListener('mouseenter', function() {
-        this.style.transform = 'translateY(-2px)';
-    });
-    
-    snapToggle.addEventListener('mouseleave', function() {
-        this.style.transform = 'translateY(0)';
     });
     
     document.body.appendChild(snapToggle);

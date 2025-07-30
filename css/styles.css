@@ -59,11 +59,47 @@ body {
     border-radius: 12px; 
     cursor: pointer; 
     z-index: 1001; 
+    transition: all 0.3s ease;
 }
 
 .toggle:hover { 
     background: rgba(255,255,255,0.3); 
     transform: translateY(-2px); 
+}
+
+/* Hide toggle and snap buttons when sidebar is open */
+.sidebar.open ~ .toggle,
+.sidebar.open ~ .snap-toggle {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-20px);
+}
+
+/* Snap toggle button */
+.snap-toggle {
+    position: fixed;
+    top: 80px;
+    left: 20px;
+    background: rgba(0, 212, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    color: #00d4ff;
+    padding: 12px 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    z-index: 1001;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.snap-toggle:hover {
+    transform: translateY(-2px);
+}
+
+.snap-toggle.disabled {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: white;
 }
 
 .wallet-btn { 
@@ -267,58 +303,6 @@ body {
 }
 
 .close { 
-    background: #ffffff; 
-    border: none; 
-    color: rgba(255, 255, 255, 0); 
-    width: 25px; 
-    height: 25px; 
-    border-radius: 50%; 
-    cursor: pointer; 
-}
-
-.content { 
-    padding: 0; 
-    height: calc(100% - 45px); 
-    overflow-y: auto; 
-    color: white; 
-    position: relative; 
-}
-
-/* Style Panel */
-.header { 
-    background: linear-gradient(135deg, #00d4ff, #0099cc); 
-    color: white; 
-    padding: 10px 15px; 
-    border-radius: 13px 13px 0 0; 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    font-weight: bold; 
-    cursor: move !important;
-}
-
-.header-controls { 
-    display: flex; 
-    align-items: center; 
-    gap: 10px; 
-}
-
-.style-btn { 
-    background: rgba(255, 255, 255, 0.2); 
-    border: none; 
-    color: white; 
-    width: 25px; 
-    height: 25px; 
-    border-radius: 50%; 
-    cursor: pointer; 
-    font-size: 12px; 
-}
-
-.style-btn:hover { 
-    background: rgba(255, 255, 255, 0.3); 
-}
-
-.close { 
     background: rgba(255, 255, 255, 0.2); 
     border: none; 
     color: rgb(255, 255, 255); 
@@ -409,13 +393,21 @@ body {
     margin: 15px 0; 
 }
 
-.tip-btn {  
-    color: #000; 
-    border: none; 
-    padding: 12px; 
-    border-radius: 8px; 
-    cursor: pointer; 
-    font-weight: bold; 
+.tip-btn {
+    background: #fff;
+    color: #000;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    transition: background 0.2s, color 0.2s;
+}
+
+.tip-btn:hover {
+    background: #f0f0f0;
+    color: #000;
 }
 
 .custom-tip { 
@@ -708,7 +700,15 @@ iframe, video {
     display: block; 
 }
 
-/* Background Presets */
+/* Background Presets - SIMPLIFIED */
+.background-section {
+    margin-bottom: 30px;
+}
+
+.background-upload {
+    margin-bottom: 20px;
+}
+
 .presets { 
     display: grid; 
     grid-template-columns: repeat(2, 1fr); 
@@ -818,7 +818,7 @@ iframe, video {
         aspect-ratio: 16/9 !important;
     }
     
-    .toggle, .wallet-btn, .save-btn {
+    .toggle, .wallet-btn, .save-btn, .snap-toggle {
         padding: 10px 14px;
         font-size: 14px;
     }
@@ -881,24 +881,6 @@ iframe, video {
 .widget[data-type="youtube"][style*="width"],
 .widget[data-type="video"][style*="width"] {
     aspect-ratio: 16/9 !important;
-}
-
-/* Tip buttons: solid white background, no transparency */
-.tip-btn {
-    background: #fff;
-    color: #000;
-    border: none;
-    padding: 12px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: bold;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    transition: background 0.2s, color 0.2s;
-}
-
-.tip-btn:hover {
-    background: #f0f0f0;
-    color: #000;
 }
 
 /* Twitter Feed Styles */
@@ -1132,6 +1114,49 @@ iframe, video {
     text-align: center;
     color: #657786;
     font-size: 14px;
+}
+
+/* Snap functionality CSS */
+.widget-wrapper.dragging {
+    opacity: 0.9;
+    transform: scale(1.02);
+    transition: none;
+}
+
+.widget-wrapper {
+    transition: transform 0.1s ease;
+}
+
+/* Snap indicator animations */
+#snap-vertical, #snap-horizontal {
+    animation: snapPulse 0.3s ease-in-out;
+}
+
+@keyframes snapPulse {
+    0% { opacity: 0; transform: scale(0.8); }
+    100% { opacity: 0.8; transform: scale(1); }
+}
+
+/* Resize handle styles */
+.resize-handle {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(-45deg, transparent 0%, transparent 30%, #00d4ff 30%, #00d4ff 40%, transparent 40%, transparent 60%, #00d4ff 60%, #00d4ff 70%, transparent 70%);
+    cursor: se-resize;
+    opacity: 0.7;
+    z-index: 10;
+    transition: opacity 0.2s ease;
+}
+
+.resize-handle:hover {
+    opacity: 1;
+}
+
+.widget-wrapper.resizing {
+    transition: none;
 }
 
 /* Responsive adjustments */
