@@ -1,4 +1,4 @@
-// Web3 Interactive Demo - Main Application Logic with Simplified Snap Function
+// Web3 Interactive Demo - Main Application Logic with Snap Function
 // This file contains all the core functionality for widget management,
 // drag and drop, UI interactions, and layout management
 
@@ -7,7 +7,8 @@ let dragged = null;
 let walletConnected = false;
 
 // Snap configuration
-const SNAP_THRESHOLD = 15; // Distance in pixels for snapping
+const SNAP_THRESHOLD = 20; // Distance in pixels for snapping
+const SNAP_GRID_SIZE = 10; // Grid size for grid snapping (optional)
 
 // Visual snap indicators
 let snapIndicators = {
@@ -18,10 +19,120 @@ let snapIndicators = {
 let snapEnabled = true;
 
 // ========================================
-// SIMPLIFIED SNAP FUNCTIONALITY
+// SNAP FUNCTIONALITY
 // ========================================
 
-// Create simple snap indicator lines
+// Enhanced resize observer for snap-on-resize
+let resizeObserver = null;
+
+// Initialize resize observer for snap functionality
+function initializeResizeSnap() {
+    if (window.ResizeObserver) {
+        resizeObserver = new ResizeObserver(entries => {
+            entries.forEach(entry => {
+                const wrapper = entry.target;
+                if (wrapper.classList.contains('widget-wrapper') && wrapper.classList.contains('resizing')) {
+                    const rect = wrapper.getBoundingClientRect();
+                    const snapResult = calculateResizeSnapPosition(wrapper, rect.left, rect.top, rect.width, rect.height);
+                    
+                    if (snapResult.snappedWidth || snapResult.snappedHeight) {
+                        wrapper.style.width = snapResult.width + 'px';
+                        wrapper.style.height = snapResult.height + 'px';
+                        wrapper.style.boxShadow = '0 0 20px rgba(0, 212, 255, 0.8)';
+                    } else {
+                        wrapper.style.boxShadow = '';
+                        hideSnapIndicators();
+                    }
+                }
+            });
+        });
+    }
+}
+
+// Calculate snap positions during resize
+function calculateResizeSnapPosition(draggedWrapper, currentX, currentY, currentWidth, currentHeight) {
+    if (!snapEnabled) {
+        hideSnapIndicators();
+        return { 
+            width: currentWidth, 
+            height: currentHeight, 
+            snappedWidth: false, 
+            snappedHeight: false 
+        };
+    }
+
+    const otherWidgets = getWidgetPositions(draggedWrapper);
+    
+    let snapWidth = currentWidth;
+    let snapHeight = currentHeight;
+    let snappedToWidth = false;
+    let snappedToHeight = false;
+    
+    let closestWidthDistance = SNAP_THRESHOLD;
+    let closestHeightDistance = SNAP_THRESHOLD;
+    let verticalSnapLine = null;
+    let horizontalSnapLine = null;
+    
+    otherWidgets.forEach(widget => {
+        // Width snapping - align right edges
+        const rightEdgeDistance = Math.abs((currentX + currentWidth) - widget.right);
+        if (rightEdgeDistance < closestWidthDistance) {
+            closestWidthDistance = rightEdgeDistance;
+            snapWidth = widget.right - currentX;
+            verticalSnapLine = widget.right;
+            snappedToWidth = true;
+        }
+        
+        // Width snapping - match other widget widths
+        const widthMatchDistance = Math.abs(currentWidth - widget.width);
+        if (widthMatchDistance < closestWidthDistance) {
+            closestWidthDistance = widthMatchDistance;
+            snapWidth = widget.width;
+            snappedToWidth = true;
+        }
+        
+        // Height snapping - align bottom edges
+        const bottomEdgeDistance = Math.abs((currentY + currentHeight) - widget.bottom);
+        if (bottomEdgeDistance < closestHeightDistance) {
+            closestHeightDistance = bottomEdgeDistance;
+            snapHeight = widget.bottom - currentY;
+            horizontalSnapLine = widget.bottom;
+            snappedToHeight = true;
+        }
+        
+        // Height snapping - match other widget heights
+        const heightMatchDistance = Math.abs(currentHeight - widget.height);
+        if (heightMatchDistance < closestHeightDistance) {
+            closestHeightDistance = heightMatchDistance;
+            snapHeight = widget.height;
+            snappedToHeight = true;
+        }
+    });
+    
+    // Show snap indicators
+    if (snappedToWidth && verticalSnapLine !== null) {
+        showVerticalSnapIndicator(verticalSnapLine);
+    }
+    if (snappedToHeight && horizontalSnapLine !== null) {
+        showHorizontalSnapIndicator(horizontalSnapLine);
+    }
+    
+    // Ensure widgets don't exceed viewport
+    const maxWidth = window.innerWidth - currentX;
+    const maxHeight = window.innerHeight - currentY;
+    
+    snapWidth = Math.max(200, Math.min(snapWidth, maxWidth)); // Min width 200px
+    snapHeight = Math.max(150, Math.min(snapHeight, maxHeight)); // Min height 150px
+    
+    return {
+        width: snapWidth,
+        height: snapHeight,
+        snappedWidth: snappedToWidth,
+        snappedHeight: snappedToHeight
+    };
+}
+
+// Create snap indicator lines
 function createSnapIndicators() {
     // Vertical snap line
     const verticalLine = document.createElement('div');
@@ -29,7 +140,7 @@ function createSnapIndicators() {
         position: fixed;
         width: 2px;
         background: #00d4ff;
-        box-shadow: 0 0 8px #00d4ff;
+        box-shadow: 0 0 10px #00d4ff;
         opacity: 0.8;
         pointer-events: none;
         z-index: 9999;
@@ -47,7 +158,7 @@ function createSnapIndicators() {
         position: fixed;
         height: 2px;
         background: #00d4ff;
-        box-shadow: 0 0 8px #00d4ff;
+        box-shadow: 0 0 10px #00d4ff;
         opacity: 0.8;
         pointer-events: none;
         z-index: 9999;
@@ -66,7 +177,7 @@ function hideSnapIndicators() {
     if (snapIndicators.horizontal) snapIndicators.horizontal.style.display = 'none';
 }
 
-// Show snap indicators
+// Show vertical snap indicator
 function showVerticalSnapIndicator(x) {
     if (snapIndicators.vertical) {
         snapIndicators.vertical.style.left = x + 'px';
@@ -74,6 +185,7 @@ function showVerticalSnapIndicator(x) {
     }
 }
 
+// Show horizontal snap indicator
 function showHorizontalSnapIndicator(y) {
     if (snapIndicators.horizontal) {
         snapIndicators.horizontal.style.top = y + 'px';
@@ -81,23 +193,23 @@ function showHorizontalSnapIndicator(y) {
     }
 }
 
-// Get all widget positions (simplified)
+// Get all widget positions and dimensions
 function getWidgetPositions(excludeWrapper = null) {
     const widgets = [];
     document.querySelectorAll('.widget-wrapper').forEach(wrapper => {
         if (wrapper === excludeWrapper) return;
         
         const rect = wrapper.getBoundingClientRect();
-        const left = parseInt(wrapper.style.left) || 0;
-        const top = parseInt(wrapper.style.top) || 0;
+        const computedStyle = window.getComputedStyle(wrapper);
         
         widgets.push({
-            left: left,
-            top: top,
-            right: left + rect.width,
-            bottom: top + rect.height,
-            centerX: left + rect.width / 2,
-            centerY: top + rect.height / 2,
+            element: wrapper,
+            left: parseInt(wrapper.style.left) || 0,
+            top: parseInt(wrapper.style.top) || 0,
+            right: (parseInt(wrapper.style.left) || 0) + rect.width,
+            bottom: (parseInt(wrapper.style.top) || 0) + rect.height,
+            centerX: (parseInt(wrapper.style.left) || 0) + rect.width / 2,
+            centerY: (parseInt(wrapper.style.top) || 0) + rect.height / 2,
             width: rect.width,
             height: rect.height
         });
@@ -105,11 +217,11 @@ function getWidgetPositions(excludeWrapper = null) {
     return widgets;
 }
 
-// Simplified snap calculation
+// Calculate snap positions
 function calculateSnapPosition(draggedWrapper, currentX, currentY) {
     if (!snapEnabled) {
         hideSnapIndicators();
-        return { x: currentX, y: currentY };
+        return { x: currentX, y: currentY, snappedX: false, snappedY: false };
     }
 
     const otherWidgets = getWidgetPositions(draggedWrapper);
@@ -122,130 +234,159 @@ function calculateSnapPosition(draggedWrapper, currentX, currentY) {
     
     let snapX = currentX;
     let snapY = currentY;
-    let snappedVertical = false;
-    let snappedHorizontal = false;
+    let snappedToVertical = false;
+    let snappedToHorizontal = false;
     
     // Find closest snap positions
+    let closestVerticalDistance = SNAP_THRESHOLD;
+    let closestHorizontalDistance = SNAP_THRESHOLD;
+    let verticalSnapLine = null;
+    let horizontalSnapLine = null;
+    
     otherWidgets.forEach(widget => {
-        // Vertical snapping (left edges, right edges, centers)
-        if (Math.abs(currentX - widget.left) < SNAP_THRESHOLD) {
+        // Vertical alignment checks
+        const leftToLeftDistance = Math.abs(currentX - widget.left);
+        const rightToRightDistance = Math.abs(draggedRight - widget.right);
+        const centerTocenterXDistance = Math.abs(draggedCenterX - widget.centerX);
+        const leftToRightDistance = Math.abs(currentX - widget.right);
+        const rightToLeftDistance = Math.abs(draggedRight - widget.left);
+        
+        // Check for left-to-left alignment
+        if (leftToLeftDistance < closestVerticalDistance) {
+            closestVerticalDistance = leftToLeftDistance;
             snapX = widget.left;
-            showVerticalSnapIndicator(widget.left);
-            snappedVertical = true;
-        } else if (Math.abs(draggedRight - widget.right) < SNAP_THRESHOLD) {
-            snapX = widget.right - draggedRect.width;
-            showVerticalSnapIndicator(widget.right);
-            snappedVertical = true;
-        } else if (Math.abs(draggedCenterX - widget.centerX) < SNAP_THRESHOLD) {
-            snapX = widget.centerX - draggedRect.width / 2;
-            showVerticalSnapIndicator(widget.centerX);
-            snappedVertical = true;
+            verticalSnapLine = widget.left;
+            snappedToVertical = true;
         }
         
-        // Horizontal snapping (top edges, bottom edges, centers)
-        if (Math.abs(currentY - widget.top) < SNAP_THRESHOLD) {
+        // Check for right-to-right alignment
+        if (rightToRightDistance < closestVerticalDistance) {
+            closestVerticalDistance = rightToRightDistance;
+            snapX = widget.right - draggedRect.width;
+            verticalSnapLine = widget.right;
+            snappedToVertical = true;
+        }
+        
+        // Check for center-to-center alignment (X)
+        if (centerTocenterXDistance < closestVerticalDistance) {
+            closestVerticalDistance = centerTocenterXDistance;
+            snapX = widget.centerX - draggedRect.width / 2;
+            verticalSnapLine = widget.centerX;
+            snappedToVertical = true;
+        }
+        
+        // Check for left-to-right alignment (spacing)
+        if (leftToRightDistance < closestVerticalDistance) {
+            closestVerticalDistance = leftToRightDistance;
+            snapX = widget.right;
+            verticalSnapLine = widget.right;
+            snappedToVertical = true;
+        }
+        
+        // Check for right-to-left alignment (spacing)
+        if (rightToLeftDistance < closestVerticalDistance) {
+            closestVerticalDistance = rightToLeftDistance;
+            snapX = widget.left - draggedRect.width;
+            verticalSnapLine = widget.left;
+            snappedToVertical = true;
+        }
+        
+        // Horizontal alignment checks
+        const topToTopDistance = Math.abs(currentY - widget.top);
+        const bottomToBottomDistance = Math.abs(draggedBottom - widget.bottom);
+        const centerToCenterYDistance = Math.abs(draggedCenterY - widget.centerY);
+        const topToBottomDistance = Math.abs(currentY - widget.bottom);
+        const bottomToTopDistance = Math.abs(draggedBottom - widget.top);
+        
+        // Check for top-to-top alignment
+        if (topToTopDistance < closestHorizontalDistance) {
+            closestHorizontalDistance = topToTopDistance;
             snapY = widget.top;
-            showHorizontalSnapIndicator(widget.top);
-            snappedHorizontal = true;
-        } else if (Math.abs(draggedBottom - widget.bottom) < SNAP_THRESHOLD) {
+            horizontalSnapLine = widget.top;
+            snappedToHorizontal = true;
+        }
+        
+        // Check for bottom-to-bottom alignment
+        if (bottomToBottomDistance < closestHorizontalDistance) {
+            closestHorizontalDistance = bottomToBottomDistance;
             snapY = widget.bottom - draggedRect.height;
-            showHorizontalSnapIndicator(widget.bottom);
-            snappedHorizontal = true;
-        } else if (Math.abs(draggedCenterY - widget.centerY) < SNAP_THRESHOLD) {
+            horizontalSnapLine = widget.bottom;
+            snappedToHorizontal = true;
+        }
+        
+        // Check for center-to-center alignment (Y)
+        if (centerToCenterYDistance < closestHorizontalDistance) {
+            closestHorizontalDistance = centerToCenterYDistance;
             snapY = widget.centerY - draggedRect.height / 2;
-            showHorizontalSnapIndicator(widget.centerY);
-            snappedHorizontal = true;
+            horizontalSnapLine = widget.centerY;
+            snappedToHorizontal = true;
+        }
+        
+        // Check for top-to-bottom alignment (spacing)
+        if (topToBottomDistance < closestHorizontalDistance) {
+            closestHorizontalDistance = topToBottomDistance;
+            snapY = widget.bottom;
+            horizontalSnapLine = widget.bottom;
+            snappedToHorizontal = true;
+        }
+        
+        // Check for bottom-to-top alignment (spacing)
+        if (bottomToTopDistance < closestHorizontalDistance) {
+            closestHorizontalDistance = bottomToTopDistance;
+            snapY = widget.top - draggedRect.height;
+            horizontalSnapLine = widget.top;
+            snappedToHorizontal = true;
         }
     });
     
-    // Keep widgets in viewport
-    snapX = Math.max(0, Math.min(snapX, window.innerWidth - draggedRect.width));
-    snapY = Math.max(0, Math.min(snapY, window.innerHeight - draggedRect.height));
-    
-    // Hide indicators if not snapping
-    if (!snappedVertical && snapIndicators.vertical) {
-        snapIndicators.vertical.style.display = 'none';
+    // Show snap indicators
+    if (snappedToVertical && verticalSnapLine !== null) {
+        showVerticalSnapIndicator(verticalSnapLine);
     }
-    if (!snappedHorizontal && snapIndicators.horizontal) {
-        snapIndicators.horizontal.style.display = 'none';
+    if (snappedToHorizontal && horizontalSnapLine !== null) {
+        showHorizontalSnapIndicator(horizontalSnapLine);
     }
     
-    return { x: snapX, y: snapY };
+    // Ensure widgets don't go outside viewport
+    const maxX = window.innerWidth - draggedRect.width;
+    const maxY = window.innerHeight - draggedRect.height;
+    
+    snapX = Math.max(0, Math.min(snapX, maxX));
+    snapY = Math.max(0, Math.min(snapY, maxY));
+    
+    return {
+        x: snapX,
+        y: snapY,
+        snappedX: snappedToVertical,
+        snappedY: snappedToHorizontal
+    };
 }
 
-// Add minimal CSS
+// Add CSS for snap functionality
 function addSnapCSS() {
     const style = document.createElement('style');
     style.textContent = `
-        .widget-wrapper {
-            resize: both !important;
-            overflow: hidden !important;
-        }
-        
         .widget-wrapper.dragging {
             opacity: 0.9;
-            transform: scale(1.01);
-            box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+            transform: scale(1.02);
+            transition: none;
         }
         
-        /* Remove any resize handle styling */
-        .resize-handle {
-            display: none !important;
+        .widget-wrapper {
+            transition: transform 0.1s ease;
         }
         
+        /* Snap indicator animations */
         #snap-vertical, #snap-horizontal {
-            animation: snapPulse 0.2s ease-in-out;
+            animation: snapPulse 0.3s ease-in-out;
         }
         
         @keyframes snapPulse {
-            0% { opacity: 0.6; }
-            100% { opacity: 0.9; }
+            0% { opacity: 0; transform: scale(0.8); }
+            100% { opacity: 0.8; transform: scale(1); }
         }
     `;
     document.head.appendChild(style);
-}
-
-// Remove any existing resize handles and use CSS resize
-function enableCleanResize(wrapper) {
-    // Remove any existing resize handles
-    const existingHandles = wrapper.querySelectorAll('.resize-handle');
-    existingHandles.forEach(handle => handle.remove());
-    
-    // Ensure wrapper can be resized with CSS
-    wrapper.style.resize = 'both';
-    wrapper.style.overflow = 'hidden';
-    
-    // Set minimum sizes
-    const widget = wrapper.querySelector('.widget');
-    if (widget && (widget.dataset.type === 'youtube' || widget.dataset.type === 'video')) {
-        wrapper.style.minWidth = '320px';
-        wrapper.style.minHeight = '180px';
-    } else {
-        wrapper.style.minWidth = '200px';
-        wrapper.style.minHeight = '150px';
-    }
-}
-
-// Snap toggle button
-function createSnapToggleButton() {
-    const snapToggle = document.createElement('button');
-    snapToggle.className = 'snap-toggle';
-    snapToggle.innerHTML = '🧲';
-    snapToggle.title = 'Toggle Snap (Currently ON)';
-    
-    snapToggle.addEventListener('click', function() {
-        snapEnabled = !snapEnabled;
-        if (snapEnabled) {
-            snapToggle.classList.remove('disabled');
-            snapToggle.title = 'Toggle Snap (Currently ON)';
-        } else {
-            snapToggle.classList.add('disabled');
-            snapToggle.title = 'Toggle Snap (Currently OFF)';
-            hideSnapIndicators();
-        }
-    });
-    
-    document.body.appendChild(snapToggle);
 }
 
 // ========================================
@@ -724,9 +865,92 @@ function createWidget(type, x, y) {
     // Add to canvas
     document.getElementById('canvas').appendChild(wrapper);
     makeWidgetDraggable(wrapper, header);
-    enableCleanResize(wrapper); // Enable clean CSS resize (NO MORE BLUE DOTS)
+    enableResizeSnap(wrapper); // Add resize snap functionality
     // Auto-enable clean mode for new widgets
     enableCleanModeByDefault(widget);
+}
+
+// Enable resize snapping for widgets
+function enableResizeSnap(wrapper) {
+    // Add resize handles if they don't exist
+    if (!wrapper.querySelector('.resize-handle')) {
+        const resizeHandle = document.createElement('div');
+        resizeHandle.className = 'resize-handle';
+        resizeHandle.style.cssText = `
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(-45deg, transparent 0%, transparent 30%, #00d4ff 30%, #00d4ff 40%, transparent 40%, transparent 60%, #00d4ff 60%, #00d4ff 70%, transparent 70%);
+            cursor: se-resize;
+            opacity: 0.7;
+            z-index: 10;
+        `;
+        wrapper.appendChild(resizeHandle);
+        
+        let isResizing = false;
+        let startX, startY, startWidth, startHeight;
+        
+        resizeHandle.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            isResizing = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            startWidth = parseInt(wrapper.offsetWidth, 10);
+            startHeight = parseInt(wrapper.offsetHeight, 10);
+            
+            wrapper.classList.add('resizing');
+            wrapper.style.zIndex = '1001';
+            
+            if (resizeObserver) {
+                resizeObserver.observe(wrapper);
+            }
+            
+            const handleMouseMove = (e) => {
+                if (!isResizing) return;
+                
+                const newWidth = startWidth + e.clientX - startX;
+                const newHeight = startHeight + e.clientY - startY;
+                
+                // Apply minimum sizes
+                const minWidth = wrapper.querySelector('.widget').dataset.type === 'youtube' || 
+                               wrapper.querySelector('.widget').dataset.type === 'video' ? 320 : 200;
+                const minHeight = wrapper.querySelector('.widget').dataset.type === 'youtube' || 
+                                wrapper.querySelector('.widget').dataset.type === 'video' ? 180 : 150;
+                
+                wrapper.style.width = Math.max(minWidth, newWidth) + 'px';
+                wrapper.style.height = Math.max(minHeight, newHeight) + 'px';
+                
+                // Maintain aspect ratio for video widgets
+                if (wrapper.querySelector('.widget').dataset.type === 'youtube' || 
+                    wrapper.querySelector('.widget').dataset.type === 'video') {
+                    const aspectRatio = 16 / 9;
+                    const calculatedHeight = Math.max(minWidth, newWidth) / aspectRatio;
+                    wrapper.style.height = Math.max(minHeight, calculatedHeight) + 'px';
+                }
+            };
+            
+            const handleMouseUp = () => {
+                isResizing = false;
+                wrapper.classList.remove('resizing');
+                wrapper.style.zIndex = '';
+                wrapper.style.boxShadow = '';
+                hideSnapIndicators();
+                
+                if (resizeObserver) {
+                    resizeObserver.unobserve(wrapper);
+                }
+                
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+            };
+            
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+        });
+    }
 }
 
 // ========================================
@@ -734,8 +958,7 @@ function createWidget(type, x, y) {
 // ========================================
 
 function makeWidgetDraggable(wrapper, header) {
-    let isDragging = false;
-    let startX, startY, startLeft, startTop;
+    let isDragging = false, startX, startY, startLeft, startTop;
 
     header.addEventListener('mousedown', function(e) {
         if (e.target.classList.contains('close') || e.target.classList.contains('style-btn')) return;
@@ -746,6 +969,8 @@ function makeWidgetDraggable(wrapper, header) {
         startLeft = parseInt(wrapper.style.left) || 0;
         startTop = parseInt(wrapper.style.top) || 0;
         wrapper.style.zIndex = '1001';
+        
+        // Add dragging class for visual feedback
         wrapper.classList.add('dragging');
 
         const handleMouseMove = (e) => {
@@ -757,14 +982,23 @@ function makeWidgetDraggable(wrapper, header) {
             // Calculate snap position
             const snapResult = calculateSnapPosition(wrapper, newX, newY);
             
-            // Apply position
+            // Apply position (snapped or original)
             wrapper.style.left = snapResult.x + 'px';
             wrapper.style.top = snapResult.y + 'px';
+            
+            // Visual feedback for snapping
+            if (snapResult.snappedX || snapResult.snappedY) {
+                wrapper.style.boxShadow = '0 0 20px rgba(0, 212, 255, 0.8)';
+            } else {
+                wrapper.style.boxShadow = '';
+                hideSnapIndicators();
+            }
         };
 
         const handleMouseUp = () => {
             isDragging = false;
             wrapper.style.zIndex = '';
+            wrapper.style.boxShadow = '';
             wrapper.classList.remove('dragging');
             hideSnapIndicators();
             
@@ -1091,6 +1325,31 @@ function loadIG(id) {
 }
 
 // ========================================
+// SNAP TOGGLE BUTTON INITIALIZATION
+// ========================================
+
+function createSnapToggleButton() {
+    const snapToggle = document.createElement('button');
+    snapToggle.className = 'snap-toggle';
+    snapToggle.innerHTML = '🧲';
+    snapToggle.title = 'Toggle Snap (Currently ON)';
+    
+    snapToggle.addEventListener('click', function() {
+        snapEnabled = !snapEnabled;
+        if (snapEnabled) {
+            snapToggle.classList.remove('disabled');
+            snapToggle.title = 'Toggle Snap (Currently ON)';
+        } else {
+            snapToggle.classList.add('disabled');
+            snapToggle.title = 'Toggle Snap (Currently OFF)';
+            hideSnapIndicators();
+        }
+    });
+    
+    document.body.appendChild(snapToggle);
+}
+
+// ========================================
 // INITIALIZATION
 // ========================================
 
@@ -1100,6 +1359,7 @@ document.addEventListener('DOMContentLoaded', function() {
     createSnapIndicators();
     addSnapCSS();
     createSnapToggleButton();
+    initializeResizeSnap(); // Initialize resize snap functionality
     
     // Add close button to sidebar
     const sidebar = document.getElementById('sidebar');
@@ -1135,21 +1395,5 @@ document.addEventListener('DOMContentLoaded', function() {
     if (savedLayout) {
         // Could implement layout restoration here
         console.log('Saved layout found:', savedLayout);
-    }
-});
-
-// Close style panels when clicking outside
-document.addEventListener('click', function(e) {
-    if (!e.target.closest('.style-panel') && !e.target.classList.contains('style-btn')) {
-        document.querySelectorAll('.style-panel').forEach(panel => {
-            panel.classList.remove('show');
-        });
-    }
-});
-
-// Prevent default drag behavior on images
-document.addEventListener('dragstart', function(e) {
-    if (e.target.tagName === 'IMG') {
-        e.preventDefault();
     }
 });
