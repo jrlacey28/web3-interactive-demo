@@ -200,7 +200,6 @@ function getWidgetPositions(excludeWrapper = null) {
         if (wrapper === excludeWrapper) return;
         
         const rect = wrapper.getBoundingClientRect();
-        const computedStyle = window.getComputedStyle(wrapper);
         
         widgets.push({
             element: wrapper,
