@@ -867,6 +867,8 @@ function createWidget(type, x, y) {
     enableResizeSnap(wrapper); // Add resize snap functionality
     // Auto-enable clean mode for new widgets
     enableCleanModeByDefault(widget);
+    // Apply initial styling including blur effect
+    updateWidgetStyle(widget.id);
 }
 
 // Enable resize snapping for widgets
@@ -1040,6 +1042,11 @@ function updateWidgetStyle(widgetId) {
     
     widget.style.background = `${bgColor}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`;
     widget.style.borderColor = borderColor;
+    
+    // Add blur effect based on transparency (more blur = less opacity)
+    const blurAmount = (1 - opacity) * 8; // Max 8px blur when fully transparent
+    widget.style.backdropFilter = `blur(${blurAmount}px)`;
+    widget.style.webkitBackdropFilter = `blur(${blurAmount}px)`; // Safari support
     
     const header = widget.closest('.widget-wrapper').querySelector('.widget-header');
     if (header) {
