@@ -207,8 +207,6 @@ function getWidgetPositions(excludeWrapper = null) {
             top: parseInt(wrapper.style.top) || 0,
             right: (parseInt(wrapper.style.left) || 0) + rect.width,
             bottom: (parseInt(wrapper.style.top) || 0) + rect.height,
-            centerX: (parseInt(wrapper.style.left) || 0) + rect.width / 2,
-            centerY: (parseInt(wrapper.style.top) || 0) + rect.height / 2,
             width: rect.width,
             height: rect.height
         });
@@ -228,8 +226,6 @@ function calculateSnapPosition(draggedWrapper, currentX, currentY) {
     
     const draggedRight = currentX + draggedRect.width;
     const draggedBottom = currentY + draggedRect.height;
-    const draggedCenterX = currentX + draggedRect.width / 2;
-    const draggedCenterY = currentY + draggedRect.height / 2;
     
     let snapX = currentX;
     let snapY = currentY;
@@ -243,10 +239,9 @@ function calculateSnapPosition(draggedWrapper, currentX, currentY) {
     let horizontalSnapLine = null;
     
     otherWidgets.forEach(widget => {
-        // Vertical alignment checks
+        // Vertical alignment checks (outer edges only)
         const leftToLeftDistance = Math.abs(currentX - widget.left);
         const rightToRightDistance = Math.abs(draggedRight - widget.right);
-        const centerTocenterXDistance = Math.abs(draggedCenterX - widget.centerX);
         const leftToRightDistance = Math.abs(currentX - widget.right);
         const rightToLeftDistance = Math.abs(draggedRight - widget.left);
         
@@ -266,13 +261,7 @@ function calculateSnapPosition(draggedWrapper, currentX, currentY) {
             snappedToVertical = true;
         }
         
-        // Check for center-to-center alignment (X)
-        if (centerTocenterXDistance < closestVerticalDistance) {
-            closestVerticalDistance = centerTocenterXDistance;
-            snapX = widget.centerX - draggedRect.width / 2;
-            verticalSnapLine = widget.centerX;
-            snappedToVertical = true;
-        }
+        // Center-to-center alignment removed - only outer edge alignment allowed
         
         // Check for left-to-right alignment (spacing)
         if (leftToRightDistance < closestVerticalDistance) {
@@ -290,10 +279,9 @@ function calculateSnapPosition(draggedWrapper, currentX, currentY) {
             snappedToVertical = true;
         }
         
-        // Horizontal alignment checks
+        // Horizontal alignment checks (outer edges only)
         const topToTopDistance = Math.abs(currentY - widget.top);
         const bottomToBottomDistance = Math.abs(draggedBottom - widget.bottom);
-        const centerToCenterYDistance = Math.abs(draggedCenterY - widget.centerY);
         const topToBottomDistance = Math.abs(currentY - widget.bottom);
         const bottomToTopDistance = Math.abs(draggedBottom - widget.top);
         
@@ -313,13 +301,7 @@ function calculateSnapPosition(draggedWrapper, currentX, currentY) {
             snappedToHorizontal = true;
         }
         
-        // Check for center-to-center alignment (Y)
-        if (centerToCenterYDistance < closestHorizontalDistance) {
-            closestHorizontalDistance = centerToCenterYDistance;
-            snapY = widget.centerY - draggedRect.height / 2;
-            horizontalSnapLine = widget.centerY;
-            snappedToHorizontal = true;
-        }
+        // Center-to-center alignment removed - only outer edge alignment allowed
         
         // Check for top-to-bottom alignment (spacing)
         if (topToBottomDistance < closestHorizontalDistance) {
@@ -871,87 +853,9 @@ function createWidget(type, x, y) {
     updateWidgetStyle(widget.id);
 }
 
-// Enable resize snapping for widgets
+// Resize snapping functionality (resize handle removed for cleaner interface)
 function enableResizeSnap(wrapper) {
-    // Add resize handles if they don't exist
-    if (!wrapper.querySelector('.resize-handle')) {
-        const resizeHandle = document.createElement('div');
-        resizeHandle.className = 'resize-handle';
-        resizeHandle.style.cssText = `
-            position: absolute;
-            bottom: 0;
-            right: 0;
-            width: 20px;
-            height: 20px;
-            background: linear-gradient(-45deg, transparent 0%, transparent 30%, #00d4ff 30%, #00d4ff 40%, transparent 40%, transparent 60%, #00d4ff 60%, #00d4ff 70%, transparent 70%);
-            cursor: se-resize;
-            opacity: 0.7;
-            z-index: 10;
-        `;
-        wrapper.appendChild(resizeHandle);
-        
-        let isResizing = false;
-        let startX, startY, startWidth, startHeight;
-        
-        resizeHandle.addEventListener('mousedown', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            isResizing = true;
-            startX = e.clientX;
-            startY = e.clientY;
-            startWidth = parseInt(wrapper.offsetWidth, 10);
-            startHeight = parseInt(wrapper.offsetHeight, 10);
-            
-            wrapper.classList.add('resizing');
-            wrapper.style.zIndex = '1001';
-            
-            if (resizeObserver) {
-                resizeObserver.observe(wrapper);
-            }
-            
-            const handleMouseMove = (e) => {
-                if (!isResizing) return;
-                
-                const newWidth = startWidth + e.clientX - startX;
-                const newHeight = startHeight + e.clientY - startY;
-                
-                // Apply minimum sizes
-                const minWidth = wrapper.querySelector('.widget').dataset.type === 'youtube' || 
-                               wrapper.querySelector('.widget').dataset.type === 'video' ? 320 : 200;
-                const minHeight = wrapper.querySelector('.widget').dataset.type === 'youtube' || 
-                                wrapper.querySelector('.widget').dataset.type === 'video' ? 180 : 150;
-                
-                wrapper.style.width = Math.max(minWidth, newWidth) + 'px';
-                wrapper.style.height = Math.max(minHeight, newHeight) + 'px';
-                
-                // Maintain aspect ratio for video widgets
-                if (wrapper.querySelector('.widget').dataset.type === 'youtube' || 
-                    wrapper.querySelector('.widget').dataset.type === 'video') {
-                    const aspectRatio = 16 / 9;
-                    const calculatedHeight = Math.max(minWidth, newWidth) / aspectRatio;
-                    wrapper.style.height = Math.max(minHeight, calculatedHeight) + 'px';
-                }
-            };
-            
-            const handleMouseUp = () => {
-                isResizing = false;
-                wrapper.classList.remove('resizing');
-                wrapper.style.zIndex = '';
-                wrapper.style.boxShadow = '';
-                hideSnapIndicators();
-                
-                if (resizeObserver) {
-                    resizeObserver.unobserve(wrapper);
-                }
-                
-                document.removeEventListener('mousemove', handleMouseMove);
-                document.removeEventListener('mouseup', handleMouseUp);
-            };
-            
-            document.addEventListener('mousemove', handleMouseMove);
-            document.addEventListener('mouseup', handleMouseUp);
-        });
-    }
+    // Resize handle functionality removed - widgets can be resized via clean mode toggle and responsive content
 }
 
 // ========================================

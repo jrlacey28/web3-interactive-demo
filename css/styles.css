@@ -1125,6 +1125,12 @@ iframe, video {
     transition: none;
 }
 
+/* Keep style panel visible during dragging */
+.widget-wrapper.dragging .style-panel.show {
+    display: block !important;
+    z-index: 1003;
+}
+
 .widget-wrapper {
     transition: transform 0.1s ease;
 }
