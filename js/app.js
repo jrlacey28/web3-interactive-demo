@@ -491,6 +491,9 @@ window.addEventListener('resize', function() {
             }
         }
     });
+    
+    // Sync all headers after window resize
+    setTimeout(() => syncAllHeaders(), 100);
 });
 
 // Store positions when widgets are moved or created
@@ -504,6 +507,36 @@ function updateStoredPosition(wrapper) {
         topPercent: (currentTop / window.innerHeight) * 100,
         widthPercent: (rect.width / window.innerWidth) * 100,
         heightPercent: (rect.height / window.innerHeight) * 100
+    });
+    
+    // Ensure header matches widget width
+    syncHeaderWidth(wrapper);
+}
+
+// Synchronize header width with widget width
+function syncHeaderWidth(wrapper) {
+    const header = wrapper.querySelector('.widget-header');
+    const widget = wrapper.querySelector('.widget');
+    
+    if (header && widget) {
+        // Make header exactly match the widget's width including borders
+        const widgetRect = widget.getBoundingClientRect();
+        const wrapperRect = wrapper.getBoundingClientRect();
+        
+        // Calculate the widget's position relative to the wrapper
+        const leftOffset = widgetRect.left - wrapperRect.left;
+        const width = widgetRect.width;
+        
+        header.style.left = leftOffset + 'px';
+        header.style.width = width + 'px';
+        header.style.right = 'auto'; // Remove right constraint
+    }
+}
+
+// Sync all widget headers
+function syncAllHeaders() {
+    document.querySelectorAll('.widget-wrapper').forEach(wrapper => {
+        syncHeaderWidth(wrapper);
     });
 }
 
@@ -998,8 +1031,11 @@ function createWidget(type, x, y) {
     enableCleanModeByDefault(widget);
     // Apply initial styling including blur effect
     updateWidgetStyle(widget.id);
-    // Store initial position for responsive scaling
-    setTimeout(() => updateStoredPosition(wrapper), 100);
+    // Store initial position for responsive scaling and sync header
+    setTimeout(() => {
+        updateStoredPosition(wrapper);
+        syncHeaderWidth(wrapper);
+    }, 100);
 }
 
 // Resize snapping functionality with 16:9 aspect ratio enforcement
@@ -1080,6 +1116,7 @@ function enableResizeSnap(wrapper) {
                 isResizing = false;
                 wrapper.classList.remove('resizing');
                 updateStoredPosition(wrapper);
+                syncHeaderWidth(wrapper); // Sync header after resize
                 
                 document.removeEventListener('mousemove', handleMouseMove);
                 document.removeEventListener('mouseup', handleMouseUp);
@@ -1525,6 +1562,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Create a demo crypto widget after a short delay
     setTimeout(() => {
         createWidget('crypto', 100, 100);
+        // Sync all headers after widgets are created
+        setTimeout(() => syncAllHeaders(), 200);
     }, 1000);
     
     // Load saved layout if it exists
