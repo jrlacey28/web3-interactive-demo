@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamSpace - Interactive Stream Layout</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/viewer.css">
+</head>
+<body class="viewer-page">
+    <div class="bg" id="bg"></div>
+    
+    <!-- Viewer Header -->
+    <header class="viewer-header">
+        <div class="viewer-nav">
+            <div class="nav-brand">
+                <a href="index.html" class="brand-link">
+                    <h1>StreamSpace</h1>
+                    <span class="viewer-tag">VIEWER</span>
+                </a>
+            </div>
+            <div class="viewer-info">
+                <span class="creator-name" id="creatorName">Interactive Stream Layout</span>
+                <a href="creator.html" class="create-your-own">Create Your Own</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>Loading Stream Layout...</p>
+        </div>
+    </div>
+
+    <!-- Main Canvas (Viewer Mode) -->
+    <div class="canvas viewer-canvas" id="canvas">
+        <!-- Widgets will be loaded here -->
+    </div>
+
+    <!-- Error State -->
+    <div class="error-state" id="errorState" style="display: none;">
+        <div class="error-content">
+            <h2>Layout Not Found</h2>
+            <p>The stream layout you're looking for doesn't exist or hasn't been published yet.</p>
+            <div class="error-actions">
+                <a href="index.html" class="btn-primary">Go Home</a>
+                <a href="creator.html" class="btn-secondary">Create Layout</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="viewer-footer">
+        <div class="footer-content">
+            <p>Powered by <strong>StreamSpace</strong> - <a href="creator.html">Create your own interactive layout</a></p>
+        </div>
+    </footer>
+
+    <!-- API Configuration -->
+    <script src="config/api-keys.js"></script>
+    
+    <!-- Core JavaScript Modules -->
+    <script src="js/api/wallet.js"></script>
+    <script src="js/api/twitter.js"></script>
+    <script src="js/api/instagram.js"></script>
+    <script src="js/api/storage.js"></script>
+    
+    <!-- Viewer JavaScript -->
+    <script src="js/viewer.js"></script>
+</body>
+</html>

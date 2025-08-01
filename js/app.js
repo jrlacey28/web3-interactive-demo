@@ -202,8 +202,21 @@ function showHorizontalSnapIndicator(y) {
     }
 }
 
-// Get all widget positions and dimensions
+// Performance optimized widget position cache
+let widgetPositionsCache = new Map();
+let cacheTimestamp = 0;
+const CACHE_DURATION = 16; // ~60fps
+
+// Get all widget positions and dimensions with caching
 function getWidgetPositions(excludeWrapper = null) {
+    const now = Date.now();
+    const cacheKey = `positions_${excludeWrapper?.id || 'all'}`;
+    
+    // Use cache if it's still valid (within 16ms for 60fps)
+    if (widgetPositionsCache.has(cacheKey) && (now - cacheTimestamp) < CACHE_DURATION) {
+        return widgetPositionsCache.get(cacheKey);
+    }
+    
     const widgets = [];
     document.querySelectorAll('.widget-wrapper').forEach(wrapper => {
         if (wrapper === excludeWrapper) return;
@@ -220,7 +233,18 @@ function getWidgetPositions(excludeWrapper = null) {
             height: rect.height
         });
     });
+    
+    // Cache the result
+    widgetPositionsCache.set(cacheKey, widgets);
+    cacheTimestamp = now;
+    
     return widgets;
+}
+
+// Clear cache when widgets are modified
+function clearWidgetPositionsCache() {
+    widgetPositionsCache.clear();
+    cacheTimestamp = 0;
 }
 
 // Calculate snap positions
@@ -779,18 +803,31 @@ function publishLayout() {
         });
     });
     
+    // Generate unique layout ID
+    const layoutId = 'layout_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    
     const layout = {
+        id: layoutId,
         widgets: widgets,
         background: document.getElementById('bg').style.backgroundImage || 
                    document.getElementById('bg').style.background,
         timestamp: new Date().toISOString(),
-        published: true
+        published: true,
+        creatorName: 'Anonymous Creator' // In production, this would come from user auth
     };
     
     // Save as published layout
     localStorage.setItem('web3DemoPublishedLayout', JSON.stringify(layout));
+    localStorage.setItem(layoutId, JSON.stringify(layout));
     
-    // Show success message
+    // Generate shareable URL
+    const baseUrl = window.location.origin + window.location.pathname.replace('creator.html', '');
+    const shareableUrl = `${baseUrl}viewer.html?layout=${layoutId}`;
+    
+    // Show success message with shareable link
+    showPublishSuccessModal(shareableUrl);
+    
+    // Update button
     const btn = document.querySelector('.publish-btn');
     const originalText = btn.textContent;
     btn.textContent = '✅ Published!';
@@ -798,10 +835,77 @@ function publishLayout() {
     setTimeout(() => {
         btn.textContent = originalText;
         btn.style.background = 'linear-gradient(135deg, #00ff88, #00cc6a)';
-    }, 2000);
+    }, 3000);
+}
+
+function showPublishSuccessModal(shareableUrl) {
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+        background: rgba(0,0,0,0.8); z-index: 10000; display: flex; 
+        align-items: center; justify-content: center; backdrop-filter: blur(10px);
+    `;
+    modal.innerHTML = `
+        <div style="background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05)); 
+                    backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.2);
+                    padding: 40px; border-radius: 20px; text-align: center; max-width: 600px; color: white;">
+            <h2 style="color: #00ff88; margin-bottom: 20px; font-size: 2rem;">🚀 Published Successfully!</h2>
+            <p style="margin: 20px 0; font-size: 1.1rem; line-height: 1.6;">
+                Your interactive stream layout is now live! Share this link with your audience:
+            </p>
+            <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; margin: 20px 0; 
+                        border: 1px solid rgba(0,212,255,0.3); word-break: break-all;">
+                <input id="shareableLink" value="${shareableUrl}" readonly 
+                       style="background: transparent; border: none; color: #00d4ff; width: 100%; 
+                              font-family: monospace; text-align: center; font-size: 0.9rem; padding: 5px;">
+            </div>
+            <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
+                <button onclick="copyToClipboard('${shareableUrl}')" 
+                        style="background: linear-gradient(135deg, #00d4ff, #0099cc); color: white; 
+                               border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; 
+                               font-weight: bold; transition: all 0.3s ease;">
+                    📋 Copy Link
+                </button>
+                <button onclick="window.open('${shareableUrl}', '_blank')" 
+                        style="background: linear-gradient(135deg, #00ff88, #00cc6a); color: white; 
+                               border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; 
+                               font-weight: bold; transition: all 0.3s ease;">
+                    👁️ Preview
+                </button>
+                <button onclick="this.parentElement.parentElement.parentElement.remove()" 
+                        style="background: rgba(255,255,255,0.2); color: white; border: none; 
+                               padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                    Close
+                </button>
+            </div>
+            <p style="margin-top: 25px; font-size: 0.9rem; color: rgba(255,255,255,0.7);">
+                💡 Tip: Bookmark this link or save it somewhere safe. You can share it on social media, 
+                embed it in your stream, or send it to your audience!
+            </p>
+        </div>
+    `;
     
-    // Optional: Show publish confirmation modal
-    showToast('🚀 Layout published successfully!', 'success');
+    document.body.appendChild(modal);
+    
+    // Auto-select the link for easy copying
+    setTimeout(() => {
+        document.getElementById('shareableLink').select();
+    }, 100);
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        showToast('✅ Link copied to clipboard!', 'success');
+    }).catch(() => {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        showToast('✅ Link copied to clipboard!', 'success');
+    });
 }
 
 // ========================================
@@ -1148,26 +1252,37 @@ function makeWidgetDraggable(wrapper, header) {
         // Add dragging class for visual feedback
         wrapper.classList.add('dragging');
 
+        let dragTimeout;
         const handleMouseMove = (e) => {
             if (!isDragging) return;
             
             const newX = startLeft + e.clientX - startX;
             const newY = startTop + e.clientY - startY;
             
-            // Calculate snap position
-            const snapResult = calculateSnapPosition(wrapper, newX, newY);
+            // Apply position immediately for smooth dragging
+            wrapper.style.left = newX + 'px';
+            wrapper.style.top = newY + 'px';
             
-            // Apply position (snapped or original)
-            wrapper.style.left = snapResult.x + 'px';
-            wrapper.style.top = snapResult.y + 'px';
-            
-            // Visual feedback for snapping
-            if (snapResult.snappedX || snapResult.snappedY) {
-                wrapper.style.boxShadow = '0 0 20px rgba(0, 212, 255, 0.8)';
-            } else {
-                wrapper.style.boxShadow = '';
-                hideSnapIndicators();
-            }
+            // Debounce snap calculations for performance
+            clearTimeout(dragTimeout);
+            dragTimeout = setTimeout(() => {
+                // Calculate snap position
+                const snapResult = calculateSnapPosition(wrapper, newX, newY);
+                
+                // Apply snapped position if different
+                if (snapResult.x !== newX || snapResult.y !== newY) {
+                    wrapper.style.left = snapResult.x + 'px';
+                    wrapper.style.top = snapResult.y + 'px';
+                }
+                
+                // Visual feedback for snapping
+                if (snapResult.snappedX || snapResult.snappedY) {
+                    wrapper.style.boxShadow = '0 0 20px rgba(0, 212, 255, 0.8)';
+                } else {
+                    wrapper.style.boxShadow = '';
+                    hideSnapIndicators();
+                }
+            }, 10); // 10ms debounce for smooth performance
         };
 
         const handleMouseUp = () => {
@@ -1176,6 +1291,12 @@ function makeWidgetDraggable(wrapper, header) {
             wrapper.style.boxShadow = '';
             wrapper.classList.remove('dragging');
             hideSnapIndicators();
+            
+            // Clear any pending drag timeout
+            clearTimeout(dragTimeout);
+            
+            // Clear position cache since widget moved
+            clearWidgetPositionsCache();
             
             // Store the new position for responsive scaling
             updateStoredPosition(wrapper);

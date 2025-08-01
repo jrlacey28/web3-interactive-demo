@@ -3,70 +3,151 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web3 Interactive Demo</title>
+    <title>StreamSpace - Create Interactive Live Streams</title>
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/home.css">
 </head>
-<body>
+<body class="home-page">
     <div class="bg" id="bg"></div>
-    <button class="toggle" onclick="toggleSidebar()">☰ Widgets</button>
-    <button class="wallet-btn" id="walletBtn" onclick="connectWallet()">Connect Wallet</button>
-    <button class="save-btn" onclick="saveLayout()">💾 Save Layout</button>
-    <button class="publish-btn" onclick="publishLayout()">🚀 Publish</button>
     
-    <div class="sidebar" id="sidebar">
-        <button class="sidebar-close" onclick="closeSidebar()">×</button>
-        <div class="section">
-            <h3>Background</h3>
-            <div class="file-upload">
-                <input type="file" id="bgFile" accept="image/*">
-                <label for="bgFile" class="file-btn">📁 Upload Image</label>
+    <!-- Navigation Header -->
+    <nav class="home-nav">
+        <div class="nav-brand">
+            <h1>StreamSpace</h1>
+            <span class="beta-tag">BETA</span>
+        </div>
+        <div class="nav-links">
+            <a href="#features" class="nav-link">Features</a>
+            <a href="#how-it-works" class="nav-link">How It Works</a>
+            <a href="creator.html" class="nav-link cta-link">Create Stream</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">Create Interactive Stream Layouts</h1>
+            <p class="hero-subtitle">Design custom layouts with widgets for tips, social feeds, videos, and more. Share with your audience for an engaging streaming experience.</p>
+            <div class="hero-actions">
+                <a href="creator.html" class="btn-primary">Start Creating</a>
+                <a href="#demo" class="btn-secondary">View Demo</a>
             </div>
-            <input type="text" class="input" id="bgUrl" placeholder="Or enter image URL">
-            <button class="btn" onclick="setBg()">Set Background</button>
-            <div class="presets">
-                <div class="preset" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);" onclick="setPreset('linear-gradient(135deg, #667eea 0%, #764ba2 100%)')"></div>
-                <div class="preset" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);" onclick="setPreset('linear-gradient(135deg, #f093fb 0%, #f5576c 100%)')"></div>
-                <div class="preset" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);" onclick="setPreset('linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)')"></div>
-                <div class="preset" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);" onclick="setPreset('linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)')"></div>
+        </div>
+        <div class="hero-visual">
+            <div class="preview-widgets">
+                <div class="preview-widget tips">
+                    <div class="widget-header-preview">Tips</div>
+                    <div class="widget-content-preview">
+                        <div class="tip-buttons-preview">
+                            <span>$1</span><span>$5</span><span>$10</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="preview-widget social">
+                    <div class="widget-header-preview">Twitter</div>
+                    <div class="widget-content-preview">
+                        <div class="social-preview">Latest tweets...</div>
+                    </div>
+                </div>
+                <div class="preview-widget video">
+                    <div class="widget-header-preview">YouTube</div>
+                    <div class="widget-content-preview">
+                        <div class="video-preview">▶ Video Player</div>
+                    </div>
+                </div>
             </div>
         </div>
+    </section>
 
-        <div class="section">
-            <h3>Videos</h3>
-            <div class="item" draggable="true" data-widget="youtube">YouTube</div>
-            <div class="item" draggable="true" data-widget="video">Video Upload</div>
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <h2>Powerful Features for Creators</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🎨</div>
+                    <h3>Drag & Drop Design</h3>
+                    <p>Intuitive interface for creating custom layouts with widgets</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💰</div>
+                    <h3>Crypto Tips</h3>
+                    <p>Accept donations with Web3 wallet integration</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📱</div>
+                    <h3>Social Integration</h3>
+                    <p>Live Twitter feeds and social media widgets</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📺</div>
+                    <h3>Video Widgets</h3>
+                    <p>YouTube integration and video upload capabilities</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <h3>Smart Snapping</h3>
+                    <p>Precision alignment tools for professional layouts</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🚀</div>
+                    <h3>Instant Sharing</h3>
+                    <p>Publish and share your layouts with one click</p>
+                </div>
+            </div>
         </div>
+    </section>
 
-        <div class="section">
-            <h3>Crypto</h3>
-            <div class="item" draggable="true" data-widget="crypto">Tips</div>
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="how-it-works">
+        <div class="container">
+            <h2>How It Works</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3>Design Your Layout</h3>
+                    <p>Drag widgets onto your canvas and arrange them however you like</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3>Customize & Configure</h3>
+                    <p>Set up your social feeds, wallet addresses, and content preferences</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3>Publish & Share</h3>
+                    <p>Generate a shareable link for your audience to view and interact with</p>
+                </div>
+            </div>
         </div>
+    </section>
 
-        <div class="section">
-            <h3>Social</h3>
-            <div class="item" draggable="true" data-widget="twitter">Twitter</div>
-            <div class="item" draggable="true" data-widget="instagram">Instagram</div>
-            <div class="item" draggable="true" data-widget="discord">Discord</div>
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <h2>Ready to Create Your Stream Layout?</h2>
+            <p>Join creators who are already using StreamSpace to engage with their audiences</p>
+            <a href="creator.html" class="btn-primary large">Get Started Now</a>
         </div>
-    </div>
+    </section>
 
-    <div class="canvas" id="canvas"></div>
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <h4>StreamSpace</h4>
+                    <p>Interactive streaming layouts made simple</p>
+                </div>
+                <div class="footer-links">
+                    <a href="creator.html">Creator Tools</a>
+                    <a href="#features">Features</a>
+                    <a href="mailto:support@streamspace.app">Support</a>
+                </div>
+            </div>
+        </div>
+    </footer>
 
-    <!-- API Configuration -->
-    <script src="config/api-keys.js"></script>
-    
-    <!-- Core JavaScript Modules -->
-    <script src="js/api/wallet.js"></script>
-    <script src="js/api/twitter.js"></script>
-    <script src="js/api/instagram.js"></script>
-    <script src="js/api/storage.js"></script>
-    
-    <!-- Components -->
-    <script src="js/components/widgets.js"></script>
-    <script src="js/components/customization.js"></script>
-    <script src="js/components/layout.js"></script>
-    
-    <!-- Main Application -->
-    <script src="js/app.js"></script>
+    <script src="js/home.js"></script>
 </body>
 </html>
