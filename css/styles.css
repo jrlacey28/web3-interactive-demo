@@ -429,7 +429,38 @@ body {
 
 .btn:hover { 
     transform: translateY(-2px); 
-    box-shadow: 0 5px 15px rgb(255, 255, 255); 
+    box-shadow: 0 5px 15px rgba(255, 255, 255, 0.3); 
+}
+
+/* YouTube Load Button - More Visible */
+.youtube-load-btn {
+    background: linear-gradient(135deg, #ff4757, #ff3742) !important;
+    color: white !important;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    width: 100%;
+    margin-bottom: 10px;
+    font-weight: bold;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(255, 71, 87, 0.3);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.youtube-load-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(255, 71, 87, 0.4);
+    background: linear-gradient(135deg, #ff3742, #ff2f3a) !important;
+}
+
+/* Crypto Widget Content */
+.crypto-content {
+    text-align: center;
+    padding: 15px;
+    background: transparent;
+    height: 100%;
 }
 
 /* Crypto Tip Buttons */
@@ -750,6 +781,44 @@ iframe, video {
     display: block; 
 }
 
+/* Video Upload Section - Centered */
+.video-upload-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 150px;
+    padding: 20px;
+}
+
+.centered-upload {
+    max-width: 200px;
+    margin: 0 auto;
+}
+
+.video-upload-btn {
+    background: linear-gradient(135deg, #00ff88, #00cc6a) !important;
+    color: white !important;
+    border: none;
+    padding: 15px 25px;
+    border-radius: 10px;
+    cursor: pointer;
+    width: 100%;
+    text-align: center;
+    display: block;
+    font-weight: bold;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 255, 136, 0.3);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.video-upload-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 255, 136, 0.4);
+    background: linear-gradient(135deg, #00cc6a, #00b85c) !important;
+}
+
 /* Background Presets - SIMPLIFIED */
 .background-section {
     margin-bottom: 30px;
@@ -884,6 +953,7 @@ iframe, video {
     position: absolute;
     top: -40px;
     left: 0;
+    right: 0;
     width: 100%;
     display: flex;
     justify-content: space-between;
@@ -898,6 +968,7 @@ iframe, video {
     cursor: move !important;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    min-height: 40px;
 }
 
 .widget-header:hover {

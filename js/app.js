@@ -853,7 +853,7 @@ function createWidget(type, x, y) {
             content = `
                 <div class="upload-section">
                     <input class="input" id="yt${counter}" placeholder="Enter YouTube URL">
-                    <button class="btn" onclick="loadYT(${counter})">Load Video</button>
+                    <button class="youtube-load-btn" onclick="loadYT(${counter})">Load Video</button>
                 </div>
                 <div id="ytc${counter}"></div>
                 <button class="video-overlay" onclick="resetYT(${counter})">×</button>
@@ -863,10 +863,10 @@ function createWidget(type, x, y) {
         case 'video':
             title = 'Video Upload';
             content = `
-                <div class="upload-section">
-                    <div class="file-upload">
+                <div class="video-upload-section">
+                    <div class="file-upload centered-upload">
                         <input type="file" id="vidFile${counter}" accept="video/*" onchange="loadVid(${counter})">
-                        <label for="vidFile${counter}" class="file-btn">📁 Upload Video</label>
+                        <label for="vidFile${counter}" class="video-upload-btn">Upload Video</label>
                     </div>
                 </div>
                 <div id="vidc${counter}"></div>
@@ -877,7 +877,7 @@ function createWidget(type, x, y) {
         case 'crypto':
             title = 'Tips';
             content = `
-                <div style="text-align:center; padding:15px;">
+                <div class="crypto-content">
                     <div class="tip-grid">
                         <button class="tip-btn" onclick="tip(1,${counter})">$1</button>
                         <button class="tip-btn" onclick="tip(5,${counter})">$5</button>
