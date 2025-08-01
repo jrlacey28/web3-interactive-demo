@@ -325,23 +325,32 @@ function calculateSnapPosition(draggedWrapper, currentX, currentY) {
             horizontalSnapLine = widget.top + widget.height/2;
             snappedToHorizontal = true;
         }
-        
-        // Check for top-to-bottom alignment (spacing)
-        if (topToBottomDistance < closestHorizontalDistance) {
-            closestHorizontalDistance = topToBottomDistance;
-            snapY = widget.bottom;
-            horizontalSnapLine = widget.bottom;
-            snappedToHorizontal = true;
-        }
-        
-        // Check for bottom-to-top alignment (spacing)
-        if (bottomToTopDistance < closestHorizontalDistance) {
-            closestHorizontalDistance = bottomToTopDistance;
-            snapY = widget.top - draggedRect.height;
-            horizontalSnapLine = widget.top;
-            snappedToHorizontal = true;
-        }
     });
+    
+    // Add viewport center snapping
+    const viewportCenterX = window.innerWidth / 2;
+    const viewportCenterY = window.innerHeight / 2;
+    const VIEWPORT_SNAP_THRESHOLD = 30;
+    
+    // Check for vertical center alignment with viewport
+    const draggedCenterX = currentX + draggedRect.width/2;
+    const centerXViewportDistance = Math.abs(draggedCenterX - viewportCenterX);
+    if (centerXViewportDistance < VIEWPORT_SNAP_THRESHOLD && centerXViewportDistance < closestVerticalDistance) {
+        closestVerticalDistance = centerXViewportDistance;
+        snapX = viewportCenterX - draggedRect.width/2;
+        verticalSnapLine = viewportCenterX;
+        snappedToVertical = true;
+    }
+    
+    // Check for horizontal center alignment with viewport  
+    const draggedCenterY = currentY + draggedRect.height/2;
+    const centerYViewportDistance = Math.abs(draggedCenterY - viewportCenterY);
+    if (centerYViewportDistance < VIEWPORT_SNAP_THRESHOLD && centerYViewportDistance < closestHorizontalDistance) {
+        closestHorizontalDistance = centerYViewportDistance;
+        snapY = viewportCenterY - draggedRect.height/2;
+        horizontalSnapLine = viewportCenterY;
+        snappedToHorizontal = true;
+    }
     
     // Show snap indicators
     if (snappedToVertical && verticalSnapLine !== null) {
@@ -723,6 +732,45 @@ function saveLayout() {
     }, 2000);
 }
 
+function publishLayout() {
+    // Get current layout
+    const widgets = [];
+    document.querySelectorAll('.widget-wrapper').forEach(wrapper => {
+        widgets.push({
+            id: wrapper.id,
+            type: wrapper.querySelector('.widget').dataset.type,
+            x: wrapper.style.left,
+            y: wrapper.style.top,
+            width: wrapper.style.width,
+            height: wrapper.style.height
+        });
+    });
+    
+    const layout = {
+        widgets: widgets,
+        background: document.getElementById('bg').style.backgroundImage || 
+                   document.getElementById('bg').style.background,
+        timestamp: new Date().toISOString(),
+        published: true
+    };
+    
+    // Save as published layout
+    localStorage.setItem('web3DemoPublishedLayout', JSON.stringify(layout));
+    
+    // Show success message
+    const btn = document.querySelector('.publish-btn');
+    const originalText = btn.textContent;
+    btn.textContent = '✅ Published!';
+    btn.style.background = 'linear-gradient(135deg, #00d4ff, #0099cc)';
+    setTimeout(() => {
+        btn.textContent = originalText;
+        btn.style.background = 'linear-gradient(135deg, #00ff88, #00cc6a)';
+    }, 2000);
+    
+    // Optional: Show publish confirmation modal
+    showToast('🚀 Layout published successfully!', 'success');
+}
+
 // ========================================
 // BACKGROUND MANAGEMENT - SIMPLIFIED
 // ========================================
@@ -829,7 +877,7 @@ function createWidget(type, x, y) {
         case 'crypto':
             title = 'Tips';
             content = `
-                <div style="text-align:center">
+                <div style="text-align:center; padding:15px;">
                     <div class="tip-grid">
                         <button class="tip-btn" onclick="tip(1,${counter})">$1</button>
                         <button class="tip-btn" onclick="tip(5,${counter})">$5</button>
@@ -839,8 +887,8 @@ function createWidget(type, x, y) {
                         <input class="amount" id="amt${counter}" placeholder="Custom amount">
                         <button class="send" onclick="customTip(${counter})">Send</button>
                     </div>
-                    <input class="input" id="msg${counter}" placeholder="Add a message (optional)" style="margin-top:10px">
-                    <div id="result${counter}"></div>
+                    <input class="input" id="msg${counter}" placeholder="Add a message (optional)" style="margin-top:10px; margin-bottom:0;">
+                    <div id="result${counter}" style="margin-top:10px; min-height:0;"></div>
                 </div>
             `;
             break;
@@ -1459,16 +1507,7 @@ document.addEventListener('DOMContentLoaded', function() {
     createSnapToggleButton();
     initializeResizeSnap(); // Initialize resize snap functionality
     
-    // Add close button to sidebar
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar && !sidebar.querySelector('.sidebar-close')) {
-        const closeBtn = document.createElement('button');
-        closeBtn.className = 'sidebar-close';
-        closeBtn.innerHTML = '×';
-        closeBtn.title = 'Close menu';
-        closeBtn.onclick = closeSidebar;
-        sidebar.appendChild(closeBtn);
-    }
+    // Close button is now in HTML
     
     // Click outside sidebar to close
     document.addEventListener('click', function(e) {

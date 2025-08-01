@@ -11,10 +11,12 @@
     <button class="toggle" onclick="toggleSidebar()">☰ Widgets</button>
     <button class="wallet-btn" id="walletBtn" onclick="connectWallet()">Connect Wallet</button>
     <button class="save-btn" onclick="saveLayout()">💾 Save Layout</button>
+    <button class="publish-btn" onclick="publishLayout()">🚀 Publish</button>
     
     <div class="sidebar" id="sidebar">
+        <button class="sidebar-close" onclick="closeSidebar()">×</button>
         <div class="section">
-            <h3>🎨 Background</h3>
+            <h3>Background</h3>
             <div class="file-upload">
                 <input type="file" id="bgFile" accept="image/*">
                 <label for="bgFile" class="file-btn">📁 Upload Image</label>
@@ -30,21 +32,21 @@
         </div>
 
         <div class="section">
-            <h3>📹 Videos</h3>
-            <div class="item" draggable="true" data-widget="youtube">🎥 YouTube</div>
-            <div class="item" draggable="true" data-widget="video">📺 Video Upload</div>
+            <h3>Videos</h3>
+            <div class="item" draggable="true" data-widget="youtube">YouTube</div>
+            <div class="item" draggable="true" data-widget="video">Video Upload</div>
         </div>
 
         <div class="section">
-            <h3>💰 Crypto</h3>
-            <div class="item" draggable="true" data-widget="crypto">₿ Tips</div>
+            <h3>Crypto</h3>
+            <div class="item" draggable="true" data-widget="crypto">Tips</div>
         </div>
 
         <div class="section">
-            <h3>📱 Social</h3>
-            <div class="item" draggable="true" data-widget="twitter">🐦 Twitter</div>
-            <div class="item" draggable="true" data-widget="instagram">📸 Instagram</div>
-            <div class="item" draggable="true" data-widget="discord">💬 Discord</div>
+            <h3>Social</h3>
+            <div class="item" draggable="true" data-widget="twitter">Twitter</div>
+            <div class="item" draggable="true" data-widget="instagram">Instagram</div>
+            <div class="item" draggable="true" data-widget="discord">Discord</div>
         </div>
     </div>
 
