@@ -200,7 +200,7 @@ body {
     backdrop-filter: blur(10px); 
     box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
     resize: both; 
-    overflow: auto; 
+    overflow: hidden; /* Remove scrollbars */
     background: rgba(0,0,0,0.85); 
 }
 
@@ -212,7 +212,7 @@ body {
     min-height: 180px;
     max-height: 80vh;
     overflow: hidden;
-    resize: both;
+    resize: none !important; /* Disable resize handles to prevent aspect ratio breaking */
     background: transparent !important;
     border: 2px solid #00d4ff;
 }
@@ -317,7 +317,7 @@ body {
 .content { 
     padding: 0; 
     height: calc(100% - 45px); 
-    overflow-y: auto; 
+    overflow: hidden; /* Remove scrollbars from content */
     color: white; 
     position: relative; 
 }
@@ -443,7 +443,7 @@ body {
     border-radius: 10px; 
     padding: 0; 
     height: 100%; 
-    overflow-y: auto; 
+    overflow-y: auto; /* Keep scrollbar for social widgets */
     color: #333; 
 }
 
@@ -547,10 +547,10 @@ body {
 }
 
 .widget.clean-mode .header {
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.8);
     backdrop-filter: blur(10px);
-    border-radius: 4px;
-    padding: 4px 8px;
+    border-radius: 8px;
+    padding: 6px 10px;
     font-size: 12px;
     margin-bottom: 5px;
     position: absolute;
@@ -559,6 +559,9 @@ body {
     z-index: 10;
     width: auto;
     min-width: 80px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .widget.clean-mode .header-controls {
@@ -841,13 +844,17 @@ iframe, video {
     justify-content: space-between;
     align-items: center;
     z-index: 10;
-    background: transparent;
-    border-radius: 8px 8px 0 0;
-    padding: 0px 0px;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
+    border-radius: 12px 12px 0 0;
+    padding: 8px 12px;
     color: #fff;
     box-sizing: border-box;
     gap: 12px;
     cursor: move !important;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 212, 255, 0.3);
 }
 
 .widget-header:hover {
@@ -865,6 +872,13 @@ iframe, video {
 
 .widget {
     border-radius: 0 0 15px 15px;
+}
+
+/* Enhanced header visibility */
+.widget-header span {
+    font-weight: 600;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
+    letter-spacing: 0.5px;
 }
 
 /* FINAL 16:9 ASPECT RATIO ENFORCEMENT */
@@ -892,7 +906,7 @@ iframe, video {
     border-radius: 8px;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
     max-height: 100%;
-    overflow-y: auto;
+    overflow-y: auto; /* Keep scrollbar for Twitter feeds */
 }
 
 .twitter-header {
@@ -1161,6 +1175,17 @@ iframe, video {
 
 .resize-handle:hover {
     opacity: 1;
+}
+
+/* Video widget resize handle */
+.video-resize-handle {
+    transition: all 0.2s ease;
+}
+
+.video-resize-handle:hover {
+    background: rgba(0, 212, 255, 1) !important;
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0, 212, 255, 0.4);
 }
 
 .widget-wrapper.resizing {
