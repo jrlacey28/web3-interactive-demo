@@ -543,17 +543,12 @@ function syncHeaderWidth(wrapper) {
     const widget = wrapper.querySelector('.widget');
     
     if (header && widget) {
-        // Make header exactly match the widget's width including borders
-        const widgetRect = widget.getBoundingClientRect();
-        const wrapperRect = wrapper.getBoundingClientRect();
-        
-        // Calculate the widget's position relative to the wrapper
-        const leftOffset = widgetRect.left - wrapperRect.left;
-        const width = widgetRect.width;
-        
-        header.style.left = leftOffset + 'px';
-        header.style.width = width + 'px';
-        header.style.right = 'auto'; // Remove right constraint
+        // Force header to match widget width exactly
+        const widgetWidth = wrapper.offsetWidth;
+        header.style.left = '0px';
+        header.style.width = widgetWidth + 'px';
+        header.style.right = 'auto';
+        header.style.boxSizing = 'border-box';
     }
 }
 
@@ -756,17 +751,60 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
+// Function to capture widget content state for preservation
+function captureWidgetState(widget) {
+    const state = {};
+    const widgetType = widget.dataset.type;
+    const widgetId = widget.id;
+    
+    // Extract widget counter from ID
+    const counter = widgetId.replace('w', '');
+    
+    switch(widgetType) {
+        case 'youtube':
+            const ytInput = document.getElementById(`yt${counter}`);
+            const ytContent = document.getElementById(`ytc${counter}`);
+            if (ytInput && ytContent) {
+                state.youtubeUrl = ytInput.value;
+                state.youtubeContent = ytContent.innerHTML;
+                state.videoLoaded = widget.classList.contains('video-loaded');
+            }
+            break;
+            
+        case 'crypto':
+            const msgInput = document.getElementById(`msg${counter}`);
+            const amtInput = document.getElementById(`amt${counter}`);
+            const result = document.getElementById(`result${counter}`);
+            if (msgInput) state.message = msgInput.value;
+            if (amtInput) state.amount = amtInput.value;
+            if (result) state.result = result.innerHTML;
+            break;
+            
+        case 'twitter':
+            const userInput = document.getElementById(`user${counter}`);
+            const feed = document.getElementById(`feed${counter}`);
+            if (userInput) state.username = userInput.value;
+            if (feed) state.feedContent = feed.innerHTML;
+            break;
+    }
+    
+    return state;
+}
+
 function saveLayout() {
     const widgets = [];
     document.querySelectorAll('.widget-wrapper').forEach(wrapper => {
-        widgets.push({
+        const widget = wrapper.querySelector('.widget');
+        const widgetData = {
             id: wrapper.id,
-            type: wrapper.querySelector('.widget').dataset.type,
+            type: widget.dataset.type,
             x: wrapper.style.left,
             y: wrapper.style.top,
             width: wrapper.style.width,
-            height: wrapper.style.height
-        });
+            height: wrapper.style.height,
+            state: captureWidgetState(widget) // Capture content state
+        };
+        widgets.push(widgetData);
     });
     
     const layout = {
@@ -793,14 +831,17 @@ function publishLayout() {
     // Get current layout
     const widgets = [];
     document.querySelectorAll('.widget-wrapper').forEach(wrapper => {
-        widgets.push({
+        const widget = wrapper.querySelector('.widget');
+        const widgetData = {
             id: wrapper.id,
-            type: wrapper.querySelector('.widget').dataset.type,
+            type: widget.dataset.type,
             x: wrapper.style.left,
             y: wrapper.style.top,
             width: wrapper.style.width,
-            height: wrapper.style.height
-        });
+            height: wrapper.style.height,
+            state: captureWidgetState(widget) // Capture content state
+        };
+        widgets.push(widgetData);
     });
     
     // Generate unique layout ID
@@ -1147,8 +1188,8 @@ function enableResizeSnap(wrapper) {
     const widget = wrapper.querySelector('.widget');
     const widgetType = widget.dataset.type;
     
-    // Create custom resize functionality for video widgets
-    if (widgetType === 'youtube' || widgetType === 'video') {
+    // Create resize functionality for ALL widgets
+    {
         // Add resize corner handle
         const resizeHandle = document.createElement('div');
         resizeHandle.className = 'video-resize-handle';
@@ -1167,9 +1208,15 @@ function enableResizeSnap(wrapper) {
             cursor: se-resize;
             border-radius: 4px;
             font-size: 12px;
-            z-index: 10;
+            z-index: 100;
             user-select: none;
+            pointer-events: auto;
         `;
+        
+        // Ensure wrapper has proper positioning
+        if (wrapper.style.position !== 'absolute') {
+            wrapper.style.position = 'absolute';
+        }
         
         wrapper.appendChild(resizeHandle);
         
@@ -1192,22 +1239,37 @@ function enableResizeSnap(wrapper) {
                 const deltaX = e.clientX - startX;
                 const deltaY = e.clientY - startY;
                 
-                // Calculate new width, prioritizing width changes
-                let newWidth = Math.max(320, startWidth + deltaX);
-                let newHeight = (newWidth / 16) * 9; // Maintain 16:9
+                let newWidth, newHeight;
                 
-                // Ensure it doesn't exceed viewport
-                const maxWidth = window.innerWidth - parseInt(wrapper.style.left);
-                const maxHeight = window.innerHeight - parseInt(wrapper.style.top);
-                
-                if (newWidth > maxWidth) {
-                    newWidth = maxWidth;
+                if (widgetType === 'youtube' || widgetType === 'video') {
+                    // Video widgets: maintain 16:9 aspect ratio
+                    newWidth = Math.max(320, startWidth + deltaX);
                     newHeight = (newWidth / 16) * 9;
-                }
-                
-                if (newHeight > maxHeight) {
-                    newHeight = maxHeight;
-                    newWidth = (newHeight / 9) * 16;
+                    
+                    // Ensure it doesn't exceed viewport
+                    const maxWidth = window.innerWidth - parseInt(wrapper.style.left);
+                    const maxHeight = window.innerHeight - parseInt(wrapper.style.top);
+                    
+                    if (newWidth > maxWidth) {
+                        newWidth = maxWidth;
+                        newHeight = (newWidth / 16) * 9;
+                    }
+                    
+                    if (newHeight > maxHeight) {
+                        newHeight = maxHeight;
+                        newWidth = (newHeight / 9) * 16;
+                    }
+                } else {
+                    // Other widgets: free resize
+                    newWidth = Math.max(250, startWidth + deltaX);
+                    newHeight = Math.max(150, startHeight + deltaY);
+                    
+                    // Ensure it doesn't exceed viewport
+                    const maxWidth = window.innerWidth - parseInt(wrapper.style.left);
+                    const maxHeight = window.innerHeight - parseInt(wrapper.style.top);
+                    
+                    newWidth = Math.min(newWidth, maxWidth);
+                    newHeight = Math.min(newHeight, maxHeight);
                 }
                 
                 wrapper.style.width = newWidth + 'px';

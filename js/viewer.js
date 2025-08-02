@@ -244,9 +244,59 @@ function createViewerWidget(widgetData, counter) {
     // Add to canvas
     canvas.appendChild(wrapper);
     
-    // Apply any saved customizations (colors, etc.)
+    // Apply any saved state (content and customizations)
+    if (widgetData.state) {
+        restoreWidgetState(widget, widgetData.state, counter);
+    }
     if (widgetData.customization) {
         applyCustomization(widget.id, widgetData.customization);
+    }
+}
+
+// Function to restore widget state in viewer
+function restoreWidgetState(widget, state, counter) {
+    const widgetType = widget.dataset.type;
+    
+    switch(widgetType) {
+        case 'youtube':
+            if (state.youtubeUrl) {
+                const input = document.getElementById(`yt${counter}`);
+                const content = document.getElementById(`ytc${counter}`);
+                if (input) input.value = state.youtubeUrl;
+                if (content && state.youtubeContent) {
+                    content.innerHTML = state.youtubeContent;
+                }
+                if (state.videoLoaded) {
+                    widget.classList.add('video-loaded');
+                }
+            }
+            break;
+            
+        case 'crypto':
+            if (state.message) {
+                const msgInput = document.getElementById(`msg${counter}`);
+                if (msgInput) msgInput.value = state.message;
+            }
+            if (state.amount) {
+                const amtInput = document.getElementById(`amt${counter}`);
+                if (amtInput) amtInput.value = state.amount;
+            }
+            if (state.result) {
+                const result = document.getElementById(`result${counter}`);
+                if (result) result.innerHTML = state.result;
+            }
+            break;
+            
+        case 'twitter':
+            if (state.username) {
+                const userInput = document.getElementById(`user${counter}`);
+                if (userInput) userInput.value = state.username;
+            }
+            if (state.feedContent) {
+                const feed = document.getElementById(`feed${counter}`);
+                if (feed) feed.innerHTML = state.feedContent;
+            }
+            break;
     }
 }
 

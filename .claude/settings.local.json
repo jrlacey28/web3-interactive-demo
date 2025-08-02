@@ -3,7 +3,8 @@
     "allow": [
       "Bash(npx tsc:*)",
       "mcp__ide__getDiagnostics",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "Bash(start creator.html)"
     ],
     "deny": []
   }

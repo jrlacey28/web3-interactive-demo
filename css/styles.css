@@ -76,7 +76,7 @@ body {
 /* Control Buttons */
 .home-btn {
     position: fixed;
-    top: 20px;
+    bottom: 20px;
     left: 20px;
     background: rgba(255,255,255,0.2);
     backdrop-filter: blur(10px);
@@ -1317,15 +1317,17 @@ iframe, video {
     opacity: 1;
 }
 
-/* Video widget resize handle */
+/* Widget resize handles for all widget types */
 .video-resize-handle {
     transition: all 0.2s ease;
+    opacity: 0.8;
 }
 
 .video-resize-handle:hover {
     background: rgba(0, 212, 255, 1) !important;
     transform: scale(1.1);
     box-shadow: 0 2px 8px rgba(0, 212, 255, 0.4);
+    opacity: 1;
 }
 
 .widget-wrapper.resizing {
