@@ -102,7 +102,7 @@ body {
 .toggle { 
     position: fixed; 
     top: 20px; 
-    left: 80px; 
+    left: 70px; 
     background: rgba(255,255,255,0.2); 
     backdrop-filter: blur(10px); 
     border: 1px solid rgba(255,255,255,0.3); 
@@ -131,7 +131,7 @@ body {
 .snap-toggle {
     position: fixed;
     top: 80px;
-    left: 80px;
+    left: 70px;
     background: rgba(0, 212, 255, 0.2);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(0, 212, 255, 0.3);
@@ -271,7 +271,9 @@ body {
     box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
     resize: both; 
     overflow: hidden; /* Remove scrollbars */
-    background: rgba(255,255,255,0.1); 
+    background: rgba(255,255,255,0.1);
+    -webkit-user-drag: none; /* Prevent dragging */
+    user-select: none; /* Prevent text selection during drag */
 }
 
 /* ENHANCED VIDEO WIDGET FIXES - MAINTAINS 16:9 ASPECT RATIO */
@@ -389,7 +391,15 @@ body {
     height: calc(100% - 45px); 
     overflow: hidden; /* Remove scrollbars from content */
     color: white; 
-    position: relative; 
+    position: relative;
+    pointer-events: auto; /* Ensure content can be interacted with */
+    user-select: none; /* Prevent text selection during drag */
+}
+
+/* Allow interaction with form elements */
+.content input, .content button, .content textarea, .content select {
+    user-select: auto;
+    pointer-events: auto;
 }
 
 .style-panel.show { 
@@ -972,6 +982,8 @@ iframe, video {
 .widget-wrapper {
     position: absolute;
     display: inline-block;
+    -webkit-user-drag: none; /* Prevent dragging */
+    user-select: none; /* Prevent text selection during drag */
 }
 
 .widget-header {

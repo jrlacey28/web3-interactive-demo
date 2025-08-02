@@ -543,11 +543,10 @@ function syncHeaderWidth(wrapper) {
     const widget = wrapper.querySelector('.widget');
     
     if (header && widget) {
-        // Force header to match widget width exactly
-        const widgetWidth = wrapper.offsetWidth;
+        // Force header to span full wrapper width
         header.style.left = '0px';
-        header.style.width = widgetWidth + 'px';
-        header.style.right = 'auto';
+        header.style.right = '0px';
+        header.style.width = 'auto';
         header.style.boxSizing = 'border-box';
     }
 }
@@ -1016,11 +1015,24 @@ function createWidget(type, x, y) {
     wrapper.style.position = 'absolute';
     wrapper.id = `wrapper${counter}`;
     
+    // Set initial size based on widget type
+    if (type === 'youtube' || type === 'video') {
+        wrapper.style.width = '480px';
+        wrapper.style.height = '270px'; // 16:9 ratio
+    } else {
+        wrapper.style.width = '320px';
+        wrapper.style.height = '240px';
+    }
+    
     // Create widget
     const widget = document.createElement('div');
     widget.className = 'widget glow';
     widget.id = `w${counter}`;
     widget.dataset.type = type;
+    
+    // Set widget size to match wrapper
+    widget.style.width = wrapper.style.width;
+    widget.style.height = wrapper.style.height;
 
     let content = '';
     let title = '';
@@ -1213,12 +1225,13 @@ function enableResizeSnap(wrapper) {
             pointer-events: auto;
         `;
         
-        // Ensure wrapper has proper positioning
-        if (wrapper.style.position !== 'absolute') {
-            wrapper.style.position = 'absolute';
-        }
+        // Ensure wrapper has proper positioning context for resize handle
+        wrapper.style.position = 'absolute';
         
-        wrapper.appendChild(resizeHandle);
+        // Add resize handle after a small delay to ensure proper positioning
+        setTimeout(() => {
+            wrapper.appendChild(resizeHandle);
+        }, 50);
         
         let isResizing = false;
         let startX, startY, startWidth, startHeight;
@@ -1300,6 +1313,27 @@ function enableResizeSnap(wrapper) {
 
 function makeWidgetDraggable(wrapper, header) {
     let isDragging = false, startX, startY, startLeft, startTop;
+
+    // Prevent content area from being draggable
+    const content = wrapper.querySelector('.content');
+    if (content) {
+        content.addEventListener('mousedown', function(e) {
+            // Stop drag events from bubbling up from content area
+            if (e.target.closest('.content') && !e.target.closest('.widget-header')) {
+                e.stopPropagation();
+            }
+        });
+        
+        // Disable drag on the content area completely
+        content.draggable = false;
+        content.style.userSelect = 'none';
+    }
+    
+    // Also ensure the widget itself doesn't interfere with header dragging
+    const widget = wrapper.querySelector('.widget');
+    if (widget) {
+        widget.draggable = false;
+    }
 
     header.addEventListener('mousedown', function(e) {
         if (e.target.classList.contains('close') || e.target.classList.contains('style-btn')) return;
