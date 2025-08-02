@@ -1015,13 +1015,13 @@ function createWidget(type, x, y) {
     wrapper.style.position = 'absolute';
     wrapper.id = `wrapper${counter}`;
     
-    // Set initial size based on widget type
+    // Set initial size based on widget type - smaller default sizes
     if (type === 'youtube' || type === 'video') {
-        wrapper.style.width = '480px';
-        wrapper.style.height = '270px'; // 16:9 ratio
-    } else {
         wrapper.style.width = '320px';
-        wrapper.style.height = '240px';
+        wrapper.style.height = '180px'; // 16:9 ratio (320 * 9/16 = 180)
+    } else {
+        wrapper.style.width = '300px';
+        wrapper.style.height = '200px';
     }
     
     // Create widget
@@ -1289,13 +1289,16 @@ function enableResizeSnap(wrapper) {
                 wrapper.style.height = newHeight + 'px';
                 widget.style.width = newWidth + 'px';
                 widget.style.height = newHeight + 'px';
+                
+                // Immediately sync header width during resize
+                syncHeaderWidth(wrapper);
             };
             
             const handleMouseUp = () => {
                 isResizing = false;
                 wrapper.classList.remove('resizing');
                 updateStoredPosition(wrapper);
-                syncHeaderWidth(wrapper); // Sync header after resize
+                syncHeaderWidth(wrapper); // Final sync after resize
                 
                 document.removeEventListener('mousemove', handleMouseMove);
                 document.removeEventListener('mouseup', handleMouseUp);
@@ -1314,25 +1317,31 @@ function enableResizeSnap(wrapper) {
 function makeWidgetDraggable(wrapper, header) {
     let isDragging = false, startX, startY, startLeft, startTop;
 
-    // Prevent content area from being draggable
+    // Prevent content area and widget body from being draggable
     const content = wrapper.querySelector('.content');
+    const widget = wrapper.querySelector('.widget');
+    
     if (content) {
         content.addEventListener('mousedown', function(e) {
             // Stop drag events from bubbling up from content area
-            if (e.target.closest('.content') && !e.target.closest('.widget-header')) {
-                e.stopPropagation();
-            }
+            e.stopPropagation();
+            e.preventDefault();
         });
-        
-        // Disable drag on the content area completely
         content.draggable = false;
         content.style.userSelect = 'none';
+        content.style.pointerEvents = 'auto'; // Allow content interaction
     }
     
-    // Also ensure the widget itself doesn't interfere with header dragging
-    const widget = wrapper.querySelector('.widget');
     if (widget) {
+        widget.addEventListener('mousedown', function(e) {
+            // Only allow dragging from header, block everything else
+            if (!e.target.closest('.widget-header')) {
+                e.stopPropagation();
+                e.preventDefault();
+            }
+        });
         widget.draggable = false;
+        widget.style.pointerEvents = 'none'; // Block widget body interaction
     }
 
     header.addEventListener('mousedown', function(e) {

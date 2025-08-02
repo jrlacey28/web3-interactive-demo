@@ -102,7 +102,7 @@ body {
 .toggle { 
     position: fixed; 
     top: 20px; 
-    left: 70px; 
+    left: 20px; 
     background: rgba(255,255,255,0.2); 
     backdrop-filter: blur(10px); 
     border: 1px solid rgba(255,255,255,0.3); 
@@ -131,7 +131,7 @@ body {
 .snap-toggle {
     position: fixed;
     top: 80px;
-    left: 70px;
+    left: 20px;
     background: rgba(0, 212, 255, 0.2);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(0, 212, 255, 0.3);
@@ -269,11 +269,12 @@ body {
     min-height: 200px; 
     backdrop-filter: blur(15px); 
     box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
-    resize: both; 
+    resize: none; /* Disable default resize - we use custom handles */
     overflow: hidden; /* Remove scrollbars */
     background: rgba(255,255,255,0.1);
     -webkit-user-drag: none; /* Prevent dragging */
     user-select: none; /* Prevent text selection during drag */
+    pointer-events: none; /* Prevent widget body from being interactive for dragging */
 }
 
 /* ENHANCED VIDEO WIDGET FIXES - MAINTAINS 16:9 ASPECT RATIO */
@@ -396,10 +397,20 @@ body {
     user-select: none; /* Prevent text selection during drag */
 }
 
-/* Allow interaction with form elements */
-.content input, .content button, .content textarea, .content select {
+/* Allow interaction with form elements and content */
+.content input, .content button, .content textarea, .content select, .content iframe, .content video {
     user-select: auto;
     pointer-events: auto;
+}
+
+/* Ensure content is interactive */
+.content {
+    pointer-events: auto !important;
+}
+
+/* But prevent the content from being draggable */
+.content * {
+    -webkit-user-drag: none;
 }
 
 .style-panel.show { 
@@ -1007,6 +1018,8 @@ iframe, video {
     min-height: 40px;
     border: 2px solid #0099cc;
     border-bottom: none;
+    pointer-events: auto; /* Ensure header is interactive for dragging */
+    -webkit-user-drag: none; /* Prevent native drag */
 }
 
 .widget-header:hover {
