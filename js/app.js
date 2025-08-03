@@ -1032,7 +1032,7 @@ function createWidget(type, x, y) {
     
     // Create widget
     const widget = document.createElement('div');
-    widget.className = 'widget glow';
+    widget.className = 'widget';
     widget.id = `w${counter}`;
     widget.dataset.type = type;
     
@@ -1135,6 +1135,33 @@ function createWidget(type, x, y) {
                 </div>
             `;
             break;
+            
+        case 'square':
+            title = 'Square';
+            content = `
+                <div class="shape-content">
+                    <div class="shape square-shape"></div>
+                </div>
+            `;
+            break;
+            
+        case 'circle':
+            title = 'Circle';
+            content = `
+                <div class="shape-content">
+                    <div class="shape circle-shape"></div>
+                </div>
+            `;
+            break;
+            
+        case 'triangle':
+            title = 'Triangle';
+            content = `
+                <div class="shape-content">
+                    <div class="shape triangle-shape"></div>
+                </div>
+            `;
+            break;
     }
 
     // Create header (now outside widget)
@@ -1147,40 +1174,10 @@ function createWidget(type, x, y) {
             <button class="close" onclick="remove('${widget.id}')">×</button>
         </div>
     `;
-    // Widget content
+    // Widget content (without embedded style panel)
     widget.innerHTML = `
         <div class="content">
             ${content}
-            <div class="style-panel" id="style-panel-${widget.id}">
-                <div class="style-group">
-                    <label>Widget Transparency</label>
-                    <input type="range" class="style-slider opacity-slider" min="0" max="1" step="0.1" value="0.85" onchange="updateWidgetStyle('${widget.id}')">
-                </div>
-                <div class="style-group">
-                    <div class="style-row">
-                        <label>Background</label>
-                        <input type="color" class="style-color bg-color" value="#000000" onchange="updateWidgetStyle('${widget.id}')">
-                    </div>
-                </div>
-                <div class="style-group">
-                    <div class="style-row">
-                        <label>Border</label>
-                        <input type="color" class="style-color border-color" value="#00d4ff" onchange="updateWidgetStyle('${widget.id}')">
-                    </div>
-                </div>
-                <div class="style-group">
-                    <div class="style-row">
-                        <label>Button Color</label>
-                        <input type="color" class="style-color btn-color" value="#00d4ff" onchange="updateButtonStyle('${widget.id}')">
-                    </div>
-                </div>
-                <div class="style-group">
-                    <div class="style-row">
-                        <label>Button Text</label>
-                        <input type="color" class="style-color btn-text-color" value="#ffffff" onchange="updateButtonStyle('${widget.id}')">
-                    </div>
-                </div>
-            </div>
         </div>
     `;
     // Append header and widget to wrapper
@@ -1214,8 +1211,8 @@ function enableResizeSnap(wrapper) {
         resizeHandle.innerHTML = '↘';
         resizeHandle.style.cssText = `
             position: absolute;
-            bottom: 5px;
-            right: 5px;
+            bottom: -15px;
+            right: -15px;
             width: 20px;
             height: 20px;
             background: rgba(0, 212, 255, 0.8);
@@ -1260,35 +1257,26 @@ function enableResizeSnap(wrapper) {
                 
                 let newWidth, newHeight;
                 
+                // Calculate viewport constraints
+                const wrapperLeft = parseInt(wrapper.style.left) || 0;
+                const wrapperTop = parseInt(wrapper.style.top) || 0;
+                const maxWidth = window.innerWidth - wrapperLeft - 30; // Leave space for resize handle
+                const maxHeight = window.innerHeight - wrapperTop - 30;
+                
                 if (widgetType === 'youtube' || widgetType === 'video') {
                     // Video widgets: maintain 16:9 aspect ratio
-                    newWidth = Math.max(320, startWidth + deltaX);
+                    newWidth = Math.max(320, Math.min(startWidth + deltaX, maxWidth));
                     newHeight = (newWidth / 16) * 9;
                     
-                    // Ensure it doesn't exceed viewport
-                    const maxWidth = window.innerWidth - parseInt(wrapper.style.left);
-                    const maxHeight = window.innerHeight - parseInt(wrapper.style.top);
-                    
-                    if (newWidth > maxWidth) {
-                        newWidth = maxWidth;
-                        newHeight = (newWidth / 16) * 9;
-                    }
-                    
+                    // If height would exceed viewport, recalculate based on height constraint
                     if (newHeight > maxHeight) {
                         newHeight = maxHeight;
                         newWidth = (newHeight / 9) * 16;
                     }
                 } else {
-                    // Other widgets: free resize
-                    newWidth = Math.max(250, startWidth + deltaX);
-                    newHeight = Math.max(150, startHeight + deltaY);
-                    
-                    // Ensure it doesn't exceed viewport
-                    const maxWidth = window.innerWidth - parseInt(wrapper.style.left);
-                    const maxHeight = window.innerHeight - parseInt(wrapper.style.top);
-                    
-                    newWidth = Math.min(newWidth, maxWidth);
-                    newHeight = Math.min(newHeight, maxHeight);
+                    // Other widgets: free resize with minimum constraints
+                    newWidth = Math.max(250, Math.min(startWidth + deltaX, maxWidth));
+                    newHeight = Math.max(150, Math.min(startHeight + deltaY, maxHeight));
                 }
                 
                 wrapper.style.width = newWidth + 'px';
@@ -1297,7 +1285,9 @@ function enableResizeSnap(wrapper) {
                 widget.style.height = newHeight + 'px';
                 
                 // Immediately sync header width during resize
-                syncHeaderWidth(wrapper);
+                requestAnimationFrame(() => {
+                    syncHeaderWidth(wrapper);
+                });
             };
             
             const handleMouseUp = () => {
@@ -1373,8 +1363,7 @@ function makeWidgetDraggable(wrapper, header) {
         startTop = parseInt(wrapper.style.top) || 0;
         wrapper.style.zIndex = '1001';
         
-        // Add dragging class for visual feedback
-        wrapper.classList.add('dragging');
+        // Remove any visual effects during drag (no glow, no enlargement)
 
         let dragTimeout;
         const handleMouseMove = (e) => {
@@ -1421,7 +1410,7 @@ function makeWidgetDraggable(wrapper, header) {
             isDragging = false;
             wrapper.style.zIndex = '';
             wrapper.style.boxShadow = '';
-            wrapper.classList.remove('dragging');
+            // No dragging class to remove since we don't add it
             hideSnapIndicators();
             
             // Clear any pending drag timeout
@@ -1805,6 +1794,288 @@ function createSnapToggleButton() {
     document.body.appendChild(snapToggle);
 }
 
+// Layer management system
+let currentZIndex = 1000;
+
+function createLayerManagementButton() {
+    const layerToggle = document.createElement('button');
+    layerToggle.className = 'layer-toggle';
+    layerToggle.innerHTML = '📚';
+    layerToggle.title = 'Manage Layers';
+    
+    layerToggle.addEventListener('click', function() {
+        toggleLayerPanel();
+    });
+    
+    document.body.appendChild(layerToggle);
+}
+
+function toggleLayerPanel() {
+    let layerPanel = document.getElementById('layerPanel');
+    
+    if (layerPanel) {
+        layerPanel.remove();
+        return;
+    }
+    
+    layerPanel = document.createElement('div');
+    layerPanel.id = 'layerPanel';
+    layerPanel.className = 'layer-panel';
+    layerPanel.innerHTML = `
+        <div class="layer-header">
+            <h3>Layer Management</h3>
+            <button class="layer-close" onclick="document.getElementById('layerPanel').remove()">×</button>
+        </div>
+        <div class="layer-list" id="layerList">
+            <!-- Layers will be populated here -->
+        </div>
+    `;
+    
+    layerPanel.style.cssText = `
+        position: fixed;
+        left: 20px;
+        top: 120px;
+        width: 250px;
+        background: rgba(0, 0, 0, 0.9);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+        padding: 0;
+        z-index: 10000;
+        color: white;
+        font-family: Arial, sans-serif;
+    `;
+    
+    document.body.appendChild(layerPanel);
+    updateLayerList();
+}
+
+function updateLayerList() {
+    const layerList = document.getElementById('layerList');
+    if (!layerList) return;
+    
+    const widgets = Array.from(document.querySelectorAll('.widget-wrapper'));
+    widgets.sort((a, b) => {
+        const aZ = parseInt(a.style.zIndex) || 1000;
+        const bZ = parseInt(b.style.zIndex) || 1000;
+        return bZ - aZ; // Highest z-index first
+    });
+    
+    layerList.innerHTML = '';
+    
+    widgets.forEach((wrapper, index) => {
+        const widget = wrapper.querySelector('.widget');
+        const widgetType = widget.dataset.type;
+        const zIndex = parseInt(wrapper.style.zIndex) || 1000;
+        
+        const layerItem = document.createElement('div');
+        layerItem.className = 'layer-item';
+        layerItem.innerHTML = `
+            <div class="layer-info">
+                <span class="layer-type">${widgetType.charAt(0).toUpperCase() + widgetType.slice(1)}</span>
+                <span class="layer-z">Z: ${zIndex}</span>
+            </div>
+            <div class="layer-controls">
+                <button onclick="moveLayerUp('${wrapper.id}')" title="Move Up">↑</button>
+                <button onclick="moveLayerDown('${wrapper.id}')" title="Move Down">↓</button>
+                <button onclick="bringToFront('${wrapper.id}')" title="Bring to Front">⬆</button>
+                <button onclick="sendToBack('${wrapper.id}')" title="Send to Back">⬇</button>
+            </div>
+        `;
+        
+        layerItem.style.cssText = `
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+        `;
+        
+        layerItem.addEventListener('click', () => {
+            highlightWidget(wrapper.id);
+        });
+        
+        layerList.appendChild(layerItem);
+    });
+}
+
+function moveLayerUp(wrapperId) {
+    const wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
+    
+    const currentZ = parseInt(wrapper.style.zIndex) || 1000;
+    wrapper.style.zIndex = currentZ + 1;
+    updateLayerList();
+}
+
+function moveLayerDown(wrapperId) {
+    const wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
+    
+    const currentZ = parseInt(wrapper.style.zIndex) || 1000;
+    wrapper.style.zIndex = Math.max(1, currentZ - 1);
+    updateLayerList();
+}
+
+function bringToFront(wrapperId) {
+    const wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
+    
+    currentZIndex += 1;
+    wrapper.style.zIndex = currentZIndex;
+    updateLayerList();
+}
+
+function sendToBack(wrapperId) {
+    const wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
+    
+    wrapper.style.zIndex = 1;
+    updateLayerList();
+}
+
+function highlightWidget(wrapperId) {
+    // Remove previous highlights
+    document.querySelectorAll('.widget-wrapper').forEach(w => {
+        w.style.outline = '';
+    });
+    
+    // Highlight selected widget
+    const wrapper = document.getElementById(wrapperId);
+    if (wrapper) {
+        wrapper.style.outline = '3px solid #00d4ff';
+        setTimeout(() => {
+            wrapper.style.outline = '';
+        }, 2000);
+    }
+}
+
+// ========================================
+// WIDGET CUSTOMIZATION PANEL
+// ========================================
+
+function toggleStylePanel(widgetId) {
+    // Remove any existing style panel
+    const existingPanel = document.getElementById('external-style-panel');
+    if (existingPanel) {
+        existingPanel.remove();
+        return;
+    }
+    
+    // Get widget element
+    const widget = document.getElementById(widgetId);
+    if (!widget) return;
+    
+    // Create external style panel
+    const stylePanel = document.createElement('div');
+    stylePanel.id = 'external-style-panel';
+    stylePanel.className = 'external-style-panel';
+    
+    const widgetType = widget.dataset.type;
+    const isShape = ['square', 'circle', 'triangle'].includes(widgetType);
+    
+    stylePanel.innerHTML = `
+        <div class="style-panel-header">
+            <h3>Customize ${widgetType.charAt(0).toUpperCase() + widgetType.slice(1)}</h3>
+            <button class="style-panel-close" onclick="document.getElementById('external-style-panel').remove()">×</button>
+        </div>
+        <div class="style-panel-content">
+            <div class="style-group">
+                <label>Widget Transparency</label>
+                <input type="range" class="style-slider opacity-slider" min="0" max="1" step="0.1" value="0.85" onchange="updateWidgetStyle('${widgetId}')">
+            </div>
+            <div class="style-group">
+                <div class="style-row">
+                    <label>Background Color</label>
+                    <input type="color" class="style-color bg-color" value="#000000" onchange="updateWidgetStyle('${widgetId}')">
+                </div>
+            </div>
+            <div class="style-group">
+                <div class="style-row">
+                    <label>Border Color</label>
+                    <input type="color" class="style-color border-color" value="#00d4ff" onchange="updateWidgetStyle('${widgetId}')">
+                </div>
+            </div>
+            ${isShape ? `
+                <div class="style-group">
+                    <div class="style-row">
+                        <label>Shape Color</label>
+                        <input type="color" class="style-color shape-color" value="#00d4ff" onchange="updateShapeStyle('${widgetId}')">
+                    </div>
+                </div>
+                <div class="style-group">
+                    <label>Shape Size</label>
+                    <input type="range" class="style-slider size-slider" min="20" max="120" step="10" value="80" onchange="updateShapeStyle('${widgetId}')">
+                </div>
+            ` : `
+                <div class="style-group">
+                    <div class="style-row">
+                        <label>Button Color</label>
+                        <input type="color" class="style-color btn-color" value="#00d4ff" onchange="updateButtonStyle('${widgetId}')">
+                    </div>
+                </div>
+                <div class="style-group">
+                    <div class="style-row">
+                        <label>Button Text Color</label>
+                        <input type="color" class="style-color btn-text-color" value="#ffffff" onchange="updateButtonStyle('${widgetId}')">
+                    </div>
+                </div>
+            `}
+        </div>
+    `;
+    
+    // Position the panel near the widget
+    const wrapper = widget.closest('.widget-wrapper');
+    const wrapperRect = wrapper.getBoundingClientRect();
+    
+    stylePanel.style.cssText = `
+        position: fixed;
+        left: ${Math.min(wrapperRect.right + 10, window.innerWidth - 300)}px;
+        top: ${Math.max(wrapperRect.top, 20)}px;
+        width: 280px;
+        background: rgba(0, 0, 0, 0.95);
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        padding: 0;
+        z-index: 10000;
+        color: white;
+        font-family: Arial, sans-serif;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    `;
+    
+    document.body.appendChild(stylePanel);
+}
+
+function updateShapeStyle(widgetId) {
+    const widget = document.getElementById(widgetId);
+    const panel = document.getElementById('external-style-panel');
+    if (!widget || !panel) return;
+    
+    const shapeColor = panel.querySelector('.shape-color')?.value || '#00d4ff';
+    const shapeSize = panel.querySelector('.size-slider')?.value || 80;
+    
+    const shape = widget.querySelector('.shape');
+    if (shape) {
+        if (shape.classList.contains('square-shape')) {
+            shape.style.width = shapeSize + 'px';
+            shape.style.height = shapeSize + 'px';
+            shape.style.background = shapeColor;
+        } else if (shape.classList.contains('circle-shape')) {
+            shape.style.width = shapeSize + 'px';
+            shape.style.height = shapeSize + 'px';
+            shape.style.background = shapeColor;
+        } else if (shape.classList.contains('triangle-shape')) {
+            const halfSize = shapeSize / 2;
+            shape.style.borderLeftWidth = halfSize + 'px';
+            shape.style.borderRightWidth = halfSize + 'px';
+            shape.style.borderBottomWidth = shapeSize + 'px';
+            shape.style.borderBottomColor = shapeColor;
+        }
+    }
+}
+
 // ========================================
 // INITIALIZATION
 // ========================================
@@ -1815,6 +2086,7 @@ document.addEventListener('DOMContentLoaded', function() {
     createSnapIndicators();
     addSnapCSS();
     createSnapToggleButton();
+    createLayerManagementButton();
     initializeResizeSnap(); // Initialize resize snap functionality
     
     // Close button is now in HTML
@@ -1854,13 +2126,15 @@ document.addEventListener('DOMContentLoaded', function() {
 function saveLayout() {
     const layout = captureLayoutState();
     localStorage.setItem('web3DemoLayout', JSON.stringify(layout));
-    showToast('✅ Layout saved!', 'success');
+    const saveBtn = document.querySelector('.save-btn');
+    showToast('✅ Layout saved!', 'success', saveBtn);
 }
 
 function publishLayout() {
     const layout = captureLayoutState();
     localStorage.setItem('web3DemoPublishedLayout', JSON.stringify(layout));
-    showToast('🚀 Layout published!', 'success');
+    const publishBtn = document.querySelector('.publish-btn');
+    showToast('🚀 Layout published!', 'success', publishBtn);
     
     // Open viewer page in new tab
     setTimeout(() => {
@@ -1946,11 +2220,20 @@ function captureWidgetState(widget, widgetType, counter) {
     return state;
 }
 
-function showToast(message, type = 'info') {
+function showToast(message, type = 'info', sourceElement = null) {
     const toast = document.createElement('div');
     const bgColor = type === 'success' ? '#00ff88' : type === 'error' ? '#ff4757' : '#00d4ff';
+    
+    let positionStyle = '';
+    if (sourceElement) {
+        const rect = sourceElement.getBoundingClientRect();
+        positionStyle = `position: fixed; top: ${rect.bottom + 10}px; left: ${rect.left}px;`;
+    } else {
+        positionStyle = 'position: fixed; top: 20px; right: 20px;';
+    }
+    
     toast.style.cssText = `
-        position: fixed; top: 20px; right: 20px; background: ${bgColor};
+        ${positionStyle} background: ${bgColor};
         color: white; padding: 15px 20px; border-radius: 8px; z-index: 10000;
         font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         transition: all 0.3s ease;
@@ -1960,7 +2243,7 @@ function showToast(message, type = 'info') {
     
     setTimeout(() => {
         toast.style.opacity = '0';
-        toast.style.transform = 'translateX(100px)';
+        toast.style.transform = sourceElement ? 'translateY(-20px)' : 'translateX(100px)';
         setTimeout(() => toast.remove(), 300);
     }, 3000);
 }

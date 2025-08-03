@@ -92,10 +92,20 @@ function displayLayout(layout) {
     const canvas = document.getElementById('canvas');
     const bg = document.getElementById('bg');
     
-    // Set background
+    // Set background properly 
     if (layout.background) {
+        // Clear any existing background styles
+        bg.style.background = '';
+        bg.style.backgroundImage = '';
+        bg.style.backgroundSize = '';
+        bg.style.backgroundPosition = '';
+        bg.style.backgroundRepeat = '';
+        
         if (layout.background.includes('url(')) {
             bg.style.backgroundImage = layout.background;
+            bg.style.backgroundSize = 'cover';
+            bg.style.backgroundPosition = 'center';
+            bg.style.backgroundRepeat = 'no-repeat';
         } else {
             bg.style.background = layout.background;
         }
@@ -229,16 +239,12 @@ function createViewerWidget(widgetData, counter) {
             break;
     }
 
-    // Create header (read-only, no controls)
-    const header = document.createElement('div');
-    header.className = 'widget-header';
-    header.innerHTML = `<span>${title}</span>`;
+    // No headers in viewer mode - only content
     
     // Widget content
     widget.innerHTML = `<div class="content">${content}</div>`;
     
-    // Append to wrapper
-    wrapper.appendChild(header);
+    // Append only widget to wrapper (no header)
     wrapper.appendChild(widget);
     
     // Add to canvas
