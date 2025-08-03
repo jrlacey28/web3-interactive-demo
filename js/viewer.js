@@ -272,6 +272,22 @@ function restoreWidgetState(widget, state, counter) {
             }
             break;
             
+        case 'video':
+            if (state.videoContent) {
+                const content = document.getElementById(`vidc${counter}`);
+                const uploadSection = widget.querySelector('.video-upload-section');
+                if (content) {
+                    content.innerHTML = state.videoContent;
+                }
+                if (uploadSection) {
+                    uploadSection.style.display = 'none';
+                }
+                if (state.videoLoaded) {
+                    widget.classList.add('video-loaded');
+                }
+            }
+            break;
+            
         case 'crypto':
             if (state.message) {
                 const msgInput = document.getElementById(`msg${counter}`);

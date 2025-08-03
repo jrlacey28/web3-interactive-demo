@@ -400,12 +400,19 @@ body {
 /* Allow interaction with form elements and content */
 .content input, .content button, .content textarea, .content select, .content iframe, .content video {
     user-select: auto;
-    pointer-events: auto;
+    pointer-events: auto !important;
+    -webkit-user-drag: none;
 }
 
 /* Ensure content is interactive */
 .content {
     pointer-events: auto !important;
+}
+
+/* Ensure all interactive elements work */
+.content .input, .content .btn, .content .youtube-load-btn, .content .video-upload-btn {
+    pointer-events: auto !important;
+    user-select: auto;
 }
 
 /* But prevent the content from being draggable */

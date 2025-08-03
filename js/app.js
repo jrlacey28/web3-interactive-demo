@@ -543,10 +543,16 @@ function syncHeaderWidth(wrapper) {
     const widget = wrapper.querySelector('.widget');
     
     if (header && widget) {
-        // Force header to span full wrapper width
-        header.style.left = '0px';
-        header.style.right = '0px';
-        header.style.width = 'auto';
+        // Match header width exactly to widget width (not wrapper)
+        const widgetRect = widget.getBoundingClientRect();
+        const wrapperRect = wrapper.getBoundingClientRect();
+        
+        const widgetWidth = widget.offsetWidth;
+        const leftOffset = widget.offsetLeft || 0;
+        
+        header.style.left = leftOffset + 'px';
+        header.style.width = widgetWidth + 'px';
+        header.style.right = 'auto';
         header.style.boxSizing = 'border-box';
     }
 }
@@ -1341,7 +1347,20 @@ function makeWidgetDraggable(wrapper, header) {
             }
         });
         widget.draggable = false;
-        widget.style.pointerEvents = 'none'; // Block widget body interaction
+        widget.style.pointerEvents = 'none'; // Block widget body interaction except for inputs
+        
+        // Ensure inputs and interactive elements work
+        const inputs = widget.querySelectorAll('input, textarea, button, select');
+        inputs.forEach(input => {
+            input.style.pointerEvents = 'auto';
+            input.style.userSelect = 'auto';
+            input.addEventListener('mousedown', (e) => {
+                e.stopPropagation(); // Prevent dragging when interacting with inputs
+            });
+            input.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent dragging when clicking inputs
+            });
+        });
     }
 
     header.addEventListener('mousedown', function(e) {
@@ -1361,8 +1380,16 @@ function makeWidgetDraggable(wrapper, header) {
         const handleMouseMove = (e) => {
             if (!isDragging) return;
             
-            const newX = startLeft + e.clientX - startX;
-            const newY = startTop + e.clientY - startY;
+            let newX = startLeft + e.clientX - startX;
+            let newY = startTop + e.clientY - startY;
+            
+            // Apply boundary constraints - prevent header from going beyond body boundaries
+            const wrapperRect = wrapper.getBoundingClientRect();
+            const canvasRect = document.getElementById('canvas').getBoundingClientRect();
+            
+            // Ensure widget stays within canvas boundaries
+            newX = Math.max(0, Math.min(newX, canvasRect.width - wrapperRect.width));
+            newY = Math.max(0, Math.min(newY, canvasRect.height - wrapperRect.height));
             
             // Apply position immediately for smooth dragging
             wrapper.style.left = newX + 'px';
@@ -1520,11 +1547,25 @@ function loadVid(id) {
     const fileInput = document.getElementById(`vidFile${id}`);
     const content = document.getElementById(`vidc${id}`);
     const widget = document.getElementById(`w${id.toString().split('vidFile')[0] || id}`);
+    const uploadSection = widget.querySelector('.video-upload-section');
     
     if (fileInput && fileInput.files[0]) {
         const file = fileInput.files[0];
         const url = URL.createObjectURL(file);
-        content.innerHTML = `<video controls><source src="${url}"></video>`;
+        
+        // Create video element with controls and reset button like YouTube widget
+        content.innerHTML = `
+            <video controls style="width: 100%; height: 100%; object-fit: cover;">
+                <source src="${url}" type="${file.type}">
+                Your browser does not support the video tag.
+            </video>
+            <button class="video-overlay" onclick="resetVid(${id})">×</button>
+        `;
+        
+        // Hide upload section and mark as loaded
+        if (uploadSection) {
+            uploadSection.style.display = 'none';
+        }
         widget.classList.add('video-loaded');
     }
 }
@@ -1533,10 +1574,16 @@ function resetVid(id) {
     const widget = document.getElementById(`w${id.toString().split('vid')[0] || id}`);
     const content = document.getElementById(`vidc${id}`);
     const input = document.getElementById(`vidFile${id}`);
+    const uploadSection = widget.querySelector('.video-upload-section');
     
     widget.classList.remove('video-loaded');
     content.innerHTML = '';
     if (input) input.value = '';
+    
+    // Show upload section again
+    if (uploadSection) {
+        uploadSection.style.display = 'block';
+    }
 }
 
 // ========================================
@@ -1799,3 +1846,121 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Saved layout found:', savedLayout);
     }
 });
+
+// ========================================
+// LAYOUT SAVE AND PUBLISH FUNCTIONS
+// ========================================
+
+function saveLayout() {
+    const layout = captureLayoutState();
+    localStorage.setItem('web3DemoLayout', JSON.stringify(layout));
+    showToast('✅ Layout saved!', 'success');
+}
+
+function publishLayout() {
+    const layout = captureLayoutState();
+    localStorage.setItem('web3DemoPublishedLayout', JSON.stringify(layout));
+    showToast('🚀 Layout published!', 'success');
+    
+    // Open viewer page in new tab
+    setTimeout(() => {
+        window.open('viewer.html?layout=demo', '_blank');
+    }, 1000);
+}
+
+function captureLayoutState() {
+    const widgets = [];
+    const wrappers = document.querySelectorAll('.widget-wrapper');
+    
+    wrappers.forEach((wrapper, index) => {
+        const widget = wrapper.querySelector('.widget');
+        const widgetType = widget.dataset.type;
+        
+        const widgetData = {
+            id: wrapper.id,
+            type: widgetType,
+            x: wrapper.style.left,
+            y: wrapper.style.top,
+            width: wrapper.style.width,
+            height: wrapper.style.height,
+            state: captureWidgetState(widget, widgetType, index + 1)
+        };
+        
+        widgets.push(widgetData);
+    });
+    
+    const bgElement = document.getElementById('bg');
+    const background = bgElement.style.background || bgElement.style.backgroundImage;
+    
+    return {
+        widgets: widgets,
+        background: background,
+        timestamp: new Date().toISOString(),
+        creatorName: 'Anonymous Creator'
+    };
+}
+
+function captureWidgetState(widget, widgetType, counter) {
+    const state = {};
+    
+    switch(widgetType) {
+        case 'youtube':
+            const ytInput = document.getElementById(`yt${counter}`);
+            const ytContent = document.getElementById(`ytc${counter}`);
+            if (ytInput && ytInput.value) {
+                state.youtubeUrl = ytInput.value;
+                state.youtubeContent = ytContent ? ytContent.innerHTML : '';
+                state.videoLoaded = widget.classList.contains('video-loaded');
+            }
+            break;
+            
+        case 'video':
+            const vidContent = document.getElementById(`vidc${counter}`);
+            if (vidContent && vidContent.innerHTML.trim()) {
+                state.videoContent = vidContent.innerHTML;
+                state.videoLoaded = widget.classList.contains('video-loaded');
+            }
+            break;
+            
+        case 'crypto':
+            const msgInput = document.getElementById(`msg${counter}`);
+            const amtInput = document.getElementById(`amt${counter}`);
+            const result = document.getElementById(`result${counter}`);
+            
+            if (msgInput && msgInput.value) state.message = msgInput.value;
+            if (amtInput && amtInput.value) state.amount = amtInput.value;
+            if (result && result.innerHTML) state.result = result.innerHTML;
+            break;
+            
+        case 'twitter':
+            const userInput = document.getElementById(`user${counter}`);
+            const feed = document.getElementById(`feed${counter}`);
+            
+            if (userInput && userInput.value) state.username = userInput.value;
+            if (feed && feed.innerHTML !== 'Enter a username and click "Load Real Feed"') {
+                state.feedContent = feed.innerHTML;
+            }
+            break;
+    }
+    
+    return state;
+}
+
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    const bgColor = type === 'success' ? '#00ff88' : type === 'error' ? '#ff4757' : '#00d4ff';
+    toast.style.cssText = `
+        position: fixed; top: 20px; right: 20px; background: ${bgColor};
+        color: white; padding: 15px 20px; border-radius: 8px; z-index: 10000;
+        font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        transition: all 0.3s ease;
+    `;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100px)';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
