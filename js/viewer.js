@@ -144,7 +144,7 @@ function createViewerWidget(widgetData, counter) {
     
     // Create widget
     const widget = document.createElement('div');
-    widget.className = 'widget';
+    widget.className = 'widget clean-mode'; // Auto-enable clean mode for viewer
     widget.id = `w${counter}`;
     widget.dataset.type = widgetData.type;
     widget.style.width = '100%';
@@ -157,7 +157,7 @@ function createViewerWidget(widgetData, counter) {
         case 'youtube':
             title = 'YouTube';
             content = `
-                <div class="upload-section">
+                <div class="upload-section" style="display: none;">
                     <input class="input" id="yt${counter}" placeholder="Enter YouTube URL" readonly>
                     <button class="youtube-load-btn" onclick="loadYT(${counter})">Load Video</button>
                 </div>
@@ -168,7 +168,7 @@ function createViewerWidget(widgetData, counter) {
         case 'video':
             title = 'Video Upload';
             content = `
-                <div class="video-upload-section">
+                <div class="video-upload-section" style="display: none;">
                     <div class="file-upload centered-upload">
                         <p style="color: rgba(255,255,255,0.7); text-align: center; padding: 20px;">
                             Video upload disabled in viewer mode
@@ -255,7 +255,7 @@ function createViewerWidget(widgetData, counter) {
         restoreWidgetState(widget, widgetData.state, counter);
     }
     if (widgetData.customization) {
-        applyCustomization(widget.id, widgetData.customization);
+        applyCustomization(widget, widgetData.customization);
     }
 }
 
@@ -269,11 +269,22 @@ function restoreWidgetState(widget, state, counter) {
                 const input = document.getElementById(`yt${counter}`);
                 const content = document.getElementById(`ytc${counter}`);
                 if (input) input.value = state.youtubeUrl;
-                if (content && state.youtubeContent) {
-                    content.innerHTML = state.youtubeContent;
-                }
-                if (state.videoLoaded) {
-                    widget.classList.add('video-loaded');
+                if (content) {
+                    // Extract video ID and create iframe directly
+                    const url = state.youtubeUrl;
+                    let videoId = '';
+                    if (url.includes('youtube.com/watch?v=')) {
+                        videoId = url.split('v=')[1].split('&')[0];
+                    } else if (url.includes('youtu.be/')) {
+                        videoId = url.split('youtu.be/')[1].split('?')[0];
+                    } else if (url.includes('youtube.com/embed/')) {
+                        videoId = url.split('embed/')[1].split('?')[0];
+                    }
+                    
+                    if (videoId) {
+                        content.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}" allowfullscreen style="border:none; border-radius:8px;"></iframe>`;
+                        widget.classList.add('video-loaded');
+                    }
                 }
             }
             break;
@@ -283,14 +294,14 @@ function restoreWidgetState(widget, state, counter) {
                 const content = document.getElementById(`vidc${counter}`);
                 const uploadSection = widget.querySelector('.video-upload-section');
                 if (content) {
-                    content.innerHTML = state.videoContent;
+                    // Clean up the video content to remove any overlay buttons
+                    let cleanVideoContent = state.videoContent.replace(/<button[^>]*class="video-overlay"[^>]*>.*?<\/button>/g, '');
+                    content.innerHTML = cleanVideoContent;
                 }
                 if (uploadSection) {
                     uploadSection.style.display = 'none';
                 }
-                if (state.videoLoaded) {
-                    widget.classList.add('video-loaded');
-                }
+                widget.classList.add('video-loaded');
             }
             break;
             
@@ -319,6 +330,62 @@ function restoreWidgetState(widget, state, counter) {
                 if (feed) feed.innerHTML = state.feedContent;
             }
             break;
+    }
+}
+
+// Function to apply customization styles in viewer
+function applyCustomization(widget, customization) {
+    if (!customization) return;
+    
+    // Apply widget background and transparency
+    if (customization.opacity !== undefined) {
+        const opacity = customization.opacity;
+        const bgColor = customization.bgColor || '#000000';
+        const borderColor = customization.borderColor || '#00d4ff';
+        
+        widget.style.background = `${bgColor}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`;
+        widget.style.borderColor = borderColor;
+        
+        // Add blur effect based on transparency
+        const blurAmount = (1 - opacity) * 8;
+        widget.style.backdropFilter = `blur(${blurAmount}px)`;
+        widget.style.webkitBackdropFilter = `blur(${blurAmount}px)`;
+    }
+    
+    // Apply button customizations
+    if (customization.buttonColor || customization.buttonTextColor) {
+        const buttonColor = customization.buttonColor || '#00d4ff';
+        const textColor = customization.buttonTextColor || '#ffffff';
+        
+        widget.querySelectorAll('.btn, .tip-btn, .send, .twitter-load-btn, .youtube-load-btn').forEach(btn => {
+            btn.style.background = `linear-gradient(135deg, ${buttonColor}, ${buttonColor}dd)`;
+            btn.style.color = textColor;
+        });
+    }
+    
+    // Apply shape customizations
+    if (customization.shapeColor || customization.shapeSize) {
+        const shapeColor = customization.shapeColor || '#00d4ff';
+        const shapeSize = customization.shapeSize || 80;
+        
+        const shape = widget.querySelector('.shape');
+        if (shape) {
+            if (shape.classList.contains('square-shape')) {
+                shape.style.width = shapeSize + 'px';
+                shape.style.height = shapeSize + 'px';
+                shape.style.background = shapeColor;
+            } else if (shape.classList.contains('circle-shape')) {
+                shape.style.width = shapeSize + 'px';
+                shape.style.height = shapeSize + 'px';
+                shape.style.background = shapeColor;
+            } else if (shape.classList.contains('triangle-shape')) {
+                const halfSize = shapeSize / 2;
+                shape.style.borderLeftWidth = halfSize + 'px';
+                shape.style.borderRightWidth = halfSize + 'px';
+                shape.style.borderBottomWidth = shapeSize + 'px';
+                shape.style.borderBottomColor = shapeColor;
+            }
+        }
     }
 }
 

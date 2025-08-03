@@ -449,69 +449,73 @@ function storeWidgetPositions() {
     });
 }
 
-// Enhanced window resize handler
+// Enhanced window resize handler with collision detection
 window.addEventListener('resize', function() {
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
+    const MIN_SPACING = 20;
     
     document.querySelectorAll('.widget-wrapper').forEach(wrapper => {
         const storedPos = originalPositions.get(wrapper.id);
         
         if (storedPos) {
             // Calculate new positions based on stored percentages
-            const newLeft = Math.max(0, Math.min(
+            let newLeft = Math.max(0, Math.min(
                 (storedPos.leftPercent / 100) * viewportWidth,
                 viewportWidth - 200 // Minimum space on right
             ));
-            const newTop = Math.max(0, Math.min(
+            let newTop = Math.max(0, Math.min(
                 (storedPos.topPercent / 100) * viewportHeight,
                 viewportHeight - 150 // Minimum space on bottom
             ));
-            
-            wrapper.style.left = newLeft + 'px';
-            wrapper.style.top = newTop + 'px';
             
             // Scale widget size proportionally but maintain aspect ratios
             const widget = wrapper.querySelector('.widget');
             const widgetType = widget.dataset.type;
             
+            let newWidth, newHeight;
+            
             if (widgetType === 'youtube' || widgetType === 'video') {
                 // For video widgets, maintain 16:9 aspect ratio
-                const newWidth = Math.max(320, Math.min(
+                newWidth = Math.max(320, Math.min(
                     (storedPos.widthPercent / 100) * viewportWidth,
-                    viewportWidth - newLeft - 20
+                    viewportWidth - newLeft - MIN_SPACING
                 ));
-                const newHeight = (newWidth / 16) * 9; // Maintain 16:9
-                
-                wrapper.style.width = newWidth + 'px';
-                wrapper.style.height = newHeight + 'px';
-                widget.style.width = newWidth + 'px';
-                widget.style.height = newHeight + 'px';
+                newHeight = (newWidth / 16) * 9; // Maintain 16:9
             } else {
                 // For other widgets, scale proportionally
-                const newWidth = Math.max(250, Math.min(
+                newWidth = Math.max(250, Math.min(
                     (storedPos.widthPercent / 100) * viewportWidth,
-                    viewportWidth - newLeft - 20
+                    viewportWidth - newLeft - MIN_SPACING
                 ));
-                const newHeight = Math.max(150, Math.min(
+                newHeight = Math.max(150, Math.min(
                     (storedPos.heightPercent / 100) * viewportHeight,
-                    viewportHeight - newTop - 20
+                    viewportHeight - newTop - MIN_SPACING
                 ));
-                
-                wrapper.style.width = newWidth + 'px';
-                wrapper.style.height = newHeight + 'px';
-                widget.style.width = newWidth + 'px';
-                widget.style.height = newHeight + 'px';
             }
+            
+            // Check for collisions and adjust size/position if necessary
+            const constrainedSize = checkWidgetCollisions(wrapper, newLeft, newTop, newWidth, newHeight, MIN_SPACING);
+            newWidth = constrainedSize.width;
+            newHeight = constrainedSize.height;
+            
+            // Apply final positions and sizes
+            wrapper.style.left = newLeft + 'px';
+            wrapper.style.top = newTop + 'px';
+            wrapper.style.width = newWidth + 'px';
+            wrapper.style.height = newHeight + 'px';
+            widget.style.width = newWidth + 'px';
+            widget.style.height = newHeight + 'px';
+            
         } else {
             // Fallback for widgets without stored positions
             const rect = wrapper.getBoundingClientRect();
             
             if (rect.right > viewportWidth) {
-                wrapper.style.left = Math.max(0, viewportWidth - rect.width - 20) + 'px';
+                wrapper.style.left = Math.max(0, viewportWidth - rect.width - MIN_SPACING) + 'px';
             }
             if (rect.bottom > viewportHeight) {
-                wrapper.style.top = Math.max(0, viewportHeight - rect.height - 20) + 'px';
+                wrapper.style.top = Math.max(0, viewportHeight - rect.height - MIN_SPACING) + 'px';
             }
         }
     });
@@ -1198,6 +1202,73 @@ function createWidget(type, x, y) {
     }, 100);
 }
 
+// Function to check for widget collisions and maintain spacing during resize
+function checkWidgetCollisions(currentWrapper, x, y, width, height, minSpacing) {
+    const otherWidgets = [];
+    
+    // Get all other widgets
+    document.querySelectorAll('.widget-wrapper').forEach(wrapper => {
+        if (wrapper === currentWrapper) return;
+        
+        const rect = wrapper.getBoundingClientRect();
+        const wrapperLeft = parseInt(wrapper.style.left) || 0;
+        const wrapperTop = parseInt(wrapper.style.top) || 0;
+        
+        otherWidgets.push({
+            left: wrapperLeft,
+            top: wrapperTop,
+            right: wrapperLeft + rect.width,
+            bottom: wrapperTop + rect.height,
+            width: rect.width,
+            height: rect.height
+        });
+    });
+    
+    let constrainedWidth = width;
+    let constrainedHeight = height;
+    
+    // Check potential collisions with proposed size
+    const proposedRight = x + width;
+    const proposedBottom = y + height;
+    
+    otherWidgets.forEach(other => {
+        // Check if widgets would overlap or be too close
+        const horizontalOverlap = !(proposedRight + minSpacing <= other.left || x >= other.right + minSpacing);
+        const verticalOverlap = !(proposedBottom + minSpacing <= other.top || y >= other.bottom + minSpacing);
+        
+        if (horizontalOverlap && verticalOverlap) {
+            // Calculate maximum allowed size to maintain spacing
+            
+            // Width constraint
+            if (x < other.left) {
+                // Current widget is to the left, constrain width
+                const maxAllowedWidth = other.left - x - minSpacing;
+                if (maxAllowedWidth > 0 && maxAllowedWidth < constrainedWidth) {
+                    constrainedWidth = maxAllowedWidth;
+                }
+            }
+            
+            // Height constraint
+            if (y < other.top) {
+                // Current widget is above, constrain height
+                const maxAllowedHeight = other.top - y - minSpacing;
+                if (maxAllowedHeight > 0 && maxAllowedHeight < constrainedHeight) {
+                    constrainedHeight = maxAllowedHeight;
+                }
+            }
+        }
+    });
+    
+    // Ensure minimum sizes are maintained
+    constrainedWidth = Math.max(constrainedWidth, 200);
+    constrainedHeight = Math.max(constrainedHeight, 150);
+    
+    return {
+        width: constrainedWidth,
+        height: constrainedHeight
+    };
+}
+
 // Resize snapping functionality with 16:9 aspect ratio enforcement
 function enableResizeSnap(wrapper) {
     const widget = wrapper.querySelector('.widget');
@@ -1278,6 +1349,12 @@ function enableResizeSnap(wrapper) {
                     newWidth = Math.max(250, Math.min(startWidth + deltaX, maxWidth));
                     newHeight = Math.max(150, Math.min(startHeight + deltaY, maxHeight));
                 }
+                
+                // Check for collisions with other widgets and maintain spacing
+                const MIN_SPACING = 20;
+                const constrainedSize = checkWidgetCollisions(wrapper, wrapperLeft, wrapperTop, newWidth, newHeight, MIN_SPACING);
+                newWidth = constrainedSize.width;
+                newHeight = constrainedSize.height;
                 
                 wrapper.style.width = newWidth + 'px';
                 wrapper.style.height = newHeight + 'px';
@@ -1870,70 +1947,106 @@ function updateLayerList() {
         
         const layerItem = document.createElement('div');
         layerItem.className = 'layer-item';
+        layerItem.draggable = true;
+        layerItem.dataset.wrapperId = wrapper.id;
+        layerItem.dataset.currentIndex = index;
+        
         layerItem.innerHTML = `
+            <div class="layer-drag-handle">
+                <span class="hamburger-icon">☰</span>
+            </div>
             <div class="layer-info">
                 <span class="layer-type">${widgetType.charAt(0).toUpperCase() + widgetType.slice(1)}</span>
                 <span class="layer-z">Z: ${zIndex}</span>
             </div>
-            <div class="layer-controls">
-                <button onclick="moveLayerUp('${wrapper.id}')" title="Move Up">↑</button>
-                <button onclick="moveLayerDown('${wrapper.id}')" title="Move Down">↓</button>
-                <button onclick="bringToFront('${wrapper.id}')" title="Bring to Front">⬆</button>
-                <button onclick="sendToBack('${wrapper.id}')" title="Send to Back">⬇</button>
+            <div class="layer-actions">
+                <button onclick="highlightWidget('${wrapper.id}')" title="Select Widget">👁️</button>
             </div>
         `;
         
         layerItem.style.cssText = `
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            gap: 12px;
             padding: 8px 12px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            cursor: pointer;
+            cursor: grab;
+            transition: background-color 0.2s ease;
         `;
         
-        layerItem.addEventListener('click', () => {
-            highlightWidget(wrapper.id);
-        });
+        // Add drag and drop event listeners
+        layerItem.addEventListener('dragstart', handleLayerDragStart);
+        layerItem.addEventListener('dragover', handleLayerDragOver);
+        layerItem.addEventListener('drop', handleLayerDrop);
+        layerItem.addEventListener('dragend', handleLayerDragEnd);
         
         layerList.appendChild(layerItem);
     });
 }
 
-function moveLayerUp(wrapperId) {
-    const wrapper = document.getElementById(wrapperId);
-    if (!wrapper) return;
-    
-    const currentZ = parseInt(wrapper.style.zIndex) || 1000;
-    wrapper.style.zIndex = currentZ + 1;
-    updateLayerList();
+// Drag and drop handlers for layer management
+let draggedLayerItem = null;
+
+function handleLayerDragStart(e) {
+    draggedLayerItem = e.target;
+    e.target.style.opacity = '0.5';
+    e.target.style.cursor = 'grabbing';
+    e.dataTransfer.effectAllowed = 'move';
 }
 
-function moveLayerDown(wrapperId) {
-    const wrapper = document.getElementById(wrapperId);
-    if (!wrapper) return;
+function handleLayerDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
     
-    const currentZ = parseInt(wrapper.style.zIndex) || 1000;
-    wrapper.style.zIndex = Math.max(1, currentZ - 1);
-    updateLayerList();
+    // Add visual feedback
+    const targetItem = e.target.closest('.layer-item');
+    if (targetItem && targetItem !== draggedLayerItem) {
+        targetItem.style.backgroundColor = 'rgba(0, 212, 255, 0.2)';
+    }
 }
 
-function bringToFront(wrapperId) {
-    const wrapper = document.getElementById(wrapperId);
-    if (!wrapper) return;
+function handleLayerDrop(e) {
+    e.preventDefault();
     
-    currentZIndex += 1;
-    wrapper.style.zIndex = currentZIndex;
-    updateLayerList();
+    const targetItem = e.target.closest('.layer-item');
+    if (targetItem && targetItem !== draggedLayerItem) {
+        const draggedWrapperId = draggedLayerItem.dataset.wrapperId;
+        const targetWrapperId = targetItem.dataset.wrapperId;
+        
+        const draggedWrapper = document.getElementById(draggedWrapperId);
+        const targetWrapper = document.getElementById(targetWrapperId);
+        
+        if (draggedWrapper && targetWrapper) {
+            // Swap z-indices
+            const draggedZ = parseInt(draggedWrapper.style.zIndex) || 1000;
+            const targetZ = parseInt(targetWrapper.style.zIndex) || 1000;
+            
+            draggedWrapper.style.zIndex = targetZ;
+            targetWrapper.style.zIndex = draggedZ;
+            
+            // Update the layer list to reflect changes
+            updateLayerList();
+        }
+    }
+    
+    // Reset visual feedback
+    document.querySelectorAll('.layer-item').forEach(item => {
+        item.style.backgroundColor = '';
+    });
 }
 
-function sendToBack(wrapperId) {
-    const wrapper = document.getElementById(wrapperId);
-    if (!wrapper) return;
+function handleLayerDragEnd(e) {
+    e.target.style.opacity = '1';
+    e.target.style.cursor = 'grab';
+    draggedLayerItem = null;
     
-    wrapper.style.zIndex = 1;
-    updateLayerList();
+    // Reset visual feedback
+    document.querySelectorAll('.layer-item').forEach(item => {
+        item.style.backgroundColor = '';
+    });
 }
+
+// Legacy layer management functions removed - now using drag and drop system
 
 function highlightWidget(wrapperId) {
     // Remove previous highlights
@@ -2126,20 +2239,135 @@ document.addEventListener('DOMContentLoaded', function() {
 function saveLayout() {
     const layout = captureLayoutState();
     localStorage.setItem('web3DemoLayout', JSON.stringify(layout));
+    
+    // Change save button to green "saved" state
     const saveBtn = document.querySelector('.save-btn');
+    const originalText = saveBtn.textContent;
+    const originalBackground = saveBtn.style.background;
+    
+    saveBtn.textContent = '✅ Saved';
+    saveBtn.style.background = 'linear-gradient(135deg, #00ff88, #00cc6a)';
+    saveBtn.classList.add('saved-state');
+    
+    // Reset button when layout is edited again
+    markLayoutAsUnsaved();
+    
     showToast('✅ Layout saved!', 'success', saveBtn);
 }
 
-function publishLayout() {
-    const layout = captureLayoutState();
-    localStorage.setItem('web3DemoPublishedLayout', JSON.stringify(layout));
-    const publishBtn = document.querySelector('.publish-btn');
-    showToast('🚀 Layout published!', 'success', publishBtn);
+// Function to mark layout as unsaved and reset save button
+function markLayoutAsUnsaved() {
+    // Reset save button when any changes are made
+    const saveBtn = document.querySelector('.save-btn');
     
-    // Open viewer page in new tab
+    // Set up listeners to detect changes (only once)
+    if (!saveBtn.hasAttribute('data-listeners-set')) {
+        saveBtn.setAttribute('data-listeners-set', 'true');
+        
+        // Listen for widget modifications
+        const resetSaveButton = () => {
+            if (saveBtn.classList.contains('saved-state')) {
+                saveBtn.textContent = '💾 Save Layout';
+                saveBtn.style.background = 'linear-gradient(135deg, #00d4ff, #0099cc)';
+                saveBtn.classList.remove('saved-state');
+            }
+        };
+        
+        // Detect when widgets are moved, resized, or modified
+        document.addEventListener('mouseup', (e) => {
+            // Only reset if it was a meaningful interaction with widgets
+            if (e.target.closest('.widget-wrapper') || e.target.closest('.widget')) {
+                setTimeout(resetSaveButton, 100);
+            }
+        });
+        
+        // Detect when widgets are added or removed
+        const observer = new MutationObserver((mutations) => {
+            let shouldReset = false;
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'childList' && 
+                    (mutation.target.id === 'canvas' || mutation.target.closest('#canvas'))) {
+                    shouldReset = true;
+                }
+            });
+            if (shouldReset) {
+                resetSaveButton();
+            }
+        });
+        
+        observer.observe(document.getElementById('canvas'), {
+            childList: true,
+            subtree: true
+        });
+        
+        // Reset when style panels are used
+        document.addEventListener('input', (e) => {
+            if (e.target.closest('#external-style-panel')) {
+                resetSaveButton();
+            }
+        });
+        
+        // Reset when background is changed
+        document.addEventListener('change', (e) => {
+            if (e.target.id === 'bgFile' || e.target.id === 'bgUrl' || e.target.closest('.presets')) {
+                setTimeout(resetSaveButton, 100);
+            }
+        });
+    }
+}
+
+function publishLayout() {
+    // Get current layout
+    const widgets = [];
+    document.querySelectorAll('.widget-wrapper').forEach(wrapper => {
+        const widget = wrapper.querySelector('.widget');
+        const widgetData = {
+            id: wrapper.id,
+            type: widget.dataset.type,
+            x: wrapper.style.left,
+            y: wrapper.style.top,
+            width: wrapper.style.width,
+            height: wrapper.style.height,
+            state: captureWidgetState(widget, widget.dataset.type, Array.from(document.querySelectorAll('.widget-wrapper')).indexOf(wrapper) + 1),
+            customization: captureWidgetCustomization(widget)
+        };
+        widgets.push(widgetData);
+    });
+    
+    // Generate unique layout ID
+    const layoutId = 'layout_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    
+    const layout = {
+        id: layoutId,
+        widgets: widgets,
+        background: document.getElementById('bg').style.backgroundImage || 
+                   document.getElementById('bg').style.background,
+        timestamp: new Date().toISOString(),
+        published: true,
+        creatorName: 'Anonymous Creator'
+    };
+    
+    // Save as published layout
+    localStorage.setItem('web3DemoPublishedLayout', JSON.stringify(layout));
+    localStorage.setItem(layoutId, JSON.stringify(layout));
+    
+    // Generate shareable URL
+    const baseUrl = window.location.origin + window.location.pathname.replace('creator.html', '');
+    const shareableUrl = `${baseUrl}viewer.html?layout=${layoutId}`;
+    
+    // Show success modal with shareable link
+    showPublishSuccessModal(shareableUrl);
+    
+    // Update button temporarily
+    const btn = document.querySelector('.publish-btn');
+    const originalText = btn.textContent;
+    const originalBackground = btn.style.background;
+    btn.textContent = '✅ Published!';
+    btn.style.background = 'linear-gradient(135deg, #00ff88, #00cc6a)';
     setTimeout(() => {
-        window.open('viewer.html?layout=demo', '_blank');
-    }, 1000);
+        btn.textContent = originalText;
+        btn.style.background = originalBackground;
+    }, 3000);
 }
 
 function captureLayoutState() {
@@ -2157,7 +2385,8 @@ function captureLayoutState() {
             y: wrapper.style.top,
             width: wrapper.style.width,
             height: wrapper.style.height,
-            state: captureWidgetState(widget, widgetType, index + 1)
+            state: captureWidgetState(widget, widgetType, index + 1),
+            customization: captureWidgetCustomization(widget)
         };
         
         widgets.push(widgetData);
@@ -2218,6 +2447,55 @@ function captureWidgetState(widget, widgetType, counter) {
     }
     
     return state;
+}
+
+// Function to capture widget customization settings
+function captureWidgetCustomization(widget) {
+    const customization = {};
+    
+    // Extract current applied styles
+    const computedStyle = window.getComputedStyle(widget);
+    
+    // Capture background color and opacity
+    if (widget.style.background) {
+        const bgMatch = widget.style.background.match(/#([a-fA-F0-9]{6})([a-fA-F0-9]{2})?/);
+        if (bgMatch) {
+            customization.bgColor = '#' + bgMatch[1];
+            if (bgMatch[2]) {
+                customization.opacity = parseInt(bgMatch[2], 16) / 255;
+            }
+        }
+    }
+    
+    // Capture border color
+    if (widget.style.borderColor) {
+        customization.borderColor = widget.style.borderColor;
+    }
+    
+    // Capture button colors
+    const firstButton = widget.querySelector('.btn, .tip-btn, .send, .twitter-load-btn, .youtube-load-btn');
+    if (firstButton && firstButton.style.background) {
+        const btnBgMatch = firstButton.style.background.match(/#([a-fA-F0-9]{6})/);
+        if (btnBgMatch) {
+            customization.buttonColor = '#' + btnBgMatch[1];
+        }
+        if (firstButton.style.color) {
+            customization.buttonTextColor = firstButton.style.color;
+        }
+    }
+    
+    // Capture shape customizations
+    const shape = widget.querySelector('.shape');
+    if (shape) {
+        if (shape.style.background) {
+            customization.shapeColor = shape.style.background;
+        }
+        if (shape.style.width) {
+            customization.shapeSize = parseInt(shape.style.width);
+        }
+    }
+    
+    return Object.keys(customization).length > 0 ? customization : null;
 }
 
 function showToast(message, type = 'info', sourceElement = null) {

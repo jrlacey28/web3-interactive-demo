@@ -127,31 +127,36 @@ body {
     transform: translateX(-20px);
 }
 
-/* Snap toggle button */
+/* Snap toggle button - Updated for consistency */
 .snap-toggle {
     position: fixed;
     top: 80px;
     left: 20px;
-    background: rgba(0, 212, 255, 0.2);
+    background: rgba(0, 212, 255, 0.9);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(0, 212, 255, 0.3);
-    color: #00d4ff;
-    padding: 12px 16px;
-    border-radius: 12px;
+    border: none;
+    color: white;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
     cursor: pointer;
     z-index: 1001;
-    font-size: 16px;
+    font-size: 20px;
     transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .snap-toggle:hover {
-    transform: translateY(-2px);
+    background: rgba(0, 212, 255, 1);
+    transform: scale(1.1);
 }
 
 .snap-toggle.disabled {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.3);
-    color: white;
+    background: rgba(150, 150, 150, 0.7);
+    color: #999;
 }
 
 .wallet-btn { 
@@ -201,6 +206,16 @@ body {
 .save-btn:hover { 
     transform: translateY(-2px); 
     box-shadow: 0 5px 15px rgba(0,212,255,0.4); 
+}
+
+.save-btn.saved-state {
+    background: linear-gradient(135deg, #00ff88, #00cc6a) !important;
+    box-shadow: 0 4px 12px rgba(0, 255, 136, 0.3);
+}
+
+.save-btn.saved-state:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 255, 136, 0.4);
 }
 
 .publish-btn { 
@@ -516,54 +531,71 @@ body {
     height: 100%;
 }
 
-/* Crypto Tip Buttons */
+/* Crypto Tip Buttons - Responsive to widget size */
 .tip-grid { 
     display: grid; 
     grid-template-columns: repeat(3, 1fr); 
-    gap: 10px; 
-    margin: 15px 0; 
+    gap: 3%; 
+    margin: 8% 0; 
+    height: 25%;
 }
 
 .tip-btn {
     background: #fff;
     color: #000;
     border: none;
-    padding: 12px;
+    padding: 0;
     border-radius: 8px;
     cursor: pointer;
     font-weight: bold;
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    transition: background 0.2s, color 0.2s;
+    transition: background 0.2s, color 0.2s, transform 0.2s;
+    font-size: calc(0.8em + 0.5vw);
+    min-height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 3/2;
 }
 
 .tip-btn:hover {
     background: #f0f0f0;
     color: #000;
+    transform: scale(1.05);
 }
 
 .custom-tip { 
     display: flex; 
-    gap: 10px; 
-    margin-top: 10px; 
+    gap: 3%; 
+    margin-top: 5%; 
+    height: 20%;
 }
 
 .amount { 
-    flex: 1; 
-    padding: 10px; 
+    flex: 2; 
+    padding: 2%;
     border: 2px solid #fefefe; 
     border-radius: 8px; 
     background: rgba(255,255,255,0.1); 
     color: white; 
+    font-size: calc(0.8em + 0.3vw);
+    min-height: 35px;
 }
 
 .send { 
     background: linear-gradient(135deg, #00ff88, #00cc6a); 
     color: white; 
     border: none; 
-    padding: 10px 20px; 
+    padding: 0 4%;
     border-radius: 8px; 
     cursor: pointer; 
     font-weight: bold; 
+    flex: 1;
+    font-size: calc(0.8em + 0.3vw);
+    min-height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Social Widgets */
@@ -1053,14 +1085,17 @@ iframe, video {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     transition: all 0.3s ease;
     backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .snap-toggle {
-    top: 60px;
+    top: 80px; /* Align with the existing pattern */
 }
 
 .layer-toggle {
-    top: 120px;
+    top: 140px; /* Proper spacing from snap toggle */
 }
 
 .snap-toggle:hover, .layer-toggle:hover {
@@ -1101,6 +1136,7 @@ iframe, video {
     display: flex;
     flex-direction: column;
     gap: 4px;
+    flex: 1;
 }
 
 .layer-panel .layer-type {
@@ -1113,12 +1149,53 @@ iframe, video {
     color: #aaa;
 }
 
-.layer-panel .layer-controls {
+/* Draggable Layer Items */
+.layer-panel .layer-item {
+    user-select: none;
+    border-radius: 4px;
+    margin: 2px 0;
+}
+
+.layer-panel .layer-item:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.layer-panel .layer-item.dragging {
+    background: rgba(0, 212, 255, 0.3) !important;
+    transform: rotate(2deg);
+}
+
+.layer-panel .layer-drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    cursor: grab;
+    transition: all 0.2s ease;
+}
+
+.layer-panel .layer-drag-handle:hover {
+    color: #00d4ff;
+    transform: scale(1.2);
+}
+
+.layer-panel .layer-drag-handle:active {
+    cursor: grabbing;
+}
+
+.layer-panel .hamburger-icon {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+    transition: color 0.2s ease;
+}
+
+.layer-panel .layer-actions {
     display: flex;
     gap: 4px;
 }
 
-.layer-panel .layer-controls button {
+.layer-panel .layer-actions button {
     background: rgba(0, 212, 255, 0.2);
     border: 1px solid rgba(0, 212, 255, 0.4);
     color: white;
@@ -1127,10 +1204,18 @@ iframe, video {
     cursor: pointer;
     font-size: 12px;
     transition: all 0.2s ease;
+    min-width: 30px;
 }
 
-.layer-panel .layer-controls button:hover {
+.layer-panel .layer-actions button:hover {
     background: rgba(0, 212, 255, 0.4);
+    transform: scale(1.05);
+}
+
+/* Drop zone feedback */
+.layer-panel .layer-item.drop-zone {
+    background: rgba(0, 212, 255, 0.2) !important;
+    border: 2px dashed rgba(0, 212, 255, 0.5);
 }
 
 /* Shape Widgets */
