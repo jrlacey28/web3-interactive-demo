@@ -182,18 +182,23 @@ function createViewerWidget(widgetData, counter) {
         case 'crypto':
             title = 'Tips';
             content = `
-                <div class="crypto-content">
-                    <div class="tip-grid">
-                        <button class="tip-btn" onclick="tip(1,${counter})">$1</button>
-                        <button class="tip-btn" onclick="tip(5,${counter})">$5</button>
-                        <button class="tip-btn" onclick="tip(10,${counter})">$10</button>
+                <div class="simple-tip-widget">
+                    <div class="tip-header">
+                        <h3>Send a Tip</h3>
                     </div>
-                    <div class="custom-tip">
-                        <input class="amount" id="amt${counter}" placeholder="Custom amount">
-                        <button class="send" onclick="customTip(${counter})">Send</button>
+                    <div class="tip-amounts">
+                        <button class="tip-amount-btn" onclick="selectTip(1, ${counter})" data-amount="1">$1</button>
+                        <button class="tip-amount-btn" onclick="selectTip(5, ${counter})" data-amount="5">$5</button>
+                        <button class="tip-amount-btn" onclick="selectTip(10, ${counter})" data-amount="10">$10</button>
                     </div>
-                    <input class="input" id="msg${counter}" placeholder="Add a message (optional)" style="margin-top:10px; margin-bottom:0;">
-                    <div id="result${counter}" style="margin-top:10px; min-height:0;"></div>
+                    <div class="tip-message">
+                        <textarea id="tipMsg${counter}" placeholder="Leave a message (optional)" maxlength="100"></textarea>
+                        <div class="char-count"><span id="charCount${counter}">0</span>/100</div>
+                    </div>
+                    <button class="send-tip-btn" id="sendBtn${counter}" onclick="sendTip(${counter})" disabled>
+                        Send Tip
+                    </button>
+                    <div class="tip-result" id="tipResult${counter}"></div>
                 </div>
             `;
             break;
@@ -421,7 +426,102 @@ async function initializeWalletForViewer() {
     }
 }
 
-// Tip functions (same as creator but viewer-focused)
+// ========================================
+// NEW SIMPLE TIP FUNCTIONS FOR VIEWER
+// ========================================
+
+let selectedTipAmounts = {}; // Store selected amounts per widget
+
+function selectTip(amount, widgetId) {
+    // Store selected amount
+    selectedTipAmounts[widgetId] = amount;
+    
+    // Update button states
+    const widget = document.getElementById(`w${widgetId}`);
+    const buttons = widget.querySelectorAll('.tip-amount-btn');
+    buttons.forEach(btn => {
+        btn.classList.remove('selected');
+        if (btn.dataset.amount == amount) {
+            btn.classList.add('selected');
+        }
+    });
+    
+    // Enable send button
+    const sendBtn = document.getElementById(`sendBtn${widgetId}`);
+    sendBtn.disabled = false;
+}
+
+function sendTip(widgetId) {
+    const amount = selectedTipAmounts[widgetId];
+    const message = document.getElementById(`tipMsg${widgetId}`).value.trim();
+    const resultDiv = document.getElementById(`tipResult${widgetId}`);
+    
+    if (!amount) {
+        resultDiv.innerHTML = 'Please select a tip amount';
+        resultDiv.className = 'tip-result error';
+        return;
+    }
+    
+    // Simulate tip processing with wallet connection
+    const sendBtn = document.getElementById(`sendBtn${widgetId}`);
+    sendBtn.disabled = true;
+    sendBtn.textContent = 'Sending...';
+    
+    // Check wallet connection
+    if (typeof window.ethereum !== 'undefined') {
+        window.ethereum.request({ method: 'eth_requestAccounts' })
+            .then(() => {
+                setTimeout(() => {
+                    resultDiv.innerHTML = `Thank you for your $${amount} tip!${message ? `<br><em>"${message}"</em>` : ''}`;
+                    resultDiv.className = 'tip-result success';
+                    
+                    // Show success animation
+                    showTipSuccess(amount);
+                    
+                    // Reset form
+                    setTimeout(() => {
+                        const buttons = document.getElementById(`w${widgetId}`).querySelectorAll('.tip-amount-btn');
+                        buttons.forEach(btn => btn.classList.remove('selected'));
+                        document.getElementById(`tipMsg${widgetId}`).value = '';
+                        document.getElementById(`charCount${widgetId}`).textContent = '0';
+                        sendBtn.disabled = true;
+                        sendBtn.textContent = 'Send Tip';
+                        selectedTipAmounts[widgetId] = null;
+                        
+                        // Clear result after a few seconds
+                        setTimeout(() => {
+                            resultDiv.innerHTML = '';
+                            resultDiv.className = 'tip-result';
+                        }, 5000);
+                    }, 2000);
+                }, 1000);
+            })
+            .catch(() => {
+                resultDiv.innerHTML = 'Please connect your wallet to send tips';
+                resultDiv.className = 'tip-result error';
+                sendBtn.disabled = false;
+                sendBtn.textContent = 'Send Tip';
+            });
+    } else {
+        resultDiv.innerHTML = 'Please install MetaMask to send tips';
+        resultDiv.className = 'tip-result error';
+        sendBtn.disabled = false;
+        sendBtn.textContent = 'Send Tip';
+    }
+}
+
+// Add character counter functionality for viewer
+document.addEventListener('input', function(e) {
+    if (e.target.id && e.target.id.startsWith('tipMsg')) {
+        const widgetId = e.target.id.replace('tipMsg', '');
+        const charCountSpan = document.getElementById(`charCount${widgetId}`);
+        if (charCountSpan) {
+            charCountSpan.textContent = e.target.value.length;
+        }
+    }
+});
+
+// Old tip functions (deprecated but kept for compatibility)
 function tip(amount, id) {
     if (!walletConnected) {
         connectWalletForTips();

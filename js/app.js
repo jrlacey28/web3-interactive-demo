@@ -494,10 +494,10 @@ window.addEventListener('resize', function() {
                 ));
             }
             
-            // Check for collisions and adjust size/position if necessary
-            const constrainedSize = checkWidgetCollisions(wrapper, newLeft, newTop, newWidth, newHeight, MIN_SPACING);
-            newWidth = constrainedSize.width;
-            newHeight = constrainedSize.height;
+            // Check for collisions and adjust position if necessary
+            const adjustedPosition = checkWidgetPositionCollisions(wrapper, newLeft, newTop, newWidth, newHeight, MIN_SPACING);
+            newLeft = adjustedPosition.left;
+            newTop = adjustedPosition.top;
             
             // Apply final positions and sizes
             wrapper.style.left = newLeft + 'px';
@@ -1077,18 +1077,23 @@ function createWidget(type, x, y) {
         case 'crypto':
             title = 'Tips';
             content = `
-                <div class="crypto-content">
-                    <div class="tip-grid">
-                        <button class="tip-btn" onclick="tip(1,${counter})">$1</button>
-                        <button class="tip-btn" onclick="tip(5,${counter})">$5</button>
-                        <button class="tip-btn" onclick="tip(10,${counter})">$10</button>
+                <div class="simple-tip-widget">
+                    <div class="tip-header">
+                        <h3>Send a Tip</h3>
                     </div>
-                    <div class="custom-tip">
-                        <input class="amount" id="amt${counter}" placeholder="Custom amount">
-                        <button class="send" onclick="customTip(${counter})">Send</button>
+                    <div class="tip-amounts">
+                        <button class="tip-amount-btn" onclick="selectTip(1, ${counter})" data-amount="1">$1</button>
+                        <button class="tip-amount-btn" onclick="selectTip(5, ${counter})" data-amount="5">$5</button>
+                        <button class="tip-amount-btn" onclick="selectTip(10, ${counter})" data-amount="10">$10</button>
                     </div>
-                    <input class="input" id="msg${counter}" placeholder="Add a message (optional)" style="margin-top:10px; margin-bottom:0;">
-                    <div id="result${counter}" style="margin-top:10px; min-height:0;"></div>
+                    <div class="tip-message">
+                        <textarea id="tipMsg${counter}" placeholder="Leave a message (optional)" maxlength="100"></textarea>
+                        <div class="char-count"><span id="charCount${counter}">0</span>/100</div>
+                    </div>
+                    <button class="send-tip-btn" id="sendBtn${counter}" onclick="sendTip(${counter})" disabled>
+                        Send Tip
+                    </button>
+                    <div class="tip-result" id="tipResult${counter}"></div>
                 </div>
             `;
             break;
@@ -1171,10 +1176,12 @@ function createWidget(type, x, y) {
     // Create header (now outside widget)
     const header = document.createElement('div');
     header.className = 'widget-header';
+    const showCustomization = type !== 'youtube' && type !== 'video';
+    
     header.innerHTML = `
         <span>${title}</span>
         <div class="header-controls">
-            <button class="style-btn" onclick="toggleStylePanel('${widget.id}')" title="Customize">🎨</button>
+            ${showCustomization ? '<button class="style-btn" onclick="toggleStylePanel(\'' + widget.id + '\')" title="Customize">🎨</button>' : ''}
             <button class="close" onclick="remove('${widget.id}')">×</button>
         </div>
     `;
@@ -1266,6 +1273,80 @@ function checkWidgetCollisions(currentWrapper, x, y, width, height, minSpacing) 
     return {
         width: constrainedWidth,
         height: constrainedHeight
+    };
+}
+
+// Function to check position collisions during window resize
+function checkWidgetPositionCollisions(currentWrapper, x, y, width, height, minSpacing) {
+    const otherWidgets = [];
+    
+    // Get all other visible widgets
+    document.querySelectorAll('.widget-wrapper').forEach(wrapper => {
+        if (wrapper === currentWrapper || wrapper.style.display === 'none') return;
+        
+        const rect = wrapper.getBoundingClientRect();
+        const wrapperLeft = parseInt(wrapper.style.left) || 0;
+        const wrapperTop = parseInt(wrapper.style.top) || 0;
+        
+        otherWidgets.push({
+            element: wrapper,
+            left: wrapperLeft,
+            top: wrapperTop,
+            right: wrapperLeft + rect.width,
+            bottom: wrapperTop + rect.height,
+            width: rect.width,
+            height: rect.height
+        });
+    });
+    
+    let adjustedX = x;
+    let adjustedY = y;
+    
+    // Check for overlaps and push widgets away
+    otherWidgets.forEach(other => {
+        const proposedRight = adjustedX + width;
+        const proposedBottom = adjustedY + height;
+        
+        // Check if widgets would overlap
+        const horizontalOverlap = !(proposedRight + minSpacing <= other.left || adjustedX >= other.right + minSpacing);
+        const verticalOverlap = !(proposedBottom + minSpacing <= other.top || adjustedY >= other.bottom + minSpacing);
+        
+        if (horizontalOverlap && verticalOverlap) {
+            // Determine best direction to move to avoid overlap
+            const overlapLeft = proposedRight - other.left;
+            const overlapRight = other.right - adjustedX;
+            const overlapTop = proposedBottom - other.top;
+            const overlapBottom = other.bottom - adjustedY;
+            
+            // Move in direction with least overlap
+            const minHorizontal = Math.min(overlapLeft, overlapRight);
+            const minVertical = Math.min(overlapTop, overlapBottom);
+            
+            if (minHorizontal < minVertical) {
+                // Move horizontally
+                if (overlapLeft < overlapRight) {
+                    adjustedX = other.left - width - minSpacing;
+                } else {
+                    adjustedX = other.right + minSpacing;
+                }
+            } else {
+                // Move vertically
+                if (overlapTop < overlapBottom) {
+                    adjustedY = other.top - height - minSpacing;
+                } else {
+                    adjustedY = other.bottom + minSpacing;
+                }
+            }
+            
+            // Ensure we don't move outside viewport
+            adjustedX = Math.max(0, Math.min(adjustedX, window.innerWidth - width - minSpacing));
+            adjustedY = Math.max(0, Math.min(adjustedY, window.innerHeight - height - minSpacing));
+        }
+    });
+    
+    return {
+        left: adjustedX,
+        top: adjustedY
     };
 }
 
@@ -1653,7 +1734,82 @@ function resetVid(id) {
 }
 
 // ========================================
-// CRYPTO TIP FUNCTIONS
+// NEW SIMPLE TIP FUNCTIONS
+// ========================================
+
+let selectedTipAmounts = {}; // Store selected amounts per widget
+
+function selectTip(amount, widgetId) {
+    // Store selected amount
+    selectedTipAmounts[widgetId] = amount;
+    
+    // Update button states
+    const widget = document.getElementById(`w${widgetId}`);
+    const buttons = widget.querySelectorAll('.tip-amount-btn');
+    buttons.forEach(btn => {
+        btn.classList.remove('selected');
+        if (btn.dataset.amount == amount) {
+            btn.classList.add('selected');
+        }
+    });
+    
+    // Enable send button
+    const sendBtn = document.getElementById(`sendBtn${widgetId}`);
+    sendBtn.disabled = false;
+}
+
+function sendTip(widgetId) {
+    const amount = selectedTipAmounts[widgetId];
+    const message = document.getElementById(`tipMsg${widgetId}`).value.trim();
+    const resultDiv = document.getElementById(`tipResult${widgetId}`);
+    
+    if (!amount) {
+        resultDiv.innerHTML = 'Please select a tip amount';
+        resultDiv.className = 'tip-result error';
+        return;
+    }
+    
+    // Simulate tip processing
+    const sendBtn = document.getElementById(`sendBtn${widgetId}`);
+    sendBtn.disabled = true;
+    sendBtn.textContent = 'Sending...';
+    
+    setTimeout(() => {
+        resultDiv.innerHTML = `Thank you for your $${amount} tip!${message ? `<br><em>"${message}"</em>` : ''}`;
+        resultDiv.className = 'tip-result success';
+        
+        // Reset form
+        setTimeout(() => {
+            const buttons = document.getElementById(`w${widgetId}`).querySelectorAll('.tip-amount-btn');
+            buttons.forEach(btn => btn.classList.remove('selected'));
+            document.getElementById(`tipMsg${widgetId}`).value = '';
+            document.getElementById(`charCount${widgetId}`).textContent = '0';
+            sendBtn.disabled = true;
+            sendBtn.textContent = 'Send Tip';
+            selectedTipAmounts[widgetId] = null;
+            
+            // Clear result after a few seconds
+            setTimeout(() => {
+                resultDiv.innerHTML = '';
+                resultDiv.className = 'tip-result';
+            }, 5000);
+        }, 2000);
+    }, 1000);
+}
+
+// Add character counter functionality
+document.addEventListener('input', function(e) {
+    if (e.target.id && e.target.id.startsWith('tipMsg')) {
+        const widgetId = e.target.id.replace('tipMsg', '');
+        const charCountSpan = document.getElementById(`charCount${widgetId}`);
+        if (charCountSpan) {
+            charCountSpan.textContent = e.target.value.length;
+        }
+    }
+});
+
+// ========================================
+// OLD CRYPTO TIP FUNCTIONS (DEPRECATED)
 // ========================================
 
 function tip(amount, id) {
@@ -1951,6 +2107,9 @@ function updateLayerList() {
         layerItem.dataset.wrapperId = wrapper.id;
         layerItem.dataset.currentIndex = index;
         
+        const isHidden = wrapper.style.display === 'none';
+        const eyeIcon = isHidden ? '🙈' : '👁️';
+        
         layerItem.innerHTML = `
             <div class="layer-drag-handle">
                 <span class="hamburger-icon">☰</span>
@@ -1960,7 +2119,8 @@ function updateLayerList() {
                 <span class="layer-z">Z: ${zIndex}</span>
             </div>
             <div class="layer-actions">
-                <button onclick="highlightWidget('${wrapper.id}')" title="Select Widget">👁️</button>
+                <button onclick="toggleWidgetVisibility('${wrapper.id}')" title="Toggle Visibility" style="opacity: ${isHidden ? '0.5' : '1'}">${eyeIcon}</button>
+                <button onclick="highlightWidget('${wrapper.id}')" title="Select Widget">🎯</button>
             </div>
         `;
         
@@ -1972,6 +2132,7 @@ function updateLayerList() {
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             cursor: grab;
             transition: background-color 0.2s ease;
+            opacity: ${isHidden ? '0.6' : '1'};
         `;
         
         // Add drag and drop event listeners
@@ -1988,10 +2149,14 @@ function updateLayerList() {
 let draggedLayerItem = null;
 
 function handleLayerDragStart(e) {
-    draggedLayerItem = e.target;
-    e.target.style.opacity = '0.5';
-    e.target.style.cursor = 'grabbing';
-    e.dataTransfer.effectAllowed = 'move';
+    draggedLayerItem = e.target.closest('.layer-item');
+    if (draggedLayerItem) {
+        draggedLayerItem.style.opacity = '0.5';
+        draggedLayerItem.style.cursor = 'grabbing';
+        draggedLayerItem.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', draggedLayerItem.dataset.wrapperId);
+    }
 }
 
 function handleLayerDragOver(e) {
@@ -2009,7 +2174,7 @@ function handleLayerDrop(e) {
     e.preventDefault();
     
     const targetItem = e.target.closest('.layer-item');
-    if (targetItem && targetItem !== draggedLayerItem) {
+    if (targetItem && targetItem !== draggedLayerItem && draggedLayerItem) {
         const draggedWrapperId = draggedLayerItem.dataset.wrapperId;
         const targetWrapperId = targetItem.dataset.wrapperId;
         
@@ -2017,12 +2182,26 @@ function handleLayerDrop(e) {
         const targetWrapper = document.getElementById(targetWrapperId);
         
         if (draggedWrapper && targetWrapper) {
-            // Swap z-indices
-            const draggedZ = parseInt(draggedWrapper.style.zIndex) || 1000;
-            const targetZ = parseInt(targetWrapper.style.zIndex) || 1000;
+            // Get all widgets and their current z-indices
+            const allWrappers = Array.from(document.querySelectorAll('.widget-wrapper'));
+            allWrappers.sort((a, b) => {
+                const aZ = parseInt(a.style.zIndex) || 1000;
+                const bZ = parseInt(b.style.zIndex) || 1000;
+                return bZ - aZ; // Highest first
+            });
             
-            draggedWrapper.style.zIndex = targetZ;
-            targetWrapper.style.zIndex = draggedZ;
+            // Find positions in sorted array
+            const draggedIndex = allWrappers.indexOf(draggedWrapper);
+            const targetIndex = allWrappers.indexOf(targetWrapper);
+            
+            // Remove dragged item and insert at target position
+            allWrappers.splice(draggedIndex, 1);
+            allWrappers.splice(targetIndex, 0, draggedWrapper);
+            
+            // Reassign z-indices based on new order (highest to lowest)
+            allWrappers.forEach((wrapper, index) => {
+                wrapper.style.zIndex = 2000 - index; // Start from high number and decrease
+            });
             
             // Update the layer list to reflect changes
             updateLayerList();
@@ -2032,21 +2211,56 @@ function handleLayerDrop(e) {
     // Reset visual feedback
     document.querySelectorAll('.layer-item').forEach(item => {
         item.style.backgroundColor = '';
+        item.classList.remove('drop-zone');
     });
 }
 
 function handleLayerDragEnd(e) {
-    e.target.style.opacity = '1';
-    e.target.style.cursor = 'grab';
+    const item = e.target.closest('.layer-item');
+    if (item) {
+        item.style.opacity = '1';
+        item.style.cursor = 'grab';
+        item.classList.remove('dragging');
+    }
     draggedLayerItem = null;
     
     // Reset visual feedback
     document.querySelectorAll('.layer-item').forEach(item => {
         item.style.backgroundColor = '';
+        item.classList.remove('drop-zone');
     });
 }
 
-// Legacy layer management functions removed - now using drag and drop system
+// Widget visibility toggle function
+function toggleWidgetVisibility(wrapperId) {
+    const wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
+    
+    const isHidden = wrapper.style.display === 'none';
+    
+    if (isHidden) {
+        wrapper.style.display = 'block';
+        wrapper.style.opacity = '1';
+    } else {
+        wrapper.style.display = 'none';
+    }
+    
+    // Update the layer list to reflect visibility changes
+    updateLayerList();
+    
+    // Update button appearance
+    const layerItems = document.querySelectorAll('.layer-item');
+    layerItems.forEach(item => {
+        if (item.dataset.wrapperId === wrapperId) {
+            const eyeButton = item.querySelector('button[title="Toggle Visibility"]');
+            if (eyeButton) {
+                eyeButton.textContent = isHidden ? '👁️' : '🙈';
+                eyeButton.style.opacity = isHidden ? '1' : '0.5';
+            }
+            item.style.opacity = isHidden ? '1' : '0.6';
+        }
+    });
+}
 
 function highlightWidget(wrapperId) {
     // Remove previous highlights
@@ -2251,8 +2465,6 @@ function saveLayout() {
     
     // Reset button when layout is edited again
     markLayoutAsUnsaved();
-    
-    showToast('✅ Layout saved!', 'success', saveBtn);
 }
 
 // Function to mark layout as unsaved and reset save button
@@ -2335,7 +2547,7 @@ function publishLayout() {
     });
     
     // Generate unique layout ID
-    const layoutId = 'layout_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    const layoutId = Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     
     const layout = {
         id: layoutId,
@@ -2347,23 +2559,26 @@ function publishLayout() {
         creatorName: 'Anonymous Creator'
     };
     
-    // Save as published layout
+    // Save as published layout with correct key format
     localStorage.setItem('web3DemoPublishedLayout', JSON.stringify(layout));
-    localStorage.setItem(layoutId, JSON.stringify(layout));
+    localStorage.setItem(`layout_${layoutId}`, JSON.stringify(layout));
     
     // Generate shareable URL
     const baseUrl = window.location.origin + window.location.pathname.replace('creator.html', '');
     const shareableUrl = `${baseUrl}viewer.html?layout=${layoutId}`;
     
-    // Show success modal with shareable link
-    showPublishSuccessModal(shareableUrl);
-    
-    // Update button temporarily
+    // Update button temporarily and open viewer directly
     const btn = document.querySelector('.publish-btn');
     const originalText = btn.textContent;
     const originalBackground = btn.style.background;
     btn.textContent = '✅ Published!';
     btn.style.background = 'linear-gradient(135deg, #00ff88, #00cc6a)';
+    
+    // Open viewer page directly instead of showing modal
+    setTimeout(() => {
+        window.open(shareableUrl, '_blank');
+    }, 500);
+    
     setTimeout(() => {
         btn.textContent = originalText;
         btn.style.background = originalBackground;

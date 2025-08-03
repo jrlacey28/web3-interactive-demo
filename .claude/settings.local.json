@@ -4,7 +4,8 @@
       "Bash(npx tsc:*)",
       "mcp__ide__getDiagnostics",
       "Bash(cp:*)",
-      "Bash(start creator.html)"
+      "Bash(start creator.html)",
+      "Bash(dir:*)"
     ],
     "deny": []
   }
