@@ -132,15 +132,14 @@ function displayLayout(layout) {
 function createViewerWidget(widgetData, counter) {
     const canvas = document.getElementById('canvas');
     
-    // Create wrapper
+    // Create wrapper with responsive positioning
     const wrapper = document.createElement('div');
     wrapper.className = 'widget-wrapper';
-    wrapper.style.left = widgetData.x;
-    wrapper.style.top = widgetData.y;
-    wrapper.style.width = widgetData.width;
-    wrapper.style.height = widgetData.height;
     wrapper.style.position = 'absolute';
     wrapper.id = widgetData.id;
+    
+    // Apply responsive positioning (convert from creator's coordinate system)
+    applyResponsivePositioning(wrapper, widgetData);
     
     // Create widget
     const widget = document.createElement('div');
@@ -368,30 +367,6 @@ function applyCustomization(widget, customization) {
         });
     }
     
-    // Apply shape customizations
-    if (customization.shapeColor || customization.shapeSize) {
-        const shapeColor = customization.shapeColor || '#00d4ff';
-        const shapeSize = customization.shapeSize || 80;
-        
-        const shape = widget.querySelector('.shape');
-        if (shape) {
-            if (shape.classList.contains('square-shape')) {
-                shape.style.width = shapeSize + 'px';
-                shape.style.height = shapeSize + 'px';
-                shape.style.background = shapeColor;
-            } else if (shape.classList.contains('circle-shape')) {
-                shape.style.width = shapeSize + 'px';
-                shape.style.height = shapeSize + 'px';
-                shape.style.background = shapeColor;
-            } else if (shape.classList.contains('triangle-shape')) {
-                const halfSize = shapeSize / 2;
-                shape.style.borderLeftWidth = halfSize + 'px';
-                shape.style.borderRightWidth = halfSize + 'px';
-                shape.style.borderBottomWidth = shapeSize + 'px';
-                shape.style.borderBottomColor = shapeColor;
-            }
-        }
-    }
 }
 
 function hideLoadingScreen() {
@@ -520,6 +495,130 @@ document.addEventListener('input', function(e) {
         }
     }
 });
+
+// Responsive positioning system for viewer
+function applyResponsivePositioning(wrapper, widgetData) {
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    // Convert pixel positions to percentages if they're not already
+    let leftPercent, topPercent, widthPercent, heightPercent;
+    
+    // If the data contains percentage values, use them
+    if (typeof widgetData.x === 'string' && widgetData.x.includes('%')) {
+        leftPercent = parseFloat(widgetData.x);
+        topPercent = parseFloat(widgetData.y);
+        widthPercent = parseFloat(widgetData.width) / viewportWidth * 100;
+        heightPercent = parseFloat(widgetData.height) / viewportHeight * 100;
+    } else {
+        // Convert pixel values to percentages (assume they're from a 1920x1080 reference)
+        const referenceWidth = 1920;
+        const referenceHeight = 1080;
+        
+        leftPercent = (parseInt(widgetData.x) / referenceWidth) * 100;
+        topPercent = (parseInt(widgetData.y) / referenceHeight) * 100;
+        widthPercent = (parseInt(widgetData.width) / referenceWidth) * 100;
+        heightPercent = (parseInt(widgetData.height) / referenceHeight) * 100;
+    }
+    
+    // Apply smart scaling with the same system as creator
+    const widgetType = widgetData.type;
+    let newLeft = Math.max(0, Math.min(
+        (leftPercent / 100) * viewportWidth,
+        viewportWidth - 200
+    ));
+    let newTop = Math.max(0, Math.min(
+        (topPercent / 100) * viewportHeight,
+        viewportHeight - 150
+    ));
+    
+    let newWidth, newHeight;
+    
+    if (widgetType === 'youtube' || widgetType === 'video') {
+        // Video widgets: smart scaling with maximum limits
+        const baseWidth = Math.min(widthPercent / 100 * viewportWidth, getMaxVideoWidth(viewportWidth));
+        newWidth = Math.max(320, Math.min(baseWidth, viewportWidth - newLeft - 20));
+        newHeight = (newWidth / 16) * 9; // Maintain 16:9 aspect ratio
+    } else {
+        // Other widgets: smart scaling with type-specific limits
+        const maxWidth = getMaxWidgetWidth_viewer(widgetType, viewportWidth);
+        const maxHeight = getMaxWidgetHeight_viewer(widgetType, viewportHeight);
+        
+        newWidth = Math.max(
+            getMinWidgetWidth_viewer(widgetType),
+            Math.min(
+                Math.min(widthPercent / 100 * viewportWidth, maxWidth),
+                viewportWidth - newLeft - 20
+            )
+        );
+        newHeight = Math.max(
+            getMinWidgetHeight_viewer(widgetType),
+            Math.min(
+                Math.min(heightPercent / 100 * viewportHeight, maxHeight),
+                viewportHeight - newTop - 20
+            )
+        );
+    }
+    
+    // Apply the calculated positions and sizes
+    wrapper.style.left = newLeft + 'px';
+    wrapper.style.top = newTop + 'px';
+    wrapper.style.width = newWidth + 'px';
+    wrapper.style.height = newHeight + 'px';
+}
+
+// Smart scaling functions for viewer (same as creator)
+function getMaxVideoWidth(viewportWidth) {
+    if (viewportWidth <= 768) return viewportWidth * 0.9;
+    if (viewportWidth <= 1024) return viewportWidth * 0.7;
+    if (viewportWidth <= 1440) return viewportWidth * 0.5;
+    if (viewportWidth <= 1920) return 720;
+    return 800;
+}
+
+function getMaxWidgetWidth_viewer(widgetType, viewportWidth) {
+    const baseLimits = {
+        'crypto': viewportWidth <= 768 ? 350 : viewportWidth <= 1440 ? 400 : 450,
+        'twitter': viewportWidth <= 768 ? 300 : viewportWidth <= 1440 ? 350 : 400,
+        'instagram': viewportWidth <= 768 ? 300 : viewportWidth <= 1440 ? 350 : 400,
+        'discord': viewportWidth <= 768 ? 350 : viewportWidth <= 1440 ? 400 : 450
+    };
+    return baseLimits[widgetType] || (viewportWidth <= 768 ? 300 : 400);
+}
+
+function getMaxWidgetHeight_viewer(widgetType, viewportHeight) {
+    const baseLimits = {
+        'crypto': viewportHeight <= 600 ? 250 : viewportHeight <= 900 ? 300 : 350,
+        'twitter': viewportHeight <= 600 ? 400 : viewportHeight <= 900 ? 500 : 600,
+        'instagram': viewportHeight <= 600 ? 400 : viewportHeight <= 900 ? 500 : 600,
+        'discord': viewportHeight <= 600 ? 400 : viewportHeight <= 900 ? 500 : 600
+    };
+    return baseLimits[widgetType] || (viewportHeight <= 600 ? 300 : 400);
+}
+
+function getMinWidgetWidth_viewer(widgetType) {
+    const minimums = {
+        'crypto': 300,
+        'twitter': 250,
+        'instagram': 250,
+        'discord': 250,
+        'youtube': 320,
+        'video': 320
+    };
+    return minimums[widgetType] || 250;
+}
+
+function getMinWidgetHeight_viewer(widgetType) {
+    const minimums = {
+        'crypto': 200,
+        'twitter': 150,
+        'instagram': 150,
+        'discord': 150,
+        'youtube': 180,
+        'video': 180
+    };
+    return minimums[widgetType] || 150;
+}
 
 // Old tip functions (deprecated but kept for compatibility)
 function tip(amount, id) {

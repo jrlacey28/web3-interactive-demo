@@ -449,6 +449,60 @@ function storeWidgetPositions() {
     });
 }
 
+// Smart scaling functions for responsive design
+function getMaxVideoWidth(viewportWidth) {
+    // Progressive scaling for video widgets - prevents enormous videos
+    if (viewportWidth <= 768) return viewportWidth * 0.9; // 90% on mobile
+    if (viewportWidth <= 1024) return viewportWidth * 0.7; // 70% on tablet
+    if (viewportWidth <= 1440) return viewportWidth * 0.5; // 50% on laptop
+    if (viewportWidth <= 1920) return 720; // Max 720px on desktop
+    return 800; // Max 800px on large screens
+}
+
+function getMaxWidgetWidth(widgetType, viewportWidth) {
+    const baseLimits = {
+        'crypto': viewportWidth <= 768 ? 350 : viewportWidth <= 1440 ? 400 : 450,
+        'twitter': viewportWidth <= 768 ? 300 : viewportWidth <= 1440 ? 350 : 400,
+        'instagram': viewportWidth <= 768 ? 300 : viewportWidth <= 1440 ? 350 : 400,
+        'discord': viewportWidth <= 768 ? 350 : viewportWidth <= 1440 ? 400 : 450
+    };
+    return baseLimits[widgetType] || (viewportWidth <= 768 ? 300 : 400);
+}
+
+function getMaxWidgetHeight(widgetType, viewportHeight) {
+    const baseLimits = {
+        'crypto': viewportHeight <= 600 ? 250 : viewportHeight <= 900 ? 300 : 350,
+        'twitter': viewportHeight <= 600 ? 400 : viewportHeight <= 900 ? 500 : 600,
+        'instagram': viewportHeight <= 600 ? 400 : viewportHeight <= 900 ? 500 : 600,
+        'discord': viewportHeight <= 600 ? 400 : viewportHeight <= 900 ? 500 : 600
+    };
+    return baseLimits[widgetType] || (viewportHeight <= 600 ? 300 : 400);
+}
+
+function getMinWidgetWidth(widgetType) {
+    const minimums = {
+        'crypto': 300,
+        'twitter': 250,
+        'instagram': 250,
+        'discord': 250,
+        'youtube': 320,
+        'video': 320
+    };
+    return minimums[widgetType] || 250;
+}
+
+function getMinWidgetHeight(widgetType) {
+    const minimums = {
+        'crypto': 200,
+        'twitter': 150,
+        'instagram': 150,
+        'discord': 150,
+        'youtube': 180, // 16:9 of 320px
+        'video': 180
+    };
+    return minimums[widgetType] || 150;
+}
+
 // Enhanced window resize handler with collision detection
 window.addEventListener('resize', function() {
     const viewportWidth = window.innerWidth;
@@ -475,23 +529,31 @@ window.addEventListener('resize', function() {
             
             let newWidth, newHeight;
             
+            // Smart percentage-based scaling with breakpoints and limits
             if (widgetType === 'youtube' || widgetType === 'video') {
-                // For video widgets, maintain 16:9 aspect ratio
-                newWidth = Math.max(320, Math.min(
-                    (storedPos.widthPercent / 100) * viewportWidth,
-                    viewportWidth - newLeft - MIN_SPACING
-                ));
-                newHeight = (newWidth / 16) * 9; // Maintain 16:9
+                // Video widgets: smart scaling with maximum limits
+                const baseWidth = Math.min(storedPos.widthPercent / 100 * viewportWidth, getMaxVideoWidth(viewportWidth));
+                newWidth = Math.max(320, Math.min(baseWidth, viewportWidth - newLeft - MIN_SPACING));
+                newHeight = (newWidth / 16) * 9; // Maintain 16:9 aspect ratio
             } else {
-                // For other widgets, scale proportionally
-                newWidth = Math.max(250, Math.min(
-                    (storedPos.widthPercent / 100) * viewportWidth,
-                    viewportWidth - newLeft - MIN_SPACING
-                ));
-                newHeight = Math.max(150, Math.min(
-                    (storedPos.heightPercent / 100) * viewportHeight,
-                    viewportHeight - newTop - MIN_SPACING
-                ));
+                // Other widgets: smart scaling with type-specific limits
+                const maxWidth = getMaxWidgetWidth(widgetType, viewportWidth);
+                const maxHeight = getMaxWidgetHeight(widgetType, viewportHeight);
+                
+                newWidth = Math.max(
+                    getMinWidgetWidth(widgetType), 
+                    Math.min(
+                        Math.min(storedPos.widthPercent / 100 * viewportWidth, maxWidth),
+                        viewportWidth - newLeft - MIN_SPACING
+                    )
+                );
+                newHeight = Math.max(
+                    getMinWidgetHeight(widgetType),
+                    Math.min(
+                        Math.min(storedPos.heightPercent / 100 * viewportHeight, maxHeight),
+                        viewportHeight - newTop - MIN_SPACING
+                    )
+                );
             }
             
             // Check for collisions and adjust position if necessary
@@ -579,27 +641,34 @@ function toggleSidebar() {
     
     sidebar.classList.toggle('open');
     
-    // Hide/show toggle and snap buttons when sidebar opens/closes
+    // Hide/show all toggle buttons when sidebar opens/closes
+    const layerToggle = document.querySelector('.layer-toggle');
+    const safeAreaToggle = document.querySelector('.safe-area-toggle');
+    
     if (sidebar.classList.contains('open')) {
         toggle.style.opacity = '0';
         toggle.style.pointerEvents = 'none';
         toggle.style.transform = 'translateX(-20px)';
         
-        if (snapToggle) {
-            snapToggle.style.opacity = '0';
-            snapToggle.style.pointerEvents = 'none';
-            snapToggle.style.transform = 'translateX(-20px)';
-        }
+        [snapToggle, layerToggle, safeAreaToggle].forEach(btn => {
+            if (btn) {
+                btn.style.opacity = '0';
+                btn.style.pointerEvents = 'none';
+                btn.style.transform = 'translateX(-20px)';
+            }
+        });
     } else {
         toggle.style.opacity = '1';
         toggle.style.pointerEvents = 'auto';
         toggle.style.transform = 'translateX(0)';
         
-        if (snapToggle) {
-            snapToggle.style.opacity = '1';
-            snapToggle.style.pointerEvents = 'auto';
-            snapToggle.style.transform = 'translateX(0)';
-        }
+        [snapToggle, layerToggle, safeAreaToggle].forEach(btn => {
+            if (btn) {
+                btn.style.opacity = '1';
+                btn.style.pointerEvents = 'auto';
+                btn.style.transform = 'translateX(0)';
+            }
+        });
     }
 }
 
@@ -1145,32 +1214,6 @@ function createWidget(type, x, y) {
             `;
             break;
             
-        case 'square':
-            title = 'Square';
-            content = `
-                <div class="shape-content">
-                    <div class="shape square-shape"></div>
-                </div>
-            `;
-            break;
-            
-        case 'circle':
-            title = 'Circle';
-            content = `
-                <div class="shape-content">
-                    <div class="shape circle-shape"></div>
-                </div>
-            `;
-            break;
-            
-        case 'triangle':
-            title = 'Triangle';
-            content = `
-                <div class="shape-content">
-                    <div class="shape triangle-shape"></div>
-                </div>
-            `;
-            break;
     }
 
     // Create header (now outside widget)
@@ -1363,21 +1406,22 @@ function enableResizeSnap(wrapper) {
         resizeHandle.innerHTML = '↘';
         resizeHandle.style.cssText = `
             position: absolute;
-            bottom: -15px;
-            right: -15px;
-            width: 20px;
-            height: 20px;
-            background: rgba(0, 212, 255, 0.8);
+            bottom: 2px;
+            right: 2px;
+            width: 18px;
+            height: 18px;
+            background: rgba(0, 212, 255, 0.9);
             color: white;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: se-resize;
-            border-radius: 4px;
+            border-radius: 0 0 12px 0;
             font-size: 12px;
-            z-index: 100;
+            z-index: 20;
             user-select: none;
             pointer-events: auto;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         `;
         
         // Ensure wrapper has proper positioning context for resize handle
@@ -1416,8 +1460,9 @@ function enableResizeSnap(wrapper) {
                 const maxHeight = window.innerHeight - wrapperTop - 30;
                 
                 if (widgetType === 'youtube' || widgetType === 'video') {
-                    // Video widgets: maintain 16:9 aspect ratio
-                    newWidth = Math.max(320, Math.min(startWidth + deltaX, maxWidth));
+                    // Video widgets: maintain 16:9 aspect ratio with smart limits
+                    const videoMaxWidth = getMaxVideoWidth(window.innerWidth);
+                    newWidth = Math.max(320, Math.min(startWidth + deltaX, Math.min(maxWidth, videoMaxWidth)));
                     newHeight = (newWidth / 16) * 9;
                     
                     // If height would exceed viewport, recalculate based on height constraint
@@ -1426,9 +1471,14 @@ function enableResizeSnap(wrapper) {
                         newWidth = (newHeight / 9) * 16;
                     }
                 } else {
-                    // Other widgets: free resize with minimum constraints
-                    newWidth = Math.max(250, Math.min(startWidth + deltaX, maxWidth));
-                    newHeight = Math.max(150, Math.min(startHeight + deltaY, maxHeight));
+                    // Other widgets: free resize with smart type-specific constraints
+                    const minWidth = getMinWidgetWidth(widgetType);
+                    const minHeight = getMinWidgetHeight(widgetType);
+                    const typeMaxWidth = getMaxWidgetWidth(widgetType, window.innerWidth);
+                    const typeMaxHeight = getMaxWidgetHeight(widgetType, window.innerHeight);
+                    
+                    newWidth = Math.max(minWidth, Math.min(startWidth + deltaX, Math.min(maxWidth, typeMaxWidth)));
+                    newHeight = Math.max(minHeight, Math.min(startHeight + deltaY, Math.min(maxHeight, typeMaxHeight)));
                 }
                 
                 // Check for collisions with other widgets and maintain spacing
@@ -1453,6 +1503,11 @@ function enableResizeSnap(wrapper) {
                 wrapper.classList.remove('resizing');
                 updateStoredPosition(wrapper);
                 syncHeaderWidth(wrapper); // Final sync after resize
+                
+                // Check safe area bounds if visible
+                if (safeAreaVisible) {
+                    setTimeout(checkWidgetsInBounds, 50);
+                }
                 
                 document.removeEventListener('mousemove', handleMouseMove);
                 document.removeEventListener('mouseup', handleMouseUp);
@@ -1573,6 +1628,11 @@ function makeWidgetDraggable(wrapper, header) {
             
             // Clear any pending drag timeout
             clearTimeout(dragTimeout);
+            
+            // Check safe area bounds if visible
+            if (safeAreaVisible) {
+                setTimeout(checkWidgetsInBounds, 50);
+            }
             
             // Clear position cache since widget moved
             clearWidgetPositionsCache();
@@ -2044,20 +2104,20 @@ function createLayerManagementButton() {
 }
 
 function toggleLayerPanel() {
-    let layerPanel = document.getElementById('layerPanel');
+    let layerPanel = document.getElementById('layer-panel');
     
     if (layerPanel) {
-        layerPanel.remove();
+        closeLayerPanel();
         return;
     }
     
     layerPanel = document.createElement('div');
-    layerPanel.id = 'layerPanel';
+    layerPanel.id = 'layer-panel';
     layerPanel.className = 'layer-panel';
     layerPanel.innerHTML = `
         <div class="layer-header">
             <h3>Layer Management</h3>
-            <button class="layer-close" onclick="document.getElementById('layerPanel').remove()">×</button>
+            <button class="layer-close" onclick="closeLayerPanel()">×</button>
         </div>
         <div class="layer-list" id="layerList">
             <!-- Layers will be populated here -->
@@ -2081,6 +2141,30 @@ function toggleLayerPanel() {
     
     document.body.appendChild(layerPanel);
     updateLayerList();
+    
+    // Close layer panel when clicking outside
+    setTimeout(() => {
+        document.addEventListener('click', handleLayerPanelOutsideClick);
+    }, 100);
+}
+
+function handleLayerPanelOutsideClick(e) {
+    const layerPanel = document.getElementById('layer-panel');
+    const layerToggle = document.querySelector('.layer-toggle');
+    
+    if (layerPanel && 
+        !layerPanel.contains(e.target) && 
+        !layerToggle.contains(e.target)) {
+        closeLayerPanel();
+    }
+}
+
+function closeLayerPanel() {
+    const layerPanel = document.getElementById('layer-panel');
+    if (layerPanel) {
+        layerPanel.remove();
+        document.removeEventListener('click', handleLayerPanelOutsideClick);
+    }
 }
 
 function updateLayerList() {
@@ -2111,7 +2195,7 @@ function updateLayerList() {
         const eyeIcon = isHidden ? '🙈' : '👁️';
         
         layerItem.innerHTML = `
-            <div class="layer-drag-handle">
+            <div class="layer-drag-handle" style="cursor: grab;">
                 <span class="hamburger-icon">☰</span>
             </div>
             <div class="layer-info">
@@ -2138,8 +2222,16 @@ function updateLayerList() {
         // Add drag and drop event listeners
         layerItem.addEventListener('dragstart', handleLayerDragStart);
         layerItem.addEventListener('dragover', handleLayerDragOver);
+        layerItem.addEventListener('dragenter', handleLayerDragOver);
         layerItem.addEventListener('drop', handleLayerDrop);
         layerItem.addEventListener('dragend', handleLayerDragEnd);
+        layerItem.addEventListener('dragleave', (e) => {
+            // Only clear if we're leaving the layer item entirely
+            if (!layerItem.contains(e.relatedTarget)) {
+                layerItem.style.backgroundColor = '';
+                layerItem.classList.remove('drop-zone');
+            }
+        });
         
         layerList.appendChild(layerItem);
     });
@@ -2163,10 +2255,19 @@ function handleLayerDragOver(e) {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     
-    // Add visual feedback
+    // Clear previous visual feedback
+    document.querySelectorAll('.layer-item').forEach(item => {
+        if (item !== draggedLayerItem) {
+            item.style.backgroundColor = '';
+            item.classList.remove('drop-zone');
+        }
+    });
+    
+    // Add visual feedback to target
     const targetItem = e.target.closest('.layer-item');
     if (targetItem && targetItem !== draggedLayerItem) {
-        targetItem.style.backgroundColor = 'rgba(0, 212, 255, 0.2)';
+        targetItem.style.backgroundColor = 'rgba(0, 212, 255, 0.3)';
+        targetItem.classList.add('drop-zone');
     }
 }
 
@@ -2300,7 +2401,6 @@ function toggleStylePanel(widgetId) {
     stylePanel.className = 'external-style-panel';
     
     const widgetType = widget.dataset.type;
-    const isShape = ['square', 'circle', 'triangle'].includes(widgetType);
     
     stylePanel.innerHTML = `
         <div class="style-panel-header">
@@ -2404,11 +2504,156 @@ function updateShapeStyle(widgetId) {
 }
 
 // ========================================
+// SAFE AREA WARNING SYSTEM
+// ========================================
+
+let safeAreaVisible = false;
+
+function createSafeAreaToggle() {
+    const safeAreaToggle = document.createElement('button');
+    safeAreaToggle.className = 'safe-area-toggle';
+    safeAreaToggle.innerHTML = '⚠️';
+    safeAreaToggle.title = 'Toggle Safe Area';
+    safeAreaToggle.onclick = toggleSafeArea;
+    document.body.appendChild(safeAreaToggle);
+}
+
+function toggleSafeArea() {
+    safeAreaVisible = !safeAreaVisible;
+    
+    let overlay = document.getElementById('safe-area-overlay');
+    if (!overlay) {
+        overlay = createSafeAreaOverlay();
+    }
+    
+    if (safeAreaVisible) {
+        overlay.classList.add('active');
+        updateSafeAreaBounds();
+        checkWidgetsInBounds();
+    } else {
+        overlay.classList.remove('active');
+        clearOutOfBoundsWarnings();
+    }
+}
+
+function createSafeAreaOverlay() {
+    const overlay = document.createElement('div');
+    overlay.id = 'safe-area-overlay';
+    overlay.className = 'safe-area-overlay';
+    
+    const warning = document.createElement('div');
+    warning.className = 'safe-area-warning';
+    warning.textContent = 'Safe viewing area - widgets outside may be cut off on smaller screens';
+    
+    overlay.appendChild(warning);
+    document.body.appendChild(overlay);
+    
+    return overlay;
+}
+
+function updateSafeAreaBounds() {
+    const overlay = document.getElementById('safe-area-overlay');
+    if (!overlay) return;
+    
+    // Remove existing bounds
+    const existingBounds = overlay.querySelector('.safe-area-bounds');
+    if (existingBounds) existingBounds.remove();
+    
+    // Create safe area bounds (based on common mobile/tablet sizes)
+    const bounds = document.createElement('div');
+    bounds.className = 'safe-area-bounds';
+    
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    // Calculate safe area (80% of viewport with centering)
+    const safeWidth = viewportWidth * 0.8;
+    const safeHeight = viewportHeight * 0.8;
+    const offsetX = (viewportWidth - safeWidth) / 2;
+    const offsetY = (viewportHeight - safeHeight) / 2;
+    
+    bounds.style.left = offsetX + 'px';
+    bounds.style.top = offsetY + 'px';
+    bounds.style.width = safeWidth + 'px';
+    bounds.style.height = safeHeight + 'px';
+    
+    overlay.appendChild(bounds);
+}
+
+function checkWidgetsInBounds() {
+    if (!safeAreaVisible) return;
+    
+    clearOutOfBoundsWarnings();
+    
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const safeWidth = viewportWidth * 0.8;
+    const safeHeight = viewportHeight * 0.8;
+    const offsetX = (viewportWidth - safeWidth) / 2;
+    const offsetY = (viewportHeight - safeHeight) / 2;
+    
+    document.querySelectorAll('.widget-wrapper').forEach(wrapper => {
+        const rect = wrapper.getBoundingClientRect();
+        const left = parseInt(wrapper.style.left) || 0;
+        const top = parseInt(wrapper.style.top) || 0;
+        
+        let isOutOfBounds = false;
+        let warningText = '';
+        
+        if (left < offsetX) {
+            isOutOfBounds = true;
+            warningText = 'Too far left';
+        } else if (left + rect.width > offsetX + safeWidth) {
+            isOutOfBounds = true;
+            warningText = 'Too far right';
+        }
+        
+        if (top < offsetY) {
+            isOutOfBounds = true;
+            warningText = warningText ? 'Out of bounds' : 'Too high';
+        } else if (top + rect.height > offsetY + safeHeight) {
+            isOutOfBounds = true;
+            warningText = warningText ? 'Out of bounds' : 'Too low';
+        }
+        
+        if (isOutOfBounds) {
+            addOutOfBoundsWarning(wrapper, warningText);
+        }
+    });
+}
+
+function addOutOfBoundsWarning(wrapper, text) {
+    const warning = document.createElement('div');
+    warning.className = 'out-of-bounds-warning';
+    warning.textContent = text;
+    warning.style.top = '-25px';
+    warning.style.right = '0px';
+    wrapper.appendChild(warning);
+}
+
+function clearOutOfBoundsWarnings() {
+    document.querySelectorAll('.out-of-bounds-warning').forEach(warning => {
+        warning.remove();
+    });
+}
+
+// Update safe area when window resizes
+window.addEventListener('resize', () => {
+    if (safeAreaVisible) {
+        updateSafeAreaBounds();
+        setTimeout(checkWidgetsInBounds, 100);
+    }
+});
+
+// ========================================
 // INITIALIZATION
 // ========================================
 
 // Initialize with demo widget when page loads
 document.addEventListener('DOMContentLoaded', function() {
+    // Create safe area toggle button
+    createSafeAreaToggle();
+    
     // Initialize snap functionality
     createSnapIndicators();
     addSnapCSS();
@@ -2567,22 +2812,180 @@ function publishLayout() {
     const baseUrl = window.location.origin + window.location.pathname.replace('creator.html', '');
     const shareableUrl = `${baseUrl}viewer.html?layout=${layoutId}`;
     
-    // Update button temporarily and open viewer directly
+    // Update button temporarily
     const btn = document.querySelector('.publish-btn');
     const originalText = btn.textContent;
     const originalBackground = btn.style.background;
     btn.textContent = '✅ Published!';
     btn.style.background = 'linear-gradient(135deg, #00ff88, #00cc6a)';
     
-    // Open viewer page directly instead of showing modal
-    setTimeout(() => {
-        window.open(shareableUrl, '_blank');
-    }, 500);
+    // Show publish success modal
+    showPublishSuccessModal(shareableUrl);
     
     setTimeout(() => {
         btn.textContent = originalText;
         btn.style.background = originalBackground;
     }, 3000);
+}
+
+function showPublishSuccessModal(shareableUrl) {
+    // Create modal overlay
+    const modalOverlay = document.createElement('div');
+    modalOverlay.className = 'publish-modal-overlay';
+    modalOverlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        animation: fadeIn 0.3s ease;
+    `;
+    
+    // Create modal content
+    const modal = document.createElement('div');
+    modal.className = 'publish-modal';
+    modal.style.cssText = `
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        border-radius: 20px;
+        padding: 30px;
+        width: 90%;
+        max-width: 500px;
+        text-align: center;
+        color: white;
+        border: 2px solid rgba(0, 212, 255, 0.3);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        animation: slideIn 0.3s ease;
+        position: relative;
+    `;
+    
+    modal.innerHTML = `
+        <div style="margin-bottom: 20px; font-size: 48px;">🚀</div>
+        <h2 style="margin: 0 0 10px 0; font-size: 24px; color: #00ff88;">Layout Published!</h2>
+        <p style="margin: 0 0 25px 0; color: rgba(255, 255, 255, 0.8); font-size: 16px;">
+            Your layout is now live and ready to share with the world.
+        </p>
+        
+        <div style="background: rgba(0, 0, 0, 0.3); border-radius: 12px; padding: 15px; margin: 20px 0; border: 1px solid rgba(0, 212, 255, 0.2);">
+            <div style="margin-bottom: 10px; font-size: 14px; color: rgba(255, 255, 255, 0.7);">Shareable Link:</div>
+            <div style="background: rgba(0, 0, 0, 0.5); padding: 10px; border-radius: 8px; font-family: monospace; font-size: 14px; word-break: break-all; border: 1px solid rgba(0, 212, 255, 0.3);" id="shareableLink">${shareableUrl}</div>
+        </div>
+        
+        <div style="display: flex; gap: 10px; justify-content: center; margin: 25px 0;">
+            <button onclick="copyToClipboard('${shareableUrl}')" style="
+                background: linear-gradient(135deg, #00d4ff, #0099cc);
+                color: white;
+                border: none;
+                padding: 12px 20px;
+                border-radius: 10px;
+                cursor: pointer;
+                font-weight: bold;
+                font-size: 14px;
+                transition: transform 0.2s ease;
+            " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                📋 Copy Link
+            </button>
+            <button onclick="window.open('${shareableUrl}', '_blank')" style="
+                background: linear-gradient(135deg, #00ff88, #00cc6a);
+                color: white;
+                border: none;
+                padding: 12px 20px;
+                border-radius: 10px;
+                cursor: pointer;
+                font-weight: bold;
+                font-size: 14px;
+                transition: transform 0.2s ease;
+            " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                👁️ Preview
+            </button>
+        </div>
+        
+        <button onclick="closePublishModal()" style="
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s ease;
+        " onmouseover="this.style.background='rgba(255, 255, 255, 0.2)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.1)'">
+            ×
+        </button>
+    `;
+    
+    modalOverlay.appendChild(modal);
+    document.body.appendChild(modalOverlay);
+    
+    // Close modal when clicking overlay
+    modalOverlay.addEventListener('click', (e) => {
+        if (e.target === modalOverlay) {
+            closePublishModal();
+        }
+    });
+    
+    // Add animations
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-30px) scale(0.9); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+function closePublishModal() {
+    const modal = document.querySelector('.publish-modal-overlay');
+    if (modal) {
+        modal.style.animation = 'fadeOut 0.3s ease';
+        setTimeout(() => modal.remove(), 300);
+    }
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        // Show temporary success message
+        const button = event.target;
+        const originalText = button.textContent;
+        button.textContent = '✅ Copied!';
+        button.style.background = 'linear-gradient(135deg, #00ff88, #00cc6a)';
+        
+        setTimeout(() => {
+            button.textContent = originalText;
+            button.style.background = 'linear-gradient(135deg, #00d4ff, #0099cc)';
+        }, 2000);
+    }).catch(() => {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        const button = event.target;
+        const originalText = button.textContent;
+        button.textContent = '✅ Copied!';
+        setTimeout(() => {
+            button.textContent = originalText;
+        }, 2000);
+    });
 }
 
 function captureLayoutState() {
@@ -2699,16 +3102,6 @@ function captureWidgetCustomization(widget) {
         }
     }
     
-    // Capture shape customizations
-    const shape = widget.querySelector('.shape');
-    if (shape) {
-        if (shape.style.background) {
-            customization.shapeColor = shape.style.background;
-        }
-        if (shape.style.width) {
-            customization.shapeSize = parseInt(shape.style.width);
-        }
-    }
     
     return Object.keys(customization).length > 0 ? customization : null;
 }
