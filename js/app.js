@@ -3423,6 +3423,16 @@ function captureWidgetState(widget, widgetType, counter) {
                 state.feedContent = feed.innerHTML;
             }
             break;
+            
+        case 'livestream':
+            const streamInput = document.getElementById(`stream${counter}`);
+            const streamContent = document.getElementById(`streamc${counter}`);
+            if (streamInput && streamInput.value) {
+                state.streamUrl = streamInput.value;
+                state.streamContent = streamContent ? streamContent.innerHTML : '';
+                state.streamLoaded = widget.classList.contains('video-loaded');
+            }
+            break;
     }
     
     return state;

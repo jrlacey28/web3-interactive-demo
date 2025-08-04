@@ -546,6 +546,18 @@ function restoreWidgetState(widget, state, counter) {
             }
             break;
             
+        case 'livestream':
+            if (state.streamUrl) {
+                const input = document.getElementById(`stream${counter}`);
+                const content = document.getElementById(`streamc${counter}`);
+                if (input) input.value = state.streamUrl;
+                if (content && state.streamContent) {
+                    content.innerHTML = state.streamContent;
+                    widget.classList.add('video-loaded');
+                }
+            }
+            break;
+            
         case 'twitter':
             if (state.username) {
                 const userInput = document.getElementById(`user${counter}`);
