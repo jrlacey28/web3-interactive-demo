@@ -1194,7 +1194,6 @@ function adjustWidgetsForViewport() {
             // Adjust position to maintain relative placement
             const widthDiff = newWidth - (widthPercent / 100) * viewportWidth;
             newLeft = Math.max(10, newLeft - (widthDiff / 2)); // Keep centered
-        }
         } else {
             // Scale other widgets responsively
             const scaleFactor = getWidgetScaleFactor(widgetType, viewportWidth);

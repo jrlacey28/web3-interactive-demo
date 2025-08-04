@@ -1,8 +1,10 @@
 /* Home Page Styles */
 
-/* CSS Custom Properties - Design System */
+/* CSS Custom Properties - Space Theme Design System */
 :root {
-  --primary-gradient: linear-gradient(135deg, #00d4ff, #0099cc);
+  --primary-gradient: linear-gradient(135deg, #9d4edd, #7b2cbf);
+  --secondary-gradient: linear-gradient(135deg, #5a189a, #240046);
+  --accent-gradient: linear-gradient(135deg, #c77dff, #9d4edd);
   --success-gradient: linear-gradient(135deg, #00ff88, #00cc6a);
   --danger-gradient: linear-gradient(135deg, #ff4757, #ff3742);
   --surface-blur: backdrop-filter: blur(15px);
@@ -15,9 +17,13 @@
   --spacing-lg: 24px;
   --spacing-xl: 32px;
   --spacing-2xl: 48px;
-  --text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  --text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+  --card-shadow: 0 10px 30px rgba(16, 0, 32, 0.4);
   --hover-transform: translateY(-2px);
+  --space-dark: #0a0015;
+  --space-purple: #2d1b4e;
+  --space-light-purple: #9d4edd;
+  --space-glow: #c77dff;
 }
 
 /* Home Page Layout */
@@ -37,13 +43,15 @@ html, body {
 }
 
 .home-page .bg {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: url('../Logo/genesis horizontal.jpg') center center/cover no-repeat,
+              linear-gradient(135deg, #1a0029 0%, #2d1b4e 50%, #0a0015 100%);
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   z-index: -1;
+  filter: brightness(0.7) contrast(1.2);
 }
 
 /* Container */
@@ -60,9 +68,9 @@ html, body {
   left: 0;
   right: 0;
   z-index: 1000;
-  background: rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(16, 0, 32, 0.8);
+  backdrop-filter: blur(15px);
+  border-bottom: 1px solid rgba(199, 125, 255, 0.2);
   padding: var(--spacing-md) var(--spacing-lg);
   display: flex;
   justify-content: space-between;
@@ -175,9 +183,9 @@ html, body {
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, #0099cc, #007799);
+  background: var(--accent-gradient);
   transform: var(--hover-transform);
-  box-shadow: 0 5px 20px rgba(0, 212, 255, 0.4);
+  box-shadow: 0 5px 20px rgba(199, 125, 255, 0.6);
 }
 
 .btn-primary.large {
@@ -186,11 +194,12 @@ html, body {
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(199, 125, 255, 0.2);
   color: white;
   padding: var(--spacing-md) var(--spacing-xl);
   border-radius: var(--border-radius-medium);
   text-decoration: none;
+  border: 1px solid rgba(199, 125, 255, 0.4);
   font-weight: bold;
   font-size: 1.1rem;
   transition: all 0.3s ease;
@@ -306,9 +315,9 @@ html, body {
 }
 
 .feature-card {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(16, 0, 32, 0.6);
   backdrop-filter: blur(15px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(199, 125, 255, 0.2);
   border-radius: var(--border-radius-large);
   padding: var(--spacing-xl);
   text-align: center;
@@ -318,8 +327,9 @@ html, body {
 
 .feature-card:hover {
   transform: var(--hover-transform);
-  background: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+  background: rgba(199, 125, 255, 0.2);
+  border-color: rgba(199, 125, 255, 0.4);
+  box-shadow: 0 15px 35px rgba(199, 125, 255, 0.2);
 }
 
 .feature-icon {
