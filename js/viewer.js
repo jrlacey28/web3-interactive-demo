@@ -499,25 +499,47 @@ document.addEventListener('input', function(e) {
     }
 });
 
-// Responsive positioning system for viewer - matches creator exactly
+// Responsive positioning system for viewer - maintains relative positioning
 function applyResponsivePositioning(wrapper, widgetData) {
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     
-    // Use exact pixel positioning if data contains pixel values (matching creator)
-    if (typeof widgetData.x === 'string' && widgetData.x.includes('px')) {
-        let newLeft = parseInt(widgetData.x);
-        let newTop = parseInt(widgetData.y);
-        let newWidth = parseInt(widgetData.width);
-        let newHeight = parseInt(widgetData.height);
+    // Use percentage positioning for responsive layouts
+    if (typeof widgetData.x === 'string' && widgetData.x.includes('%')) {
+        const leftPercent = parseFloat(widgetData.x);
+        const topPercent = parseFloat(widgetData.y);
+        const widthPercent = parseFloat(widgetData.width);
+        const heightPercent = parseFloat(widgetData.height);
         
-        // Apply viewport constraints to prevent widgets from going off-screen
-        newLeft = Math.max(0, Math.min(newLeft, viewportWidth - 100));
-        newTop = Math.max(0, Math.min(newTop, viewportHeight - 100));
-        newWidth = Math.min(newWidth, viewportWidth - newLeft - 20);
-        newHeight = Math.min(newHeight, viewportHeight - newTop - 20);
+        // Calculate responsive positions maintaining relative placement
+        let newLeft = (leftPercent / 100) * viewportWidth;
+        let newTop = (topPercent / 100) * viewportHeight;
+        let newWidth = (widthPercent / 100) * viewportWidth;
+        let newHeight = (heightPercent / 100) * viewportHeight;
         
-        // Apply the exact positions from creator
+        // Apply widget type constraints
+        const widgetType = widgetData.type;
+        
+        if (widgetType === 'youtube' || widgetType === 'video') {
+            // Maintain aspect ratio for videos
+            const maxVideoWidth = getMaxVideoWidth(viewportWidth);
+            newWidth = Math.min(newWidth, maxVideoWidth);
+            newHeight = (newWidth / 16) * 9;
+        } else {
+            // Apply type-specific size limits
+            const minWidth = getMinWidgetWidth_viewer(widgetType);
+            const minHeight = getMinWidgetHeight_viewer(widgetType);
+            const maxWidth = getMaxWidgetWidth_viewer(widgetType, viewportWidth);
+            const maxHeight = getMaxWidgetHeight_viewer(widgetType, viewportHeight);
+            
+            newWidth = Math.max(minWidth, Math.min(newWidth, maxWidth));
+            newHeight = Math.max(minHeight, Math.min(newHeight, maxHeight));
+        }
+        
+        // Ensure widgets don't go off-screen
+        newLeft = Math.max(0, Math.min(newLeft, viewportWidth - newWidth - 20));
+        newTop = Math.max(0, Math.min(newTop, viewportHeight - newHeight - 20));
+        
         wrapper.style.left = newLeft + 'px';
         wrapper.style.top = newTop + 'px';
         wrapper.style.width = newWidth + 'px';
@@ -525,61 +547,42 @@ function applyResponsivePositioning(wrapper, widgetData) {
         return;
     }
     
-    // Fallback to percentage-based positioning for older layouts
-    let leftPercent, topPercent, widthPercent, heightPercent;
-    
-    if (typeof widgetData.x === 'string' && widgetData.x.includes('%')) {
-        leftPercent = parseFloat(widgetData.x);
-        topPercent = parseFloat(widgetData.y);
-        widthPercent = parseFloat(widgetData.width) / viewportWidth * 100;
-        heightPercent = parseFloat(widgetData.height) / viewportHeight * 100;
-    } else {
-        // Convert pixel values to percentages (assume they're from a 1920x1080 reference)
-        const referenceWidth = 1920;
-        const referenceHeight = 1080;
+    // Fallback to pixel positioning with constraints for older layouts
+    if (typeof widgetData.x === 'string' && widgetData.x.includes('px')) {
+        let newLeft = parseInt(widgetData.x);
+        let newTop = parseInt(widgetData.y);
+        let newWidth = parseInt(widgetData.width);
+        let newHeight = parseInt(widgetData.height);
         
-        leftPercent = (parseInt(widgetData.x) / referenceWidth) * 100;
-        topPercent = (parseInt(widgetData.y) / referenceHeight) * 100;
-        widthPercent = (parseInt(widgetData.width) / referenceWidth) * 100;
-        heightPercent = (parseInt(widgetData.height) / referenceHeight) * 100;
+        // Apply viewport constraints
+        newLeft = Math.max(0, Math.min(newLeft, viewportWidth - 100));
+        newTop = Math.max(0, Math.min(newTop, viewportHeight - 100));
+        newWidth = Math.min(newWidth, viewportWidth - newLeft - 20);
+        newHeight = Math.min(newHeight, viewportHeight - newTop - 20);
+        
+        wrapper.style.left = newLeft + 'px';
+        wrapper.style.top = newTop + 'px';
+        wrapper.style.width = newWidth + 'px';
+        wrapper.style.height = newHeight + 'px';
+        return;
     }
     
-    // Apply percentage-based scaling
-    const widgetType = widgetData.type;
-    let newLeft = Math.max(0, Math.min(
-        (leftPercent / 100) * viewportWidth,
-        viewportWidth - 200
-    ));
-    let newTop = Math.max(0, Math.min(
-        (topPercent / 100) * viewportHeight,
-        viewportHeight - 150
-    ));
+    // Legacy fallback for numeric values
+    const referenceWidth = 1920;
+    const referenceHeight = 1080;
     
-    let newWidth, newHeight;
+    const leftPercent = (parseInt(widgetData.x) / referenceWidth) * 100;
+    const topPercent = (parseInt(widgetData.y) / referenceHeight) * 100;
+    const widthPercent = (parseInt(widgetData.width) / referenceWidth) * 100;
+    const heightPercent = (parseInt(widgetData.height) / referenceHeight) * 100;
     
-    if (widgetType === 'youtube' || widgetType === 'video') {
-        const baseWidth = Math.min(widthPercent / 100 * viewportWidth, getMaxVideoWidth(viewportWidth));
-        newWidth = Math.max(320, Math.min(baseWidth, viewportWidth - newLeft - 20));
-        newHeight = (newWidth / 16) * 9;
-    } else {
-        const maxWidth = getMaxWidgetWidth_viewer(widgetType, viewportWidth);
-        const maxHeight = getMaxWidgetHeight_viewer(widgetType, viewportHeight);
-        
-        newWidth = Math.max(
-            getMinWidgetWidth_viewer(widgetType),
-            Math.min(
-                Math.min(widthPercent / 100 * viewportWidth, maxWidth),
-                viewportWidth - newLeft - 20
-            )
-        );
-        newHeight = Math.max(
-            getMinWidgetHeight_viewer(widgetType),
-            Math.min(
-                Math.min(heightPercent / 100 * viewportHeight, maxHeight),
-                viewportHeight - newTop - 20
-            )
-        );
-    }
+    let newLeft = (leftPercent / 100) * viewportWidth;
+    let newTop = (topPercent / 100) * viewportHeight;
+    let newWidth = (widthPercent / 100) * viewportWidth;
+    let newHeight = (heightPercent / 100) * viewportHeight;
+    
+    newLeft = Math.max(0, Math.min(newLeft, viewportWidth - 200));
+    newTop = Math.max(0, Math.min(newTop, viewportHeight - 150));
     
     wrapper.style.left = newLeft + 'px';
     wrapper.style.top = newTop + 'px';

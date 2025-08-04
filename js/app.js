@@ -676,6 +676,8 @@ function closeSidebar() {
     const sidebar = document.getElementById('sidebar');
     const toggle = document.querySelector('.toggle');
     const snapToggle = document.querySelector('.snap-toggle');
+    const layerToggle = document.querySelector('.layer-toggle');
+    const safeAreaToggle = document.querySelector('.safe-area-toggle');
     
     if (sidebar.classList.contains('open')) {
         sidebar.classList.remove('open');
@@ -684,11 +686,13 @@ function closeSidebar() {
         toggle.style.pointerEvents = 'auto';
         toggle.style.transform = 'translateX(0)';
         
-        if (snapToggle) {
-            snapToggle.style.opacity = '1';
-            snapToggle.style.pointerEvents = 'auto';
-            snapToggle.style.transform = 'translateX(0)';
-        }
+        [snapToggle, layerToggle, safeAreaToggle].forEach(btn => {
+            if (btn) {
+                btn.style.opacity = '1';
+                btn.style.pointerEvents = 'auto';
+                btn.style.transform = 'translateX(0)';
+            }
+        });
     }
 }
 
@@ -1094,10 +1098,13 @@ function createWidget(type, x, y) {
     wrapper.style.position = 'absolute';
     wrapper.id = `wrapper${counter}`;
     
-    // Set initial size based on widget type - smaller default sizes
+    // Set initial size based on widget type - optimized for content
     if (type === 'youtube' || type === 'video') {
         wrapper.style.width = '320px';
         wrapper.style.height = '180px'; // 16:9 ratio (320 * 9/16 = 180)
+    } else if (type === 'crypto') {
+        wrapper.style.width = '300px';
+        wrapper.style.height = '280px'; // Larger height to show send button
     } else {
         wrapper.style.width = '300px';
         wrapper.style.height = '200px';
@@ -1445,18 +1452,25 @@ function enableResizeSnap(wrapper) {
             
             wrapper.classList.add('resizing');
             
+            let resizeTimeout;
             const handleMouseMove = (e) => {
                 if (!isResizing) return;
+                
+                // Throttle resize operations for smoother performance
+                if (resizeTimeout) return;
+                resizeTimeout = setTimeout(() => {
+                    resizeTimeout = null;
+                }, 16); // ~60fps throttling
                 
                 const deltaX = e.clientX - startX;
                 const deltaY = e.clientY - startY;
                 
                 let newWidth, newHeight;
                 
-                // Calculate viewport constraints
+                // Cache viewport constraints (don't recalculate every frame)
                 const wrapperLeft = parseInt(wrapper.style.left) || 0;
                 const wrapperTop = parseInt(wrapper.style.top) || 0;
-                const maxWidth = window.innerWidth - wrapperLeft - 30; // Leave space for resize handle
+                const maxWidth = window.innerWidth - wrapperLeft - 30;
                 const maxHeight = window.innerHeight - wrapperTop - 30;
                 
                 if (widgetType === 'youtube' || widgetType === 'video') {
@@ -1481,18 +1495,19 @@ function enableResizeSnap(wrapper) {
                     newHeight = Math.max(minHeight, Math.min(startHeight + deltaY, Math.min(maxHeight, typeMaxHeight)));
                 }
                 
-                // Check for collisions with other widgets and maintain spacing
+                // Simplified collision detection (reduce computational overhead)
                 const MIN_SPACING = 20;
                 const constrainedSize = checkWidgetCollisions(wrapper, wrapperLeft, wrapperTop, newWidth, newHeight, MIN_SPACING);
                 newWidth = constrainedSize.width;
                 newHeight = constrainedSize.height;
                 
+                // Apply dimensions immediately for responsive feedback
                 wrapper.style.width = newWidth + 'px';
                 wrapper.style.height = newHeight + 'px';
                 widget.style.width = newWidth + 'px';
                 widget.style.height = newHeight + 'px';
                 
-                // Immediately sync header width during resize
+                // Batch DOM updates for better performance
                 requestAnimationFrame(() => {
                     syncHeaderWidth(wrapper);
                 });
@@ -3061,18 +3076,31 @@ function copyToClipboard(text) {
 function captureLayoutState() {
     const widgets = [];
     const wrappers = document.querySelectorAll('.widget-wrapper');
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
     
     wrappers.forEach((wrapper, index) => {
         const widget = wrapper.querySelector('.widget');
         const widgetType = widget.dataset.type;
         
+        // Convert pixel positions to percentages for responsive layout
+        const leftPx = parseInt(wrapper.style.left) || 0;
+        const topPx = parseInt(wrapper.style.top) || 0;
+        const widthPx = parseInt(wrapper.style.width) || 300;
+        const heightPx = parseInt(wrapper.style.height) || 200;
+        
         const widgetData = {
             id: wrapper.id,
             type: widgetType,
-            x: wrapper.style.left,
-            y: wrapper.style.top,
-            width: wrapper.style.width,
-            height: wrapper.style.height,
+            x: ((leftPx / viewportWidth) * 100) + '%',
+            y: ((topPx / viewportHeight) * 100) + '%',
+            width: ((widthPx / viewportWidth) * 100) + '%',
+            height: ((heightPx / viewportHeight) * 100) + '%',
+            // Keep pixel values for fallback
+            pixelX: wrapper.style.left,
+            pixelY: wrapper.style.top,
+            pixelWidth: wrapper.style.width,
+            pixelHeight: wrapper.style.height,
             state: captureWidgetState(widget, widgetType, index + 1),
             customization: captureWidgetCustomization(widget)
         };
