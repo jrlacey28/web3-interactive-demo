@@ -1226,7 +1226,7 @@ function createWidget(type, x, y) {
     // Create header (now outside widget)
     const header = document.createElement('div');
     header.className = 'widget-header';
-    const showCustomization = type !== 'youtube' && type !== 'video';
+    const showCustomization = type !== 'youtube' && type !== 'video'; // crypto, twitter, instagram, discord get customization
     
     header.innerHTML = `
         <span>${title}</span>
@@ -1723,14 +1723,96 @@ function updateButtonStyle(widgetId) {
     });
 }
 
-function toggleStylePanel(widgetId) {
-    const panel = document.getElementById(`style-panel-${widgetId}`);
-    // Close all other panels
-    document.querySelectorAll('.style-panel').forEach(p => {
-        if (p.id !== `style-panel-${widgetId}`) p.classList.remove('show');
+function updateCryptoStyle(widgetId) {
+    const widget = document.getElementById(widgetId);
+    const panel = document.getElementById('external-style-panel');
+    if (!widget || !panel) return;
+    
+    // Get all the color values
+    const tipBtnColor = panel.querySelector('.tip-btn-color')?.value || '#00d4ff';
+    const tipBtnTextColor = panel.querySelector('.tip-btn-text-color')?.value || '#ffffff';
+    const sendBtnColor = panel.querySelector('.send-btn-color')?.value || '#00ff88';
+    const sendBtnTextColor = panel.querySelector('.send-btn-text-color')?.value || '#ffffff';
+    const headerTextColor = panel.querySelector('.header-text-color')?.value || '#ffffff';
+    const messageTextColor = panel.querySelector('.message-text-color')?.value || '#cccccc';
+    const hoverIntensity = panel.querySelector('.hover-intensity')?.value || 20;
+    
+    // Apply tip amount button styles
+    widget.querySelectorAll('.tip-amount-btn').forEach(btn => {
+        btn.style.background = `linear-gradient(135deg, ${tipBtnColor}, ${tipBtnColor}dd)`;
+        btn.style.color = tipBtnTextColor;
+        btn.style.transition = 'all 0.3s ease';
+        
+        // Add hover effects
+        btn.onmouseenter = () => {
+            const intensity = hoverIntensity / 100;
+            btn.style.transform = `scale(${1 + intensity * 0.1})`;
+            btn.style.filter = `brightness(${1 + intensity * 0.3})`;
+        };
+        btn.onmouseleave = () => {
+            btn.style.transform = 'scale(1)';
+            btn.style.filter = 'brightness(1)';
+        };
     });
-    panel.classList.toggle('show');
+    
+    // Apply send button styles
+    widget.querySelectorAll('.send-tip-btn').forEach(btn => {
+        btn.style.background = `linear-gradient(135deg, ${sendBtnColor}, ${sendBtnColor}dd)`;
+        btn.style.color = sendBtnTextColor;
+        btn.style.transition = 'all 0.3s ease';
+        
+        // Add hover effects
+        btn.onmouseenter = () => {
+            const intensity = hoverIntensity / 100;
+            btn.style.transform = `scale(${1 + intensity * 0.1})`;
+            btn.style.filter = `brightness(${1 + intensity * 0.3})`;
+        };
+        btn.onmouseleave = () => {
+            btn.style.transform = 'scale(1)';
+            btn.style.filter = 'brightness(1)';
+        };
+    });
+    
+    // Apply header text color
+    widget.querySelectorAll('.tip-header h3').forEach(header => {
+        header.style.color = headerTextColor;
+    });
+    
+    // Apply message text color
+    widget.querySelectorAll('textarea, .char-count').forEach(element => {
+        element.style.color = messageTextColor;
+    });
+    
+    // Apply placeholder text color
+    widget.querySelectorAll('textarea').forEach(textarea => {
+        textarea.style.setProperty('--placeholder-color', messageTextColor);
+        const style = document.createElement('style');
+        const uniqueId = 'textarea-' + Math.random().toString(36).substr(2, 9);
+        textarea.classList.add(uniqueId);
+        style.textContent = `
+            .${uniqueId}::placeholder {
+                color: ${messageTextColor} !important;
+                opacity: 0.7;
+            }
+        `;
+        document.head.appendChild(style);
+    });
+    
+    // Store customization for persistence
+    const customization = {
+        tipBtnColor,
+        tipBtnTextColor,
+        sendBtnColor,
+        sendBtnTextColor,
+        headerTextColor,
+        messageTextColor,
+        hoverIntensity
+    };
+    
+    widget.dataset.cryptoCustomization = JSON.stringify(customization);
 }
+
+// toggleStylePanel function moved to external style panel section
 
 // ========================================
 // VIDEO WIDGET FUNCTIONS
@@ -2216,16 +2298,16 @@ function updateLayerList() {
         const eyeIcon = isHidden ? '🙈' : '👁️';
         
         layerItem.innerHTML = `
-            <div class="layer-drag-handle" style="cursor: grab;">
+            <div class="layer-drag-handle" style="cursor: grab; pointer-events: none;">
                 <span class="hamburger-icon">☰</span>
             </div>
-            <div class="layer-info">
+            <div class="layer-info" style="flex: 1; pointer-events: none;">
                 <span class="layer-type">${widgetType.charAt(0).toUpperCase() + widgetType.slice(1)}</span>
                 <span class="layer-z">Z: ${zIndex}</span>
             </div>
-            <div class="layer-actions">
-                <button onclick="toggleWidgetVisibility('${wrapper.id}')" title="Toggle Visibility" style="opacity: ${isHidden ? '0.5' : '1'}">${eyeIcon}</button>
-                <button onclick="highlightWidget('${wrapper.id}')" title="Select Widget">🎯</button>
+            <div class="layer-actions" style="pointer-events: auto;">
+                <button onclick="toggleWidgetVisibility('${wrapper.id}')" title="Toggle Visibility" style="opacity: ${isHidden ? '0.5' : '1'}; pointer-events: auto;">${eyeIcon}</button>
+                <button onclick="highlightWidget('${wrapper.id}')" title="Select Widget" style="pointer-events: auto;">🎯</button>
             </div>
         `;
         
@@ -2262,13 +2344,28 @@ function updateLayerList() {
 let draggedLayerItem = null;
 
 function handleLayerDragStart(e) {
+    e.stopPropagation();
     draggedLayerItem = e.target.closest('.layer-item');
     if (draggedLayerItem) {
+        console.log('Starting drag for:', draggedLayerItem.dataset.wrapperId); // Debug log
         draggedLayerItem.style.opacity = '0.5';
         draggedLayerItem.style.cursor = 'grabbing';
         draggedLayerItem.classList.add('dragging');
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', draggedLayerItem.dataset.wrapperId);
+        
+        // Add a drag image
+        const dragImage = draggedLayerItem.cloneNode(true);
+        dragImage.style.opacity = '0.8';
+        dragImage.style.background = 'rgba(0, 212, 255, 0.2)';
+        document.body.appendChild(dragImage);
+        dragImage.style.position = 'absolute';
+        dragImage.style.top = '-1000px';
+        e.dataTransfer.setDragImage(dragImage, 0, 0);
+        
+        setTimeout(() => {
+            document.body.removeChild(dragImage);
+        }, 0);
     }
 }
 
@@ -2294,11 +2391,14 @@ function handleLayerDragOver(e) {
 
 function handleLayerDrop(e) {
     e.preventDefault();
+    e.stopPropagation();
     
     const targetItem = e.target.closest('.layer-item');
     if (targetItem && targetItem !== draggedLayerItem && draggedLayerItem) {
         const draggedWrapperId = draggedLayerItem.dataset.wrapperId;
         const targetWrapperId = targetItem.dataset.wrapperId;
+        
+        console.log('Dropping', draggedWrapperId, 'onto', targetWrapperId); // Debug log
         
         const draggedWrapper = document.getElementById(draggedWrapperId);
         const targetWrapper = document.getElementById(targetWrapperId);
@@ -2309,12 +2409,15 @@ function handleLayerDrop(e) {
             allWrappers.sort((a, b) => {
                 const aZ = parseInt(a.style.zIndex) || 1000;
                 const bZ = parseInt(b.style.zIndex) || 1000;
-                return bZ - aZ; // Highest first
+                return bZ - aZ; // Highest first (top layer first)
             });
             
             // Find positions in sorted array
             const draggedIndex = allWrappers.indexOf(draggedWrapper);
             const targetIndex = allWrappers.indexOf(targetWrapper);
+            
+            console.log('Current order:', allWrappers.map(w => w.id));
+            console.log('Moving from index', draggedIndex, 'to', targetIndex);
             
             // Remove dragged item and insert at target position
             allWrappers.splice(draggedIndex, 1);
@@ -2322,11 +2425,17 @@ function handleLayerDrop(e) {
             
             // Reassign z-indices based on new order (highest to lowest)
             allWrappers.forEach((wrapper, index) => {
-                wrapper.style.zIndex = 2000 - index; // Start from high number and decrease
+                const newZIndex = 2000 - index; // Start from high number and decrease
+                wrapper.style.zIndex = newZIndex;
+                console.log(`Setting ${wrapper.id} z-index to ${newZIndex}`);
             });
             
+            console.log('New order:', allWrappers.map(w => w.id));
+            
             // Update the layer list to reflect changes
-            updateLayerList();
+            setTimeout(() => {
+                updateLayerList();
+            }, 100);
         }
     }
     
@@ -2422,6 +2531,64 @@ function toggleStylePanel(widgetId) {
     stylePanel.className = 'external-style-panel';
     
     const widgetType = widget.dataset.type;
+    const isCrypto = widgetType === 'crypto';
+    
+    // Enhanced customization options for crypto widgets
+    const cryptoCustomizations = isCrypto ? `
+        <div class="style-group">
+            <div class="style-row">
+                <label>Tip Button Color</label>
+                <input type="color" class="style-color tip-btn-color" value="#00d4ff" onchange="updateCryptoStyle('${widgetId}')">
+            </div>
+        </div>
+        <div class="style-group">
+            <div class="style-row">
+                <label>Tip Button Text Color</label>
+                <input type="color" class="style-color tip-btn-text-color" value="#ffffff" onchange="updateCryptoStyle('${widgetId}')">
+            </div>
+        </div>
+        <div class="style-group">
+            <div class="style-row">
+                <label>Send Button Color</label>
+                <input type="color" class="style-color send-btn-color" value="#00ff88" onchange="updateCryptoStyle('${widgetId}')">
+            </div>
+        </div>
+        <div class="style-group">
+            <div class="style-row">
+                <label>Send Button Text Color</label>
+                <input type="color" class="style-color send-btn-text-color" value="#ffffff" onchange="updateCryptoStyle('${widgetId}')">
+            </div>
+        </div>
+        <div class="style-group">
+            <div class="style-row">
+                <label>Header Text Color</label>
+                <input type="color" class="style-color header-text-color" value="#ffffff" onchange="updateCryptoStyle('${widgetId}')">
+            </div>
+        </div>
+        <div class="style-group">
+            <div class="style-row">
+                <label>Message Text Color</label>
+                <input type="color" class="style-color message-text-color" value="#cccccc" onchange="updateCryptoStyle('${widgetId}')">
+            </div>
+        </div>
+        <div class="style-group">
+            <label>Button Hover Effect</label>
+            <input type="range" class="style-slider hover-intensity" min="0" max="100" step="10" value="20" onchange="updateCryptoStyle('${widgetId}')">
+        </div>
+    ` : `
+        <div class="style-group">
+            <div class="style-row">
+                <label>Button Color</label>
+                <input type="color" class="style-color btn-color" value="#00d4ff" onchange="updateButtonStyle('${widgetId}')">
+            </div>
+        </div>
+        <div class="style-group">
+            <div class="style-row">
+                <label>Button Text Color</label>
+                <input type="color" class="style-color btn-text-color" value="#ffffff" onchange="updateButtonStyle('${widgetId}')">
+            </div>
+        </div>
+    `;
     
     stylePanel.innerHTML = `
         <div class="style-panel-header">
@@ -2445,31 +2612,7 @@ function toggleStylePanel(widgetId) {
                     <input type="color" class="style-color border-color" value="#00d4ff" onchange="updateWidgetStyle('${widgetId}')">
                 </div>
             </div>
-            ${isShape ? `
-                <div class="style-group">
-                    <div class="style-row">
-                        <label>Shape Color</label>
-                        <input type="color" class="style-color shape-color" value="#00d4ff" onchange="updateShapeStyle('${widgetId}')">
-                    </div>
-                </div>
-                <div class="style-group">
-                    <label>Shape Size</label>
-                    <input type="range" class="style-slider size-slider" min="20" max="120" step="10" value="80" onchange="updateShapeStyle('${widgetId}')">
-                </div>
-            ` : `
-                <div class="style-group">
-                    <div class="style-row">
-                        <label>Button Color</label>
-                        <input type="color" class="style-color btn-color" value="#00d4ff" onchange="updateButtonStyle('${widgetId}')">
-                    </div>
-                </div>
-                <div class="style-group">
-                    <div class="style-row">
-                        <label>Button Text Color</label>
-                        <input type="color" class="style-color btn-text-color" value="#ffffff" onchange="updateButtonStyle('${widgetId}')">
-                    </div>
-                </div>
-            `}
+            ${cryptoCustomizations}
         </div>
     `;
     

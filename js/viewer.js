@@ -1,53 +1,257 @@
-// Viewer Page JavaScript - Read-only layout display
+// Viewer Page JavaScript - Enhanced published page experience
 let walletConnected = false;
 
+// Performance optimization: Preload critical resources
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize viewer
+    // Initialize performance monitoring
+    initializePerformanceMonitoring();
+    
+    // Initialize error handling
+    initializeErrorHandling();
+    
+    // Initialize accessibility features
+    initializeAccessibility();
+    
+    // Initialize viewer with progressive loading
     initializeViewer();
+    
+    // Initialize page analytics (optional)
+    initializeAnalytics();
 });
 
-function initializeViewer() {
-    // Get layout ID from URL parameters
-    const urlParams = new URLSearchParams(window.location.search);
-    const layoutId = urlParams.get('layout') || urlParams.get('id');
-    
-    if (layoutId) {
-        loadPublishedLayout(layoutId);
-    } else {
-        // Try to load the demo/default layout
-        loadDemoLayout();
+// Performance monitoring for optimization
+function initializePerformanceMonitoring() {
+    if ('performance' in window) {
+        window.addEventListener('load', () => {
+            const perfData = performance.getEntriesByType('navigation')[0];
+            console.log('Page load time:', perfData.loadEventEnd - perfData.fetchStart, 'ms');
+            
+            // Track Core Web Vitals
+            if ('PerformanceObserver' in window) {
+                const observer = new PerformanceObserver((list) => {
+                    for (const entry of list.getEntries()) {
+                        if (entry.entryType === 'largest-contentful-paint') {
+                            console.log('LCP:', entry.startTime);
+                        }
+                    }
+                });
+                observer.observe({ entryTypes: ['largest-contentful-paint'] });
+            }
+        });
     }
 }
 
-function loadPublishedLayout(layoutId) {
-    // Show loading screen
+// Enhanced error handling
+function initializeErrorHandling() {
+    // Global error handler
+    window.addEventListener('error', (e) => {
+        console.error('Global error:', e.error);
+        // Don't show error to user for minor issues, but log them
+        if (e.error && e.error.message.includes('network') || e.error.message.includes('fetch')) {
+            showToast('Connection issue detected. Retrying...', 'warning');
+        }
+    });
+    
+    // Unhandled promise rejection handler
+    window.addEventListener('unhandledrejection', (e) => {
+        console.error('Unhandled promise rejection:', e.reason);
+        e.preventDefault();
+    });
+}
+
+// Accessibility improvements
+function initializeAccessibility() {
+    // Add keyboard navigation support
+    document.addEventListener('keydown', (e) => {
+        // Tab navigation enhancement
+        if (e.key === 'Tab') {
+            document.body.classList.add('keyboard-nav');
+        }
+        
+        // ESC to close modals or return to home
+        if (e.key === 'Escape') {
+            const errorState = document.getElementById('errorState');
+            if (errorState && errorState.style.display !== 'none') {
+                window.location.href = 'index.html';
+            }
+        }
+    });
+    
+    // Remove keyboard nav class on mouse use
+    document.addEventListener('mousedown', () => {
+        document.body.classList.remove('keyboard-nav');
+    });
+    
+    // Screen reader announcements
+    const announcer = document.createElement('div');
+    announcer.setAttribute('aria-live', 'polite');
+    announcer.setAttribute('aria-atomic', 'true');
+    announcer.className = 'sr-only';
+    announcer.style.cssText = 'position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden;';
+    document.body.appendChild(announcer);
+    
+    window.announceToScreenReader = function(message) {
+        announcer.textContent = message;
+        setTimeout(() => { announcer.textContent = ''; }, 1000);
+    };
+}
+
+// Optional analytics tracking
+function initializeAnalytics() {
+    // Only track if creator has enabled analytics (privacy-focused)
+    const urlParams = new URLSearchParams(window.location.search);
+    const trackingEnabled = urlParams.get('analytics') === 'true';
+    
+    if (trackingEnabled) {
+        // Track page view
+        console.log('Analytics: Page view tracked');
+        
+        // Track widget interactions
+        document.addEventListener('click', (e) => {
+            if (e.target.matches('.tip-amount-btn, .send-tip-btn')) {
+                console.log('Analytics: Widget interaction -', e.target.className);
+            }
+        });
+    }
+}
+
+function initializeViewer() {
+    // Enhanced URL parsing with validation
+    const urlParams = new URLSearchParams(window.location.search);
+    const layoutId = urlParams.get('layout') || urlParams.get('id');
+    
+    // Update page title and meta tags dynamically
+    updatePageMetadata(layoutId);
+    
+    // Progressive loading with better UX
+    showLoadingScreen('Initializing...');
+    
+    if (layoutId && isValidLayoutId(layoutId)) {
+        loadPublishedLayout(layoutId);
+    } else if (layoutId) {
+        // Invalid layout ID
+        showErrorState('Invalid layout ID provided');
+    } else {
+        // Try to load the demo/default layout
+        showLoadingScreen('Loading demo layout...');
+        setTimeout(() => loadDemoLayout(), 500); // Small delay for better UX
+    }
+}
+
+// Validate layout ID format
+function isValidLayoutId(layoutId) {
+    // Basic validation - alphanumeric and common separators
+    return /^[a-zA-Z0-9_-]{1,50}$/.test(layoutId);
+}
+
+// Dynamic metadata updates for SEO and sharing
+function updatePageMetadata(layoutId) {
+    if (layoutId) {
+        document.title = `StreamSpace Layout - ${layoutId}`;
+        
+        // Add or update meta tags
+        updateMetaTag('description', `Interactive stream layout created with StreamSpace - ${layoutId}`);
+        updateMetaTag('og:title', `StreamSpace Layout - ${layoutId}`);
+        updateMetaTag('og:description', 'Interactive stream layout with live widgets and real-time features');
+        updateMetaTag('og:type', 'website');
+        updateMetaTag('twitter:card', 'summary_large_image');
+    }
+}
+
+function updateMetaTag(property, content) {
+    let meta = document.querySelector(`meta[property="${property}"]`) || 
+               document.querySelector(`meta[name="${property}"]`);
+    
+    if (!meta) {
+        meta = document.createElement('meta');
+        if (property.startsWith('og:') || property.startsWith('twitter:')) {
+            meta.setAttribute('property', property);
+        } else {
+            meta.setAttribute('name', property);
+        }
+        document.head.appendChild(meta);
+    }
+    
+    meta.setAttribute('content', content);
+}
+
+// Enhanced loading screen with messages
+function showLoadingScreen(message = 'Loading Stream Layout...') {
     const loadingScreen = document.getElementById('loadingScreen');
+    const loadingText = loadingScreen.querySelector('p');
+    if (loadingText) {
+        loadingText.textContent = message;
+    }
+    loadingScreen.style.display = 'flex';
+    announceToScreenReader(`Loading: ${message}`);
+}
+
+function loadPublishedLayout(layoutId, retryCount = 0) {
+    const maxRetries = 2;
+    
+    showLoadingScreen(`Loading layout ${layoutId}...`);
     
     try {
-        // Try to load from localStorage first (for demo purposes)
+        // Try to load from localStorage first (for demo/local development)
         const savedLayout = localStorage.getItem(`layout_${layoutId}`) || 
                            localStorage.getItem('web3DemoPublishedLayout');
         
         if (savedLayout) {
             const layout = JSON.parse(savedLayout);
-            displayLayout(layout);
-            hideLoadingScreen();
+            
+            // Validate layout structure
+            if (isValidLayout(layout)) {
+                displayLayout(layout, layoutId);
+                hideLoadingScreen();
+                announceToScreenReader('Layout loaded successfully');
+            } else {
+                throw new Error('Invalid layout structure');
+            }
         } else {
             // In production, this would fetch from your backend API
-            // fetch(`/api/layouts/${layoutId}`)
-            //   .then(response => response.json())
-            //   .then(layout => displayLayout(layout))
-            //   .catch(() => showErrorState());
-            
-            // For now, show demo layout
-            setTimeout(() => {
-                loadDemoLayout();
-            }, 1000);
+            // For now, attempt to load demo or show appropriate error
+            if (retryCount < maxRetries) {
+                showLoadingScreen(`Layout not found, trying demo... (${retryCount + 1}/${maxRetries})`);
+                setTimeout(() => {
+                    loadPublishedLayout(layoutId, retryCount + 1);
+                }, 1000);
+            } else {
+                showErrorState('Layout not found', layoutId);
+            }
         }
     } catch (error) {
         console.error('Error loading layout:', error);
-        showErrorState();
+        
+        if (retryCount < maxRetries) {
+            showLoadingScreen(`Retrying... (${retryCount + 1}/${maxRetries})`);
+            setTimeout(() => {
+                loadPublishedLayout(layoutId, retryCount + 1);
+            }, 2000);
+        } else {
+            showErrorState('Failed to load layout', layoutId);
+        }
     }
+}
+
+// Validate layout structure for security and integrity
+function isValidLayout(layout) {
+    if (!layout || typeof layout !== 'object') return false;
+    if (!Array.isArray(layout.widgets)) return false;
+    
+    // Check each widget has required properties
+    for (const widget of layout.widgets) {
+        if (!widget.id || !widget.type || !widget.x || !widget.y) {
+            return false;
+        }
+        
+        // Validate widget types
+        const validTypes = ['youtube', 'video', 'crypto', 'twitter', 'instagram', 'discord'];
+        if (!validTypes.includes(widget.type)) {
+            return false;
+        }
+    }
+    
+    return true;
 }
 
 function loadDemoLayout() {
@@ -91,6 +295,10 @@ function loadDemoLayout() {
 function displayLayout(layout) {
     const canvas = document.getElementById('canvas');
     const bg = document.getElementById('bg');
+    
+    // Store original layout data for responsive scaling
+    localStorage.setItem('currentLayoutData', JSON.stringify(layout));
+    storedOriginalLayout = layout;
     
     // Set background properly 
     if (layout.background) {
@@ -380,12 +588,47 @@ function hideLoadingScreen() {
     }, 500);
 }
 
-function showErrorState() {
+function showErrorState(errorMessage = 'Layout not found', layoutId = null) {
     const loadingScreen = document.getElementById('loadingScreen');
     const errorState = document.getElementById('errorState');
     
+    // Update error message dynamically
+    const errorTitle = errorState.querySelector('h2');
+    const errorDescription = errorState.querySelector('p');
+    
+    if (errorTitle && errorDescription) {
+        if (layoutId) {
+            errorTitle.textContent = `Layout "${layoutId}" Not Found`;
+            errorDescription.textContent = `The stream layout "${layoutId}" doesn't exist or hasn't been published yet. It may have been removed or the link is incorrect.`;
+        } else {
+            errorTitle.textContent = 'Unable to Load Layout';
+            errorDescription.textContent = errorMessage;
+        }
+    }
+    
+    // Add retry option for network-related errors
+    if (errorMessage.includes('network') || errorMessage.includes('Failed to load')) {
+        const errorActions = errorState.querySelector('.error-actions');
+        if (errorActions && !errorActions.querySelector('.retry-btn')) {
+            const retryBtn = document.createElement('button');
+            retryBtn.className = 'btn-secondary retry-btn';
+            retryBtn.textContent = 'Try Again';
+            retryBtn.onclick = () => window.location.reload();
+            errorActions.insertBefore(retryBtn, errorActions.firstChild);
+        }
+    }
+    
     loadingScreen.style.display = 'none';
     errorState.style.display = 'flex';
+    
+    // Accessibility announcement
+    announceToScreenReader(`Error: ${errorMessage}`);
+    
+    // Focus management for keyboard users
+    const firstButton = errorState.querySelector('button, a');
+    if (firstButton) {
+        setTimeout(() => firstButton.focus(), 100);
+    }
 }
 
 // Initialize wallet for viewer (tips functionality)
@@ -810,23 +1053,64 @@ function loadTwitter(id) {
     }, 1500);
 }
 
-function showToast(message, type = 'info') {
+function showToast(message, type = 'info', duration = 3000) {
+    // Remove existing toasts of the same type to prevent spam
+    const existingToasts = document.querySelectorAll(`.toast-${type}`);
+    existingToasts.forEach(toast => toast.remove());
+    
     const toast = document.createElement('div');
-    const bgColor = type === 'success' ? '#00ff88' : type === 'error' ? '#ff4757' : '#00d4ff';
-    toast.style.cssText = `
-        position: fixed; top: 20px; right: 20px; background: ${bgColor}; 
-        color: white; padding: 15px 20px; border-radius: 8px; z-index: 10000;
-        font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    toast.className = `toast toast-${type}`;
+    
+    // Enhanced styling with icons and better colors
+    const colors = {
+        success: { bg: '#00ff88', icon: '✅' },
+        error: { bg: '#ff4757', icon: '❌' },
+        warning: { bg: '#ffa502', icon: '⚠️' },
+        info: { bg: '#00d4ff', icon: 'ℹ️' }
+    };
+    
+    const color = colors[type] || colors.info;
+    
+    toast.innerHTML = `
+        <span class="toast-icon">${color.icon}</span>
+        <span class="toast-message">${message}</span>
+        <button class="toast-close" onclick="this.parentElement.remove()" aria-label="Close notification">×</button>
     `;
-    toast.textContent = message;
+    
+    toast.style.cssText = `
+        position: fixed; top: 20px; right: 20px; background: ${color.bg}; 
+        color: white; padding: 12px 20px; border-radius: 8px; z-index: 10000;
+        font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        display: flex; align-items: center; gap: 8px; max-width: 400px;
+        transform: translateX(400px); transition: transform 0.3s ease;
+        font-family: Arial, sans-serif; font-size: 14px;
+    `;
+    
+    // Add accessibility attributes
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'polite');
+    
     document.body.appendChild(toast);
     
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateX(100px)';
-        toast.style.transition = 'all 0.3s ease';
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
+    // Slide in animation
+    requestAnimationFrame(() => {
+        toast.style.transform = 'translateX(0)';
+    });
+    
+    // Screen reader announcement
+    announceToScreenReader(`${type}: ${message}`);
+    
+    // Auto-dismiss
+    if (duration > 0) {
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.style.transform = 'translateX(400px)';
+                setTimeout(() => toast.remove(), 300);
+            }
+        }, duration);
+    }
+    
+    return toast;
 }
 
 // Responsive scaling system to ensure consistent behavior between creator and viewer
@@ -846,53 +1130,136 @@ function adjustWidgetsForViewport() {
     const viewportHeight = window.innerHeight;
     const wrappers = document.querySelectorAll('.widget-wrapper');
     
+    // Get original layout dimensions if available
+    const originalLayout = getOriginalLayoutDimensions();
+    
     wrappers.forEach(wrapper => {
         const widget = wrapper.querySelector('.widget');
         if (!widget) return;
         
         const widgetType = widget.dataset.type;
-        let currentLeft = parseInt(wrapper.style.left) || 0;
-        let currentTop = parseInt(wrapper.style.top) || 0;
-        let currentWidth = parseInt(wrapper.style.width) || 300;
-        let currentHeight = parseInt(wrapper.style.height) || 200;
+        const widgetId = wrapper.id;
         
-        // Constrain to viewport bounds
-        const newLeft = Math.max(0, Math.min(currentLeft, viewportWidth - 100));
-        const newTop = Math.max(0, Math.min(currentTop, viewportHeight - 100));
-        const maxWidth = viewportWidth - newLeft - 20;
-        const maxHeight = viewportHeight - newTop - 20;
+        // Get original positioning data if available
+        const originalData = originalLayout.widgets.find(w => w.id === widgetId);
         
-        let newWidth = Math.min(currentWidth, maxWidth);
-        let newHeight = Math.min(currentHeight, maxHeight);
+        if (!originalData) {
+            // Fallback to current behavior if no original data
+            adjustWidgetFallback(wrapper, widgetType, viewportWidth, viewportHeight);
+            return;
+        }
         
-        // Apply type-specific constraints
+        // YouTube-like responsive scaling based on original percentage positions
+        let leftPercent = parseFloat(originalData.x);
+        let topPercent = parseFloat(originalData.y);
+        let widthPercent = parseFloat(originalData.width);
+        let heightPercent = parseFloat(originalData.height);
+        
+        // Calculate new positions and sizes
+        let newLeft = (leftPercent / 100) * viewportWidth;
+        let newTop = (topPercent / 100) * viewportHeight;
+        let newWidth = (widthPercent / 100) * viewportWidth;
+        let newHeight = (heightPercent / 100) * viewportHeight;
+        
+        // Apply YouTube-like scaling for videos
         if (widgetType === 'youtube' || widgetType === 'video') {
-            const videoMaxWidth = getMaxVideoWidth(viewportWidth);
-            newWidth = Math.min(newWidth, videoMaxWidth);
-            newHeight = (newWidth / 16) * 9; // Maintain aspect ratio
+            // Scale videos responsively like YouTube
+            const baseWidth = (widthPercent / 100) * viewportWidth;
+            const scaleFactor = getVideoScaleFactor(viewportWidth);
+            
+            newWidth = Math.max(320, Math.min(baseWidth * scaleFactor, viewportWidth * 0.9));
+            newHeight = (newWidth / 16) * 9; // Maintain 16:9 aspect ratio
+            
+            // Adjust position to maintain relative placement
+            const widthDiff = newWidth - (widthPercent / 100) * viewportWidth;
+            newLeft = Math.max(10, newLeft - (widthDiff / 2)); // Keep centered
             
             // Ensure height fits
-            if (newHeight > maxHeight) {
-                newHeight = maxHeight;
+            if (newHeight > viewportHeight * 0.8) {
+                newHeight = viewportHeight * 0.8;
                 newWidth = (newHeight / 9) * 16;
+                newLeft = Math.max(10, (leftPercent / 100) * viewportWidth - ((newWidth - (widthPercent / 100) * viewportWidth) / 2));
             }
         } else {
-            const typeMaxWidth = getMaxWidgetWidth_viewer(widgetType, viewportWidth);
-            const typeMaxHeight = getMaxWidgetHeight_viewer(widgetType, viewportHeight);
+            // Scale other widgets responsively
+            const scaleFactor = getWidgetScaleFactor(widgetType, viewportWidth);
             const minWidth = getMinWidgetWidth_viewer(widgetType);
             const minHeight = getMinWidgetHeight_viewer(widgetType);
+            const maxWidth = getMaxWidgetWidth_viewer(widgetType, viewportWidth);
+            const maxHeight = getMaxWidgetHeight_viewer(widgetType, viewportHeight);
             
-            newWidth = Math.max(minWidth, Math.min(newWidth, typeMaxWidth));
-            newHeight = Math.max(minHeight, Math.min(newHeight, typeMaxHeight));
+            newWidth = Math.max(minWidth, Math.min(newWidth * scaleFactor, maxWidth));
+            newHeight = Math.max(minHeight, Math.min(newHeight * scaleFactor, maxHeight));
         }
         
-        // Apply adjusted dimensions
-        if (newLeft !== currentLeft || newTop !== currentTop || 
-            newWidth !== currentWidth || newHeight !== currentHeight) {
-            wrapper.style.left = newLeft + 'px';
-            wrapper.style.top = newTop + 'px';
-            wrapper.style.width = newWidth + 'px';
-            wrapper.style.height = newHeight + 'px';
-        }
+        // Ensure widgets stay within viewport bounds
+        newLeft = Math.max(10, Math.min(newLeft, viewportWidth - newWidth - 10));
+        newTop = Math.max(10, Math.min(newTop, viewportHeight - newHeight - 10));
+        
+        // Apply smooth transitions
+        wrapper.style.transition = 'all 0.3s ease';
+        wrapper.style.left = newLeft + 'px';
+        wrapper.style.top = newTop + 'px';
+        wrapper.style.width = newWidth + 'px';
+        wrapper.style.height = newHeight + 'px';
+        
+        // Clear transition after animation
+        setTimeout(() => {
+            wrapper.style.transition = '';
+        }, 300);
     });
+}
+
+// YouTube-like video scaling factors
+function getVideoScaleFactor(viewportWidth) {
+    if (viewportWidth <= 480) return 0.95; // Mobile: nearly full width
+    if (viewportWidth <= 768) return 0.85; // Tablet: slightly smaller
+    if (viewportWidth <= 1024) return 0.75; // Small desktop
+    if (viewportWidth <= 1440) return 0.65; // Medium desktop
+    if (viewportWidth <= 1920) return 0.55; // Large desktop
+    return 0.5; // Ultra-wide: 50% width
+}
+
+// Widget scaling factors for non-video widgets
+function getWidgetScaleFactor(widgetType, viewportWidth) {
+    const baseScale = viewportWidth <= 768 ? 0.9 : viewportWidth <= 1440 ? 0.8 : 0.7;
+    
+    const typeMultipliers = {
+        'crypto': 1.0,    // Tips widgets scale normally
+        'twitter': 1.0,   // Social widgets scale normally  
+        'instagram': 1.0,
+        'discord': 1.0
+    };
+    
+    return baseScale * (typeMultipliers[widgetType] || 1.0);
+}
+
+// Fallback adjustment for widgets without original data
+function adjustWidgetFallback(wrapper, widgetType, viewportWidth, viewportHeight) {
+    let currentLeft = parseInt(wrapper.style.left) || 0;
+    let currentTop = parseInt(wrapper.style.top) || 0;
+    let currentWidth = parseInt(wrapper.style.width) || 300;
+    let currentHeight = parseInt(wrapper.style.height) || 200;
+    
+    const newLeft = Math.max(10, Math.min(currentLeft, viewportWidth - 100));
+    const newTop = Math.max(10, Math.min(currentTop, viewportHeight - 100));
+    
+    wrapper.style.left = newLeft + 'px';
+    wrapper.style.top = newTop + 'px';
+}
+
+// Store original layout dimensions for responsive scaling
+let storedOriginalLayout = null;
+
+function getOriginalLayoutDimensions() {
+    if (!storedOriginalLayout) {
+        // Try to get from current layout or localStorage
+        const layoutData = localStorage.getItem('currentLayoutData');
+        if (layoutData) {
+            storedOriginalLayout = JSON.parse(layoutData);
+        } else {
+            storedOriginalLayout = { widgets: [] };
+        }
+    }
+    return storedOriginalLayout;
 }
