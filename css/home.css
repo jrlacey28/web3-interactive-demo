@@ -21,9 +21,19 @@
 }
 
 /* Home Page Layout */
+html, body {
+  overflow-x: hidden;
+  overflow-y: auto;
+  height: auto;
+  min-height: 100vh;
+}
+
 .home-page {
   overflow-x: hidden;
+  overflow-y: auto;
   scroll-behavior: smooth;
+  min-height: 100vh;
+  position: relative;
 }
 
 .home-page .bg {

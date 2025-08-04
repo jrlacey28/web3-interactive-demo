@@ -147,11 +147,11 @@ function isValidLayoutId(layoutId) {
 // Dynamic metadata updates for SEO and sharing
 function updatePageMetadata(layoutId) {
     if (layoutId) {
-        document.title = `StreamSpace Layout - ${layoutId}`;
+        document.title = `GENESIS Layout - ${layoutId}`;
         
         // Add or update meta tags
-        updateMetaTag('description', `Interactive stream layout created with StreamSpace - ${layoutId}`);
-        updateMetaTag('og:title', `StreamSpace Layout - ${layoutId}`);
+        updateMetaTag('description', `Interactive stream layout created with GENESIS - ${layoutId}`);
+        updateMetaTag('og:title', `GENESIS Layout - ${layoutId}`);
         updateMetaTag('og:description', 'Interactive stream layout with live widgets and real-time features');
         updateMetaTag('og:type', 'website');
         updateMetaTag('twitter:card', 'summary_large_image');
@@ -245,7 +245,7 @@ function isValidLayout(layout) {
         }
         
         // Validate widget types
-        const validTypes = ['youtube', 'video', 'crypto', 'twitter', 'instagram', 'discord'];
+        const validTypes = ['youtube', 'video', 'livestream', 'crypto', 'twitter', 'instagram', 'discord'];
         if (!validTypes.includes(widget.type)) {
             return false;
         }
@@ -322,7 +322,7 @@ function displayLayout(layout) {
     // Set creator name
     if (layout.creatorName) {
         document.getElementById('creatorName').textContent = `${layout.creatorName}'s Stream Layout`;
-        document.title = `${layout.creatorName}'s Stream - StreamSpace`;
+        document.title = `${layout.creatorName}'s Stream - GENESIS`;
     }
     
     // Clear existing widgets
@@ -372,6 +372,17 @@ function createViewerWidget(widgetData, counter) {
                     <button class="youtube-load-btn" onclick="loadYT(${counter})">Load Video</button>
                 </div>
                 <div id="ytc${counter}"></div>
+            `;
+            break;
+            
+        case 'livestream':
+            title = 'Live Stream';
+            content = `
+                <div class="upload-section" style="display: none;">
+                    <input class="input" id="stream${counter}" placeholder="Enter Stream URL" readonly>
+                    <button class="youtube-load-btn" onclick="loadStream(${counter})">Load Stream</button>
+                </div>
+                <div id="streamc${counter}"></div>
             `;
             break;
             
@@ -1161,25 +1172,29 @@ function adjustWidgetsForViewport() {
         let newWidth = (widthPercent / 100) * viewportWidth;
         let newHeight = (heightPercent / 100) * viewportHeight;
         
-        // Apply YouTube-like scaling for videos
-        if (widgetType === 'youtube' || widgetType === 'video') {
-            // Scale videos responsively like YouTube
+        // Apply YouTube-like scaling for videos with strict limits
+        if (widgetType === 'youtube' || widgetType === 'video' || widgetType === 'livestream') {
+            // Calculate base dimensions
             const baseWidth = (widthPercent / 100) * viewportWidth;
             const scaleFactor = getVideoScaleFactor(viewportWidth);
             
-            newWidth = Math.max(320, Math.min(baseWidth * scaleFactor, viewportWidth * 0.9));
+            // Apply scaling with absolute maximum of 1000px
+            const scaledWidth = baseWidth * scaleFactor;
+            const maxWidth = Math.min(1000, viewportWidth * 0.8); // Never exceed 1000px or 80% of viewport
+            newWidth = Math.max(320, Math.min(scaledWidth, maxWidth));
             newHeight = (newWidth / 16) * 9; // Maintain 16:9 aspect ratio
+            
+            // Ensure height doesn't exceed 70% of viewport
+            const maxHeight = viewportHeight * 0.7;
+            if (newHeight > maxHeight) {
+                newHeight = maxHeight;
+                newWidth = (newHeight / 9) * 16;
+            }
             
             // Adjust position to maintain relative placement
             const widthDiff = newWidth - (widthPercent / 100) * viewportWidth;
             newLeft = Math.max(10, newLeft - (widthDiff / 2)); // Keep centered
-            
-            // Ensure height fits
-            if (newHeight > viewportHeight * 0.8) {
-                newHeight = viewportHeight * 0.8;
-                newWidth = (newHeight / 9) * 16;
-                newLeft = Math.max(10, (leftPercent / 100) * viewportWidth - ((newWidth - (widthPercent / 100) * viewportWidth) / 2));
-            }
+        }
         } else {
             // Scale other widgets responsively
             const scaleFactor = getWidgetScaleFactor(widgetType, viewportWidth);
@@ -1210,14 +1225,14 @@ function adjustWidgetsForViewport() {
     });
 }
 
-// YouTube-like video scaling factors
+// YouTube-like video scaling factors with maximum size limits
 function getVideoScaleFactor(viewportWidth) {
-    if (viewportWidth <= 480) return 0.95; // Mobile: nearly full width
-    if (viewportWidth <= 768) return 0.85; // Tablet: slightly smaller
-    if (viewportWidth <= 1024) return 0.75; // Small desktop
-    if (viewportWidth <= 1440) return 0.65; // Medium desktop
-    if (viewportWidth <= 1920) return 0.55; // Large desktop
-    return 0.5; // Ultra-wide: 50% width
+    if (viewportWidth <= 480) return 0.9; // Mobile: 90% width
+    if (viewportWidth <= 768) return 0.8; // Tablet: 80% width
+    if (viewportWidth <= 1024) return 0.7; // Small desktop: 70% width
+    if (viewportWidth <= 1440) return 0.6; // Medium desktop: 60% width
+    if (viewportWidth <= 1920) return 0.5; // Large desktop: 50% width
+    return 0.4; // Ultra-wide: 40% width
 }
 
 // Widget scaling factors for non-video widgets

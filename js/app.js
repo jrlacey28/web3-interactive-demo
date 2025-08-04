@@ -451,12 +451,13 @@ function storeWidgetPositions() {
 
 // Smart scaling functions for responsive design
 function getMaxVideoWidth(viewportWidth) {
-    // Progressive scaling for video widgets - allows full screen layouts
-    if (viewportWidth <= 768) return viewportWidth * 0.9; // 90% on mobile
-    if (viewportWidth <= 1024) return viewportWidth * 0.7; // 70% on tablet
-    if (viewportWidth <= 1440) return viewportWidth * 0.8; // 80% on laptop
-    if (viewportWidth <= 1920) return 1200; // Max 1200px on desktop
-    return 1600; // Max 1600px on large screens for full screen layouts
+    // Progressive scaling for video widgets with absolute 1000px maximum
+    const maxAbsolute = 1000; // Never exceed 1000px
+    if (viewportWidth <= 768) return Math.min(viewportWidth * 0.9, maxAbsolute); // 90% on mobile
+    if (viewportWidth <= 1024) return Math.min(viewportWidth * 0.7, maxAbsolute); // 70% on tablet
+    if (viewportWidth <= 1440) return Math.min(viewportWidth * 0.6, maxAbsolute); // 60% on laptop
+    if (viewportWidth <= 1920) return Math.min(800, maxAbsolute); // Max 800px on desktop
+    return maxAbsolute; // Max 1000px on large screens
 }
 
 function getMaxWidgetWidth(widgetType, viewportWidth) {
@@ -1055,8 +1056,16 @@ document.addEventListener('DOMContentLoaded', function() {
 // Simplified preset function - no URL input needed
 function setPreset(gradient) {
     const bg = document.getElementById('bg');
-    bg.style.background = gradient;
-    bg.style.backgroundImage = 'none';
+    if (bg) {
+        bg.style.background = gradient;
+        bg.style.backgroundImage = 'none';
+        bg.style.backgroundSize = 'cover';
+        bg.style.backgroundPosition = 'center';
+        bg.style.backgroundRepeat = 'no-repeat';
+        console.log('Background set to:', gradient);
+    } else {
+        console.error('Background element not found');
+    }
 }
 
 // ========================================
@@ -1099,7 +1108,7 @@ function createWidget(type, x, y) {
     wrapper.id = `wrapper${counter}`;
     
     // Set initial size based on widget type - optimized for content
-    if (type === 'youtube' || type === 'video') {
+    if (type === 'youtube' || type === 'video' || type === 'livestream') {
         wrapper.style.width = '320px';
         wrapper.style.height = '180px'; // 16:9 ratio (320 * 9/16 = 180)
     } else if (type === 'crypto') {
@@ -1133,6 +1142,18 @@ function createWidget(type, x, y) {
                 </div>
                 <div id="ytc${counter}"></div>
                 <button class="video-overlay" onclick="resetYT(${counter})">×</button>
+            `;
+            break;
+            
+        case 'livestream':
+            title = 'Live Stream';
+            content = `
+                <div class="upload-section">
+                    <input class="input" id="stream${counter}" placeholder="Enter Stream URL (Twitch, OBS, etc.)">
+                    <button class="youtube-load-btn" onclick="loadStream(${counter})">Load Stream</button>
+                </div>
+                <div id="streamc${counter}"></div>
+                <button class="video-overlay" onclick="resetStream(${counter})">×</button>
             `;
             break;
             
@@ -1473,7 +1494,7 @@ function enableResizeSnap(wrapper) {
                 const maxWidth = window.innerWidth - wrapperLeft - 30;
                 const maxHeight = window.innerHeight - wrapperTop - 30;
                 
-                if (widgetType === 'youtube' || widgetType === 'video') {
+                if (widgetType === 'youtube' || widgetType === 'video' || widgetType === 'livestream') {
                     // Video widgets: maintain 16:9 aspect ratio with smart limits
                     const videoMaxWidth = getMaxVideoWidth(window.innerWidth);
                     newWidth = Math.max(320, Math.min(startWidth + deltaX, Math.min(maxWidth, videoMaxWidth)));
@@ -1735,24 +1756,12 @@ function updateCryptoStyle(widgetId) {
     const sendBtnTextColor = panel.querySelector('.send-btn-text-color')?.value || '#ffffff';
     const headerTextColor = panel.querySelector('.header-text-color')?.value || '#ffffff';
     const messageTextColor = panel.querySelector('.message-text-color')?.value || '#cccccc';
-    const hoverIntensity = panel.querySelector('.hover-intensity')?.value || 20;
     
     // Apply tip amount button styles
     widget.querySelectorAll('.tip-amount-btn').forEach(btn => {
         btn.style.background = `linear-gradient(135deg, ${tipBtnColor}, ${tipBtnColor}dd)`;
         btn.style.color = tipBtnTextColor;
         btn.style.transition = 'all 0.3s ease';
-        
-        // Add hover effects
-        btn.onmouseenter = () => {
-            const intensity = hoverIntensity / 100;
-            btn.style.transform = `scale(${1 + intensity * 0.1})`;
-            btn.style.filter = `brightness(${1 + intensity * 0.3})`;
-        };
-        btn.onmouseleave = () => {
-            btn.style.transform = 'scale(1)';
-            btn.style.filter = 'brightness(1)';
-        };
     });
     
     // Apply send button styles
@@ -1760,17 +1769,6 @@ function updateCryptoStyle(widgetId) {
         btn.style.background = `linear-gradient(135deg, ${sendBtnColor}, ${sendBtnColor}dd)`;
         btn.style.color = sendBtnTextColor;
         btn.style.transition = 'all 0.3s ease';
-        
-        // Add hover effects
-        btn.onmouseenter = () => {
-            const intensity = hoverIntensity / 100;
-            btn.style.transform = `scale(${1 + intensity * 0.1})`;
-            btn.style.filter = `brightness(${1 + intensity * 0.3})`;
-        };
-        btn.onmouseleave = () => {
-            btn.style.transform = 'scale(1)';
-            btn.style.filter = 'brightness(1)';
-        };
     });
     
     // Apply header text color
@@ -1805,8 +1803,7 @@ function updateCryptoStyle(widgetId) {
         sendBtnColor,
         sendBtnTextColor,
         headerTextColor,
-        messageTextColor,
-        hoverIntensity
+        messageTextColor
     };
     
     widget.dataset.cryptoCustomization = JSON.stringify(customization);
@@ -1841,6 +1838,64 @@ function loadYT(id) {
             content.innerHTML = '<div style="color:#ff4757;padding:20px;text-align:center">Invalid YouTube URL</div>';
         }
     }
+}
+
+function loadStream(id) {
+    const input = document.getElementById(`stream${id}`);
+    const content = document.getElementById(`streamc${id}`);
+    const widget = document.getElementById(`w${id.toString().split('stream')[0] || id}`);
+    const url = input.value.trim();
+    
+    if (url) {
+        let embedUrl = '';
+        let isValidStream = false;
+        
+        // Handle Twitch streams
+        if (url.includes('twitch.tv/')) {
+            const channel = url.split('twitch.tv/')[1].split('/')[0].split('?')[0];
+            embedUrl = `https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}`;
+            isValidStream = true;
+        }
+        // Handle YouTube live streams
+        else if (url.includes('youtube.com/watch?v=') || url.includes('youtu.be/')) {
+            let videoId = '';
+            if (url.includes('youtube.com/watch?v=')) {
+                videoId = url.split('v=')[1].split('&')[0];
+            } else if (url.includes('youtu.be/')) {
+                videoId = url.split('youtu.be/')[1].split('?')[0];
+            }
+            embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+            isValidStream = true;
+        }
+        // Handle generic stream URLs (for OBS, etc.)
+        else if (url.includes('.m3u8') || url.includes('rtmp://') || url.startsWith('http')) {
+            // For generic streams, create a video element
+            content.innerHTML = `<video controls autoplay style="width: 100%; height: 100%; border-radius: 8px;">
+                <source src="${url}" type="application/x-mpegURL">
+                <source src="${url}" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>`;
+            widget.classList.add('video-loaded');
+            return;
+        }
+        
+        if (isValidStream && embedUrl) {
+            content.innerHTML = `<iframe src="${embedUrl}" allowfullscreen style="border: none; border-radius: 8px;"></iframe>`;
+            widget.classList.add('video-loaded');
+        } else {
+            content.innerHTML = '<div style="color:#ff4757;padding:20px;text-align:center">Invalid stream URL. Supported: Twitch, YouTube Live, direct stream URLs</div>';
+        }
+    }
+}
+
+function resetStream(id) {
+    const content = document.getElementById(`streamc${id}`);
+    const input = document.getElementById(`stream${id}`);
+    const widget = document.getElementById(`w${id.toString().split('stream')[0] || id}`);
+    
+    content.innerHTML = '';
+    input.value = '';
+    widget.classList.remove('video-loaded');
 }
 
 function resetYT(id) {
@@ -2571,10 +2626,6 @@ function toggleStylePanel(widgetId) {
                 <input type="color" class="style-color message-text-color" value="#cccccc" onchange="updateCryptoStyle('${widgetId}')">
             </div>
         </div>
-        <div class="style-group">
-            <label>Button Hover Effect</label>
-            <input type="range" class="style-slider hover-intensity" min="0" max="100" step="10" value="20" onchange="updateCryptoStyle('${widgetId}')">
-        </div>
     ` : `
         <div class="style-group">
             <div class="style-row">
@@ -2616,15 +2667,39 @@ function toggleStylePanel(widgetId) {
         </div>
     `;
     
-    // Position the panel near the widget
+    // Position the panel near the widget with smart positioning
     const wrapper = widget.closest('.widget-wrapper');
     const wrapperRect = wrapper.getBoundingClientRect();
     
+    // Calculate optimal position
+    const panelWidth = 280;
+    const panelHeight = 400; // Estimated height
+    let left = wrapperRect.right + 10;
+    let top = wrapperRect.top;
+    
+    // Check if panel would go off right edge
+    if (left + panelWidth > window.innerWidth) {
+        left = wrapperRect.left - panelWidth - 10; // Position to the left
+        if (left < 0) {
+            left = 10; // Fallback to left edge with margin
+        }
+    }
+    
+    // Check if panel would go off bottom edge
+    if (top + panelHeight > window.innerHeight) {
+        top = Math.max(wrapperRect.bottom - panelHeight, 10); // Position upward
+    }
+    
+    // Ensure panel doesn't go off top edge
+    top = Math.max(top, 10);
+    
     stylePanel.style.cssText = `
         position: fixed;
-        left: ${Math.min(wrapperRect.right + 10, window.innerWidth - 300)}px;
-        top: ${Math.max(wrapperRect.top, 20)}px;
-        width: 280px;
+        left: ${left}px;
+        top: ${top}px;
+        width: ${panelWidth}px;
+        max-height: ${Math.min(panelHeight, window.innerHeight - 40)}px;
+        overflow-y: auto;
         background: rgba(0, 0, 0, 0.95);
         backdrop-filter: blur(15px);
         border: 1px solid rgba(255, 255, 255, 0.2);
@@ -2636,7 +2711,52 @@ function toggleStylePanel(widgetId) {
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
     `;
     
+    // Store reference to widget for repositioning during drag
+    stylePanel.dataset.attachedWidget = widgetId;
+    
     document.body.appendChild(stylePanel);
+    
+    // Set up mutation observer to detect widget movement
+    const observer = new MutationObserver(() => {
+        const currentWrapper = document.getElementById(widgetId)?.closest('.widget-wrapper');
+        if (currentWrapper && stylePanel.parentElement) {
+            const currentRect = currentWrapper.getBoundingClientRect();
+            
+            // Recalculate position
+            let newLeft = currentRect.right + 10;
+            let newTop = currentRect.top;
+            
+            // Apply same positioning logic
+            if (newLeft + panelWidth > window.innerWidth) {
+                newLeft = currentRect.left - panelWidth - 10;
+                if (newLeft < 0) newLeft = 10;
+            }
+            
+            if (newTop + panelHeight > window.innerHeight) {
+                newTop = Math.max(currentRect.bottom - panelHeight, 10);
+            }
+            
+            newTop = Math.max(newTop, 10);
+            
+            stylePanel.style.left = newLeft + 'px';
+            stylePanel.style.top = newTop + 'px';
+        }
+    });
+    
+    // Observe changes to widget position
+    if (wrapper) {
+        observer.observe(wrapper, {
+            attributes: true,
+            attributeFilter: ['style']
+        });
+    }
+    
+    // Clean up observer when panel is removed
+    const originalRemove = stylePanel.remove.bind(stylePanel);
+    stylePanel.remove = function() {
+        observer.disconnect();
+        originalRemove();
+    };
 }
 
 function updateShapeStyle(widgetId) {
@@ -2838,7 +2958,7 @@ function adjustWidgetsForViewport_creator() {
         let newHeight = Math.min(currentHeight, maxHeight);
         
         // Apply type-specific constraints
-        if (widgetType === 'youtube' || widgetType === 'video') {
+        if (widgetType === 'youtube' || widgetType === 'video' || widgetType === 'livestream') {
             const videoMaxWidth = getMaxVideoWidth(viewportWidth);
             newWidth = Math.min(newWidth, videoMaxWidth);
             newHeight = (newWidth / 16) * 9; // Maintain aspect ratio
