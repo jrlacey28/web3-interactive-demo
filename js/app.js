@@ -451,12 +451,12 @@ function storeWidgetPositions() {
 
 // Smart scaling functions for responsive design
 function getMaxVideoWidth(viewportWidth) {
-    // Progressive scaling for video widgets - prevents enormous videos
+    // Progressive scaling for video widgets - allows full screen layouts
     if (viewportWidth <= 768) return viewportWidth * 0.9; // 90% on mobile
     if (viewportWidth <= 1024) return viewportWidth * 0.7; // 70% on tablet
-    if (viewportWidth <= 1440) return viewportWidth * 0.5; // 50% on laptop
-    if (viewportWidth <= 1920) return 720; // Max 720px on desktop
-    return 800; // Max 800px on large screens
+    if (viewportWidth <= 1440) return viewportWidth * 0.8; // 80% on laptop
+    if (viewportWidth <= 1920) return 1200; // Max 1200px on desktop
+    return 1600; // Max 1600px on large screens for full screen layouts
 }
 
 function getMaxWidgetWidth(widgetType, viewportWidth) {
@@ -1159,7 +1159,7 @@ function createWidget(type, x, y) {
                         <textarea id="tipMsg${counter}" placeholder="Leave a message (optional)" maxlength="100"></textarea>
                         <div class="char-count"><span id="charCount${counter}">0</span>/100</div>
                     </div>
-                    <button class="send-tip-btn" id="sendBtn${counter}" onclick="sendTip(${counter})" disabled>
+                    <button class="send-tip-btn" id="sendBtn${counter}" onclick="sendTip(${counter})">
                         Send Tip
                     </button>
                     <div class="tip-result" id="tipResult${counter}"></div>
@@ -1673,9 +1673,12 @@ function enableCleanModeByDefault(widget) {
 
 function updateWidgetStyle(widgetId) {
     const widget = document.getElementById(widgetId);
-    const opacity = widget.querySelector('.opacity-slider').value;
-    const bgColor = widget.querySelector('.bg-color').value;
-    const borderColor = widget.querySelector('.border-color').value;
+    const panel = document.getElementById('external-style-panel');
+    if (!widget || !panel) return;
+    
+    const opacity = panel.querySelector('.opacity-slider').value;
+    const bgColor = panel.querySelector('.bg-color').value;
+    const borderColor = panel.querySelector('.border-color').value;
     
     widget.style.background = `${bgColor}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`;
     widget.style.borderColor = borderColor;
@@ -1693,10 +1696,13 @@ function updateWidgetStyle(widgetId) {
 
 function updateButtonStyle(widgetId) {
     const widget = document.getElementById(widgetId);
-    const buttonColor = widget.querySelector('.btn-color').value;
-    const textColor = widget.querySelector('.btn-text-color').value;
+    const panel = document.getElementById('external-style-panel');
+    if (!widget || !panel) return;
     
-    widget.querySelectorAll('.btn, .tip-btn, .send, .twitter-load-btn').forEach(btn => {
+    const buttonColor = panel.querySelector('.btn-color').value;
+    const textColor = panel.querySelector('.btn-text-color').value;
+    
+    widget.querySelectorAll('.btn, .tip-btn, .send, .twitter-load-btn, .youtube-load-btn, .tip-amount-btn, .send-tip-btn').forEach(btn => {
         btn.style.background = `linear-gradient(135deg, ${buttonColor}, ${buttonColor}dd)`;
         btn.style.color = textColor;
     });
@@ -2093,7 +2099,7 @@ let currentZIndex = 1000;
 function createLayerManagementButton() {
     const layerToggle = document.createElement('button');
     layerToggle.className = 'layer-toggle';
-    layerToggle.innerHTML = '📚';
+    layerToggle.innerHTML = '📋';
     layerToggle.title = 'Manage Layers';
     
     layerToggle.addEventListener('click', function() {
@@ -2643,7 +2649,71 @@ window.addEventListener('resize', () => {
         updateSafeAreaBounds();
         setTimeout(checkWidgetsInBounds, 100);
     }
+    
+    // Adjust widgets for viewport to ensure consistent scaling with viewer
+    adjustWidgetsForViewport_creator();
 });
+
+// Responsive scaling system for creator (matches viewer behavior)
+function adjustWidgetsForViewport_creator() {
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const wrappers = document.querySelectorAll('.widget-wrapper');
+    
+    wrappers.forEach(wrapper => {
+        const widget = wrapper.querySelector('.widget');
+        if (!widget) return;
+        
+        const widgetType = widget.dataset.type;
+        let currentLeft = parseInt(wrapper.style.left) || 0;
+        let currentTop = parseInt(wrapper.style.top) || 0;
+        let currentWidth = parseInt(wrapper.style.width) || 300;
+        let currentHeight = parseInt(wrapper.style.height) || 200;
+        
+        // Constrain to viewport bounds
+        const newLeft = Math.max(0, Math.min(currentLeft, viewportWidth - 100));
+        const newTop = Math.max(0, Math.min(currentTop, viewportHeight - 100));
+        const maxWidth = viewportWidth - newLeft - 20;
+        const maxHeight = viewportHeight - newTop - 20;
+        
+        let newWidth = Math.min(currentWidth, maxWidth);
+        let newHeight = Math.min(currentHeight, maxHeight);
+        
+        // Apply type-specific constraints
+        if (widgetType === 'youtube' || widgetType === 'video') {
+            const videoMaxWidth = getMaxVideoWidth(viewportWidth);
+            newWidth = Math.min(newWidth, videoMaxWidth);
+            newHeight = (newWidth / 16) * 9; // Maintain aspect ratio
+            
+            // Ensure height fits
+            if (newHeight > maxHeight) {
+                newHeight = maxHeight;
+                newWidth = (newHeight / 9) * 16;
+            }
+        } else {
+            const typeMaxWidth = getMaxWidgetWidth(widgetType, viewportWidth);
+            const typeMaxHeight = getMaxWidgetHeight(widgetType, viewportHeight);
+            const minWidth = getMinWidgetWidth(widgetType);
+            const minHeight = getMinWidgetHeight(widgetType);
+            
+            newWidth = Math.max(minWidth, Math.min(newWidth, typeMaxWidth));
+            newHeight = Math.max(minHeight, Math.min(newHeight, typeMaxHeight));
+        }
+        
+        // Apply adjusted dimensions smoothly
+        if (newLeft !== currentLeft || newTop !== currentTop || 
+            newWidth !== currentWidth || newHeight !== currentHeight) {
+            wrapper.style.left = newLeft + 'px';
+            wrapper.style.top = newTop + 'px';
+            wrapper.style.width = newWidth + 'px';
+            wrapper.style.height = newHeight + 'px';
+            
+            // Also update widget dimensions to match wrapper
+            widget.style.width = newWidth + 'px';
+            widget.style.height = newHeight + 'px';
+        }
+    });
+}
 
 // ========================================
 // INITIALIZATION

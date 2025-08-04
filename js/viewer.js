@@ -127,6 +127,9 @@ function displayLayout(layout) {
     
     // Initialize wallet connectivity for tips
     initializeWalletForViewer();
+    
+    // Set up responsive adjustment for consistent scaling
+    setupResponsiveScaling();
 }
 
 function createViewerWidget(widgetData, counter) {
@@ -194,7 +197,7 @@ function createViewerWidget(widgetData, counter) {
                         <textarea id="tipMsg${counter}" placeholder="Leave a message (optional)" maxlength="100"></textarea>
                         <div class="char-count"><span id="charCount${counter}">0</span>/100</div>
                     </div>
-                    <button class="send-tip-btn" id="sendBtn${counter}" onclick="sendTip(${counter})" disabled>
+                    <button class="send-tip-btn" id="sendBtn${counter}" onclick="sendTip(${counter})">
                         Send Tip
                     </button>
                     <div class="tip-result" id="tipResult${counter}"></div>
@@ -496,15 +499,35 @@ document.addEventListener('input', function(e) {
     }
 });
 
-// Responsive positioning system for viewer
+// Responsive positioning system for viewer - matches creator exactly
 function applyResponsivePositioning(wrapper, widgetData) {
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     
-    // Convert pixel positions to percentages if they're not already
+    // Use exact pixel positioning if data contains pixel values (matching creator)
+    if (typeof widgetData.x === 'string' && widgetData.x.includes('px')) {
+        let newLeft = parseInt(widgetData.x);
+        let newTop = parseInt(widgetData.y);
+        let newWidth = parseInt(widgetData.width);
+        let newHeight = parseInt(widgetData.height);
+        
+        // Apply viewport constraints to prevent widgets from going off-screen
+        newLeft = Math.max(0, Math.min(newLeft, viewportWidth - 100));
+        newTop = Math.max(0, Math.min(newTop, viewportHeight - 100));
+        newWidth = Math.min(newWidth, viewportWidth - newLeft - 20);
+        newHeight = Math.min(newHeight, viewportHeight - newTop - 20);
+        
+        // Apply the exact positions from creator
+        wrapper.style.left = newLeft + 'px';
+        wrapper.style.top = newTop + 'px';
+        wrapper.style.width = newWidth + 'px';
+        wrapper.style.height = newHeight + 'px';
+        return;
+    }
+    
+    // Fallback to percentage-based positioning for older layouts
     let leftPercent, topPercent, widthPercent, heightPercent;
     
-    // If the data contains percentage values, use them
     if (typeof widgetData.x === 'string' && widgetData.x.includes('%')) {
         leftPercent = parseFloat(widgetData.x);
         topPercent = parseFloat(widgetData.y);
@@ -521,7 +544,7 @@ function applyResponsivePositioning(wrapper, widgetData) {
         heightPercent = (parseInt(widgetData.height) / referenceHeight) * 100;
     }
     
-    // Apply smart scaling with the same system as creator
+    // Apply percentage-based scaling
     const widgetType = widgetData.type;
     let newLeft = Math.max(0, Math.min(
         (leftPercent / 100) * viewportWidth,
@@ -535,12 +558,10 @@ function applyResponsivePositioning(wrapper, widgetData) {
     let newWidth, newHeight;
     
     if (widgetType === 'youtube' || widgetType === 'video') {
-        // Video widgets: smart scaling with maximum limits
         const baseWidth = Math.min(widthPercent / 100 * viewportWidth, getMaxVideoWidth(viewportWidth));
         newWidth = Math.max(320, Math.min(baseWidth, viewportWidth - newLeft - 20));
-        newHeight = (newWidth / 16) * 9; // Maintain 16:9 aspect ratio
+        newHeight = (newWidth / 16) * 9;
     } else {
-        // Other widgets: smart scaling with type-specific limits
         const maxWidth = getMaxWidgetWidth_viewer(widgetType, viewportWidth);
         const maxHeight = getMaxWidgetHeight_viewer(widgetType, viewportHeight);
         
@@ -560,7 +581,6 @@ function applyResponsivePositioning(wrapper, widgetData) {
         );
     }
     
-    // Apply the calculated positions and sizes
     wrapper.style.left = newLeft + 'px';
     wrapper.style.top = newTop + 'px';
     wrapper.style.width = newWidth + 'px';
@@ -571,9 +591,9 @@ function applyResponsivePositioning(wrapper, widgetData) {
 function getMaxVideoWidth(viewportWidth) {
     if (viewportWidth <= 768) return viewportWidth * 0.9;
     if (viewportWidth <= 1024) return viewportWidth * 0.7;
-    if (viewportWidth <= 1440) return viewportWidth * 0.5;
-    if (viewportWidth <= 1920) return 720;
-    return 800;
+    if (viewportWidth <= 1440) return viewportWidth * 0.8;
+    if (viewportWidth <= 1920) return 1200;
+    return 1600;
 }
 
 function getMaxWidgetWidth_viewer(widgetType, viewportWidth) {
@@ -804,4 +824,72 @@ function showToast(message, type = 'info') {
         toast.style.transition = 'all 0.3s ease';
         setTimeout(() => toast.remove(), 300);
     }, 3000);
+}
+
+// Responsive scaling system to ensure consistent behavior between creator and viewer
+function setupResponsiveScaling() {
+    let resizeTimeout;
+    
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            adjustWidgetsForViewport();
+        }, 150); // Debounce resize events
+    });
+}
+
+function adjustWidgetsForViewport() {
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const wrappers = document.querySelectorAll('.widget-wrapper');
+    
+    wrappers.forEach(wrapper => {
+        const widget = wrapper.querySelector('.widget');
+        if (!widget) return;
+        
+        const widgetType = widget.dataset.type;
+        let currentLeft = parseInt(wrapper.style.left) || 0;
+        let currentTop = parseInt(wrapper.style.top) || 0;
+        let currentWidth = parseInt(wrapper.style.width) || 300;
+        let currentHeight = parseInt(wrapper.style.height) || 200;
+        
+        // Constrain to viewport bounds
+        const newLeft = Math.max(0, Math.min(currentLeft, viewportWidth - 100));
+        const newTop = Math.max(0, Math.min(currentTop, viewportHeight - 100));
+        const maxWidth = viewportWidth - newLeft - 20;
+        const maxHeight = viewportHeight - newTop - 20;
+        
+        let newWidth = Math.min(currentWidth, maxWidth);
+        let newHeight = Math.min(currentHeight, maxHeight);
+        
+        // Apply type-specific constraints
+        if (widgetType === 'youtube' || widgetType === 'video') {
+            const videoMaxWidth = getMaxVideoWidth(viewportWidth);
+            newWidth = Math.min(newWidth, videoMaxWidth);
+            newHeight = (newWidth / 16) * 9; // Maintain aspect ratio
+            
+            // Ensure height fits
+            if (newHeight > maxHeight) {
+                newHeight = maxHeight;
+                newWidth = (newHeight / 9) * 16;
+            }
+        } else {
+            const typeMaxWidth = getMaxWidgetWidth_viewer(widgetType, viewportWidth);
+            const typeMaxHeight = getMaxWidgetHeight_viewer(widgetType, viewportHeight);
+            const minWidth = getMinWidgetWidth_viewer(widgetType);
+            const minHeight = getMinWidgetHeight_viewer(widgetType);
+            
+            newWidth = Math.max(minWidth, Math.min(newWidth, typeMaxWidth));
+            newHeight = Math.max(minHeight, Math.min(newHeight, typeMaxHeight));
+        }
+        
+        // Apply adjusted dimensions
+        if (newLeft !== currentLeft || newTop !== currentTop || 
+            newWidth !== currentWidth || newHeight !== currentHeight) {
+            wrapper.style.left = newLeft + 'px';
+            wrapper.style.top = newTop + 'px';
+            wrapper.style.width = newWidth + 'px';
+            wrapper.style.height = newHeight + 'px';
+        }
+    });
 }
