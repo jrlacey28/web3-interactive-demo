@@ -1068,6 +1068,57 @@ function setPreset(gradient) {
     }
 }
 
+// New enhanced background functions
+function selectBgType(type) {
+    // Update active button
+    document.querySelectorAll('.bg-type-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelector(`[data-type="${type}"]`).classList.add('active');
+    
+    // Show/hide appropriate options
+    document.querySelectorAll('.bg-options').forEach(option => {
+        option.style.display = 'none';
+    });
+    
+    if (type === 'solid') {
+        document.getElementById('solidOptions').style.display = 'block';
+        // Apply current solid color
+        const color = document.getElementById('solidColor').value;
+        applySolidColor(color);
+    } else if (type === 'gradient') {
+        document.getElementById('gradientOptions').style.display = 'block';
+        // Update gradient
+        updateGradient();
+    } else if (type === 'image') {
+        document.getElementById('imageOptions').style.display = 'block';
+    }
+}
+
+function applySolidColor(color) {
+    const bg = document.getElementById('bg');
+    if (bg) {
+        bg.style.background = color;
+        bg.style.backgroundImage = 'none';
+        console.log('Background set to solid color:', color);
+    }
+}
+
+function updateGradient() {
+    const color1 = document.getElementById('gradientColor1').value;
+    const color2 = document.getElementById('gradientColor2').value;
+    const direction = document.getElementById('gradientDirection').value;
+    
+    const gradient = `linear-gradient(${direction}, ${color1} 0%, ${color2} 100%)`;
+    
+    const bg = document.getElementById('bg');
+    if (bg) {
+        bg.style.background = gradient;
+        bg.style.backgroundImage = 'none';
+        console.log('Background set to gradient:', gradient);
+    }
+}
+
 // ========================================
 // DRAG AND DROP SYSTEM
 // ========================================

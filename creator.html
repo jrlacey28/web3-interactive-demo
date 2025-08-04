@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GENESIS - Interactive Stream Creator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -18,15 +21,66 @@
         <button class="sidebar-close" onclick="closeSidebar()">×</button>
         <div class="section">
             <h3>Background</h3>
-            <div class="file-upload">
-                <input type="file" id="bgFile" accept="image/*">
-                <label for="bgFile" class="file-btn">📁 Upload Image</label>
+            
+            <!-- Background Type Selection -->
+            <div class="bg-type-selector">
+                <button class="bg-type-btn active" onclick="selectBgType('solid')" data-type="solid">Solid</button>
+                <button class="bg-type-btn" onclick="selectBgType('gradient')" data-type="gradient">Gradient</button>
+                <button class="bg-type-btn" onclick="selectBgType('image')" data-type="image">Image</button>
             </div>
-            <div class="presets">
-                <div class="preset" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);" onclick="setPreset('linear-gradient(135deg, #667eea 0%, #764ba2 100%)')"></div>
-                <div class="preset" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);" onclick="setPreset('linear-gradient(135deg, #f093fb 0%, #f5576c 100%)')"></div>
-                <div class="preset" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);" onclick="setPreset('linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)')"></div>
-                <div class="preset" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);" onclick="setPreset('linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)')"></div>
+            
+            <!-- Solid Color Options -->
+            <div class="bg-options" id="solidOptions">
+                <div class="color-picker-wrapper">
+                    <input type="color" id="solidColor" value="#667eea" onchange="applySolidColor(this.value)">
+                    <label for="solidColor">Choose Color</label>
+                </div>
+            </div>
+            
+            <!-- Gradient Options -->
+            <div class="bg-options" id="gradientOptions" style="display: none;">
+                <div class="gradient-controls">
+                    <div class="color-inputs">
+                        <div class="color-picker-wrapper">
+                            <input type="color" id="gradientColor1" value="#667eea" onchange="updateGradient()">
+                            <label>Color 1</label>
+                        </div>
+                        <div class="color-picker-wrapper">
+                            <input type="color" id="gradientColor2" value="#764ba2" onchange="updateGradient()">
+                            <label>Color 2</label>
+                        </div>
+                    </div>
+                    <div class="gradient-direction">
+                        <label>Direction:</label>
+                        <select id="gradientDirection" onchange="updateGradient()">
+                            <option value="135deg">Diagonal ↘</option>
+                            <option value="90deg">Vertical ↓</option>
+                            <option value="0deg">Horizontal →</option>
+                            <option value="45deg">Diagonal ↗</option>
+                            <option value="180deg">Horizontal ←</option>
+                            <option value="270deg">Vertical ↑</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Image Upload Options -->
+            <div class="bg-options" id="imageOptions" style="display: none;">
+                <div class="file-upload">
+                    <input type="file" id="bgFile" accept="image/*">
+                    <label for="bgFile" class="file-btn">📁 Upload Image</label>
+                </div>
+            </div>
+            
+            <!-- Quick Presets -->
+            <div class="presets-section">
+                <h4>Quick Presets</h4>
+                <div class="presets">
+                    <div class="preset" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);" onclick="setPreset('linear-gradient(135deg, #667eea 0%, #764ba2 100%)')"></div>
+                    <div class="preset" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);" onclick="setPreset('linear-gradient(135deg, #f093fb 0%, #f5576c 100%)')"></div>
+                    <div class="preset" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);" onclick="setPreset('linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)')"></div>
+                    <div class="preset" style="background: #1a1a1a;" onclick="setPreset('#1a1a1a')"></div>
+                </div>
             </div>
         </div>
 

@@ -1,5 +1,11 @@
 /* Viewer Page Styles */
 
+/* Font Variables */
+:root {
+  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
 /* Viewer Layout */
 .viewer-page {
   overflow: hidden;
@@ -16,15 +22,15 @@
   left: 0;
   right: 0;
   z-index: 1000;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(15px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   height: 60px;
 }
 
 .viewer-nav {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
   align-items: center;
   padding: 0 var(--spacing-lg);
   height: 100%;
@@ -40,49 +46,52 @@
 
 .brand-link h1 {
   color: white;
-  font-size: 1.2rem;
-  font-weight: bold;
+  font-size: 1.4rem;
+  font-weight: 700;
   margin: 0;
   text-shadow: var(--text-shadow);
+  font-family: var(--font-display, 'Space Grotesk', sans-serif);
+  letter-spacing: -0.02em;
 }
 
-.viewer-tag {
-  background: var(--success-gradient);
-  color: white;
-  padding: 2px 6px;
-  border-radius: var(--border-radius-small);
-  font-size: 0.6rem;
-  font-weight: bold;
-  text-transform: uppercase;
-}
-
-.viewer-info {
+.viewer-center {
   display: flex;
+  justify-content: center;
   align-items: center;
-  gap: var(--spacing-lg);
 }
 
 .creator-name {
   color: white;
   font-weight: 500;
   text-shadow: var(--text-shadow);
+  font-size: 1rem;
+  text-align: center;
+}
+
+.viewer-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
 }
 
 .create-your-own {
-  background: var(--primary-gradient);
+  background: rgba(255, 255, 255, 0.1);
   color: white;
-  padding: var(--spacing-xs) var(--spacing-md);
-  border-radius: var(--border-radius-small);
+  padding: 8px 16px;
+  border-radius: 20px;
   text-decoration: none;
   font-size: 0.9rem;
-  font-weight: bold;
-  transition: all 0.3s ease;
+  font-weight: 500;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .create-your-own:hover {
-  background: linear-gradient(135deg, #0099cc, #007799);
-  transform: var(--hover-transform);
-  box-shadow: 0 5px 15px rgba(0, 212, 255, 0.4);
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(255, 255, 255, 0.1);
 }
 
 /* Viewer Canvas */
