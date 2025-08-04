@@ -32,8 +32,11 @@
   display: grid;
   grid-template-columns: 1fr 2fr 1fr;
   align-items: center;
-  padding: 0 var(--spacing-lg);
+  padding: 0 var(--spacing-xl);
   height: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .brand-link {

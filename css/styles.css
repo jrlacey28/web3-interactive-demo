@@ -96,7 +96,10 @@ body {
     z-index: 1001;
     transition: all 0.3s ease;
     text-decoration: none;
+    font-family: var(--font-display);
     font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1111,6 +1114,44 @@ iframe, video {
     font-weight: 500;
     margin-bottom: 10px;
     margin-top: 0;
+}
+
+.radial-position, .radial-size, .image-resize, .image-position, .image-repeat {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.radial-position label, .radial-size label, 
+.image-resize label, .image-position label, .image-repeat label {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9rem;
+    font-weight: 500;
+    min-width: 60px;
+}
+
+.radial-position select, .radial-size select,
+.image-resize select, .image-position select, .image-repeat select {
+    flex: 1;
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
+
+.radial-position select option, .radial-size select option,
+.image-resize select option, .image-position select option, .image-repeat select option {
+    background: #1a1a1a;
+    color: white;
+}
+
+.image-controls {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Video Controls */

@@ -25,7 +25,8 @@
             <!-- Background Type Selection -->
             <div class="bg-type-selector">
                 <button class="bg-type-btn active" onclick="selectBgType('solid')" data-type="solid">Solid</button>
-                <button class="bg-type-btn" onclick="selectBgType('gradient')" data-type="gradient">Gradient</button>
+                <button class="bg-type-btn" onclick="selectBgType('gradient')" data-type="gradient">Linear</button>
+                <button class="bg-type-btn" onclick="selectBgType('radial')" data-type="radial">Radial</button>
                 <button class="bg-type-btn" onclick="selectBgType('image')" data-type="image">Image</button>
             </div>
             
@@ -37,7 +38,7 @@
                 </div>
             </div>
             
-            <!-- Gradient Options -->
+            <!-- Linear Gradient Options -->
             <div class="bg-options" id="gradientOptions" style="display: none;">
                 <div class="gradient-controls">
                     <div class="color-inputs">
@@ -64,11 +65,86 @@
                 </div>
             </div>
             
+            <!-- Radial Gradient Options -->
+            <div class="bg-options" id="radialOptions" style="display: none;">
+                <div class="gradient-controls">
+                    <div class="color-inputs">
+                        <div class="color-picker-wrapper">
+                            <input type="color" id="radialColor1" value="#667eea" onchange="updateRadialGradient()">
+                            <label>Center Color</label>
+                        </div>
+                        <div class="color-picker-wrapper">
+                            <input type="color" id="radialColor2" value="#764ba2" onchange="updateRadialGradient()">
+                            <label>Edge Color</label>
+                        </div>
+                    </div>
+                    <div class="radial-position">
+                        <label>Position:</label>
+                        <select id="radialPosition" onchange="updateRadialGradient()">
+                            <option value="center">Center</option>
+                            <option value="top">Top</option>
+                            <option value="bottom">Bottom</option>
+                            <option value="left">Left</option>
+                            <option value="right">Right</option>
+                            <option value="top left">Top Left</option>
+                            <option value="top right">Top Right</option>
+                            <option value="bottom left">Bottom Left</option>
+                            <option value="bottom right">Bottom Right</option>
+                        </select>
+                    </div>
+                    <div class="radial-size">
+                        <label>Size:</label>
+                        <select id="radialSize" onchange="updateRadialGradient()">
+                            <option value="ellipse">Ellipse</option>
+                            <option value="circle">Circle</option>
+                            <option value="closest-side">Closest Side</option>
+                            <option value="farthest-side">Farthest Side</option>
+                            <option value="closest-corner">Closest Corner</option>
+                            <option value="farthest-corner">Farthest Corner</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Image Upload Options -->
             <div class="bg-options" id="imageOptions" style="display: none;">
                 <div class="file-upload">
-                    <input type="file" id="bgFile" accept="image/*">
+                    <input type="file" id="bgFile" accept="image/*" onchange="handleImageUpload(this)">
                     <label for="bgFile" class="file-btn">📁 Upload Image</label>
+                </div>
+                <div class="image-controls" id="imageControls" style="display: none;">
+                    <div class="image-resize">
+                        <label>Size:</label>
+                        <select id="imageSize" onchange="updateImageBackground()">
+                            <option value="cover">Cover (Fill)</option>
+                            <option value="contain">Contain (Fit)</option>
+                            <option value="auto">Original Size</option>
+                            <option value="100% 100%">Stretch</option>
+                        </select>
+                    </div>
+                    <div class="image-position">
+                        <label>Position:</label>
+                        <select id="imagePosition" onchange="updateImageBackground()">
+                            <option value="center">Center</option>
+                            <option value="top">Top</option>
+                            <option value="bottom">Bottom</option>
+                            <option value="left">Left</option>
+                            <option value="right">Right</option>
+                            <option value="top left">Top Left</option>
+                            <option value="top right">Top Right</option>
+                            <option value="bottom left">Bottom Left</option>
+                            <option value="bottom right">Bottom Right</option>
+                        </select>
+                    </div>
+                    <div class="image-repeat">
+                        <label>Repeat:</label>
+                        <select id="imageRepeat" onchange="updateImageBackground()">
+                            <option value="no-repeat">No Repeat</option>
+                            <option value="repeat">Repeat</option>
+                            <option value="repeat-x">Repeat X</option>
+                            <option value="repeat-y">Repeat Y</option>
+                        </select>
+                    </div>
                 </div>
             </div>
             

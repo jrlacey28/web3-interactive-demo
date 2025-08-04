@@ -81,13 +81,17 @@ html, body {
 
 .hero-title {
   font-family: var(--font-display);
-  font-size: 4rem;
-  font-weight: 700;
+  font-size: 5rem;
+  font-weight: 800;
   color: white;
   margin: 0;
   text-shadow: var(--text-shadow);
-  line-height: 1.1;
-  letter-spacing: -0.02em;
+  line-height: 1.0;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, #ffffff 0%, #c77dff 50%, #9d4edd 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .hero-subtitle {
@@ -163,15 +167,32 @@ html, body {
   background: linear-gradient(135deg, #0a0015 0%, #1a0029 50%, #2d1b4e 100%);
 }
 
-.features h2 {
-  font-family: var(--font-display);
+.features-intro {
   text-align: center;
-  color: white;
-  font-size: 2.5rem;
-  font-weight: 600;
   margin-bottom: var(--spacing-2xl);
+}
+
+.features-intro h2 {
+  font-family: var(--font-display);
+  color: white;
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: var(--spacing-lg);
   text-shadow: var(--text-shadow);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #ffffff 0%, #c77dff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.features-subtitle {
+  font-family: var(--font-primary);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.2rem;
+  line-height: 1.6;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 .features-grid {
@@ -250,12 +271,32 @@ html, body {
   background: linear-gradient(135deg, #2d1b4e 0%, #0a0015 50%, #1a0029 100%);
 }
 
-.how-it-works h2 {
+.steps-intro {
   text-align: center;
-  color: white;
-  font-size: 2.5rem;
   margin-bottom: var(--spacing-2xl);
+}
+
+.steps-intro h2 {
+  font-family: var(--font-display);
+  color: white;
+  font-size: 2.8rem;
+  font-weight: 700;
+  margin-bottom: var(--spacing-lg);
   text-shadow: var(--text-shadow);
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #ffffff 0%, #9d4edd 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.steps-subtitle {
+  font-family: var(--font-primary);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.1rem;
+  line-height: 1.6;
+  max-width: 500px;
+  margin: 0 auto;
 }
 
 .steps {

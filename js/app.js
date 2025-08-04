@@ -1090,6 +1090,10 @@ function selectBgType(type) {
         document.getElementById('gradientOptions').style.display = 'block';
         // Update gradient
         updateGradient();
+    } else if (type === 'radial') {
+        document.getElementById('radialOptions').style.display = 'block';
+        // Update radial gradient
+        updateRadialGradient();
     } else if (type === 'image') {
         document.getElementById('imageOptions').style.display = 'block';
     }
@@ -1116,6 +1120,56 @@ function updateGradient() {
         bg.style.background = gradient;
         bg.style.backgroundImage = 'none';
         console.log('Background set to gradient:', gradient);
+    }
+}
+
+function updateRadialGradient() {
+    const color1 = document.getElementById('radialColor1').value;
+    const color2 = document.getElementById('radialColor2').value;
+    const position = document.getElementById('radialPosition').value;
+    const size = document.getElementById('radialSize').value;
+    
+    const gradient = `radial-gradient(${size} at ${position}, ${color1} 0%, ${color2} 100%)`;
+    
+    const bg = document.getElementById('bg');
+    if (bg) {
+        bg.style.background = gradient;
+        bg.style.backgroundImage = 'none';
+        console.log('Background set to radial gradient:', gradient);
+    }
+}
+
+// Store current image URL for background updates
+let currentImageUrl = '';
+
+function handleImageUpload(input) {
+    const file = input.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            currentImageUrl = e.target.result;
+            updateImageBackground();
+            // Show image controls
+            document.getElementById('imageControls').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function updateImageBackground() {
+    if (!currentImageUrl) return;
+    
+    const bg = document.getElementById('bg');
+    const size = document.getElementById('imageSize').value;
+    const position = document.getElementById('imagePosition').value;
+    const repeat = document.getElementById('imageRepeat').value;
+    
+    if (bg) {
+        bg.style.backgroundImage = `url(${currentImageUrl})`;
+        bg.style.backgroundSize = size;
+        bg.style.backgroundPosition = position;
+        bg.style.backgroundRepeat = repeat;
+        console.log('Background image updated:', { size, position, repeat });
     }
 }
 
