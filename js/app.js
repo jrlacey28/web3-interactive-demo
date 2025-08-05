@@ -1079,11 +1079,17 @@ function selectBgType(type) {
         option.style.display = 'none';
     });
     
+    // Set background type and apply
+    currentBackgroundData.type = type;
+    
     if (type === 'solid') {
         document.getElementById('solidOptions').style.display = 'block';
         // Apply current solid color
-        const color = document.getElementById('solidColor').value;
-        applySolidColor(color);
+        const colorElement = document.getElementById('solidColor');
+        if (colorElement) {
+            currentBackgroundData.solid.color = colorElement.value;
+        }
+        applyCurrentBackground();
     } else if (type === 'gradient') {
         document.getElementById('gradientOptions').style.display = 'block';
         // Update gradient
@@ -1094,22 +1100,18 @@ function selectBgType(type) {
         updateRadialGradient();
     } else if (type === 'image') {
         document.getElementById('imageOptions').style.display = 'block';
+        // Only apply if we have an image URL
+        if (currentBackgroundData.image.url) {
+            applyCurrentBackground();
+        }
     }
 }
 
 function applySolidColor(color) {
-    const bg = document.getElementById('bg');
-    if (bg) {
-        bg.style.background = color;
-        bg.style.backgroundImage = '';
-        bg.style.backgroundSize = '';
-        bg.style.backgroundPosition = '';
-        bg.style.backgroundRepeat = '';
-        console.log('Background set to solid color:', color);
-        
-        // Update save button state
-        resetSaveButton();
-    }
+    currentBackgroundData.type = 'solid';
+    currentBackgroundData.solid.color = color;
+    applyCurrentBackground();
+    resetSaveButton();
 }
 
 function updateGradient() {
@@ -1122,20 +1124,13 @@ function updateGradient() {
         return;
     }
     
-    const gradient = `linear-gradient(${direction.value}, ${color1.value} 0%, ${color2.value} 100%)`;
+    currentBackgroundData.type = 'linear';
+    currentBackgroundData.linear.color1 = color1.value;
+    currentBackgroundData.linear.color2 = color2.value;
+    currentBackgroundData.linear.direction = direction.value;
     
-    const bg = document.getElementById('bg');
-    if (bg) {
-        bg.style.background = gradient;
-        bg.style.backgroundImage = '';
-        bg.style.backgroundSize = '';
-        bg.style.backgroundPosition = '';
-        bg.style.backgroundRepeat = '';
-        console.log('Background set to linear gradient:', gradient);
-        
-        // Update save button state
-        resetSaveButton();
-    }
+    applyCurrentBackground();
+    resetSaveButton();
 }
 
 function updateRadialGradient() {
@@ -1149,47 +1144,71 @@ function updateRadialGradient() {
         return;
     }
     
-    const gradient = `radial-gradient(${size.value} at ${position.value}, ${color1.value} 0%, ${color2.value} 100%)`;
+    currentBackgroundData.type = 'radial';
+    currentBackgroundData.radial.color1 = color1.value;
+    currentBackgroundData.radial.color2 = color2.value;
+    currentBackgroundData.radial.position = position.value;
+    currentBackgroundData.radial.size = size.value;
     
-    const bg = document.getElementById('bg');
-    if (bg) {
-        bg.style.background = gradient;
-        bg.style.backgroundImage = '';
-        bg.style.backgroundSize = '';
-        bg.style.backgroundPosition = '';
-        bg.style.backgroundRepeat = '';
-        console.log('Background set to radial gradient:', gradient);
-        
-        // Update save button state
-        resetSaveButton();
-    }
+    applyCurrentBackground();
+    resetSaveButton();
 }
 
-// Store current image URL for background updates
-let currentImageUrl = '';
+// Enhanced Background Management System
+let currentBackgroundData = {
+    type: 'solid', // 'solid', 'linear', 'radial', 'image'
+    solid: {
+        color: '#667eea'
+    },
+    linear: {
+        color1: '#667eea',
+        color2: '#764ba2',
+        direction: '135deg'
+    },
+    radial: {
+        color1: '#667eea',
+        color2: '#764ba2',
+        position: 'center',
+        size: 'ellipse'
+    },
+    image: {
+        url: '',
+        size: 'cover',
+        position: 'center',
+        repeat: 'no-repeat'
+    }
+};
 
 // Function to properly capture current background
 function getCurrentBackground() {
-    const bg = document.getElementById('bg');
-    if (!bg) return '';
-    
-    // Check for image background first
-    if (bg.style.backgroundImage && bg.style.backgroundImage !== '' && bg.style.backgroundImage !== 'none') {
-        return bg.style.backgroundImage;
+    // Return the complete background data object for proper restoration
+    return {
+        backgroundData: currentBackgroundData,
+        // Also include the CSS string for backwards compatibility
+        backgroundString: getCurrentBackgroundString()
+    };
+}
+
+function getCurrentBackgroundString() {
+    // Build the complete background string based on current background data
+    switch (currentBackgroundData.type) {
+        case 'solid':
+            return currentBackgroundData.solid.color;
+            
+        case 'linear':
+            const linear = currentBackgroundData.linear;
+            return `linear-gradient(${linear.direction}, ${linear.color1} 0%, ${linear.color2} 100%)`;
+            
+        case 'radial':
+            const radial = currentBackgroundData.radial;
+            return `radial-gradient(${radial.size} at ${radial.position}, ${radial.color1} 0%, ${radial.color2} 100%)`;
+            
+        case 'image':
+            return currentBackgroundData.image.url ? `url(${currentBackgroundData.image.url})` : '';
+            
+        default:
+            return '';
     }
-    
-    // Check for gradient or solid color background
-    if (bg.style.background && bg.style.background !== '') {
-        return bg.style.background;
-    }
-    
-    // Fallback to computed style
-    const computedStyle = window.getComputedStyle(bg);
-    if (computedStyle.backgroundImage !== 'none') {
-        return computedStyle.backgroundImage;
-    }
-    
-    return computedStyle.background || '';
 }
 
 function handleImageUpload(input) {
@@ -1197,11 +1216,11 @@ function handleImageUpload(input) {
     if (file) {
         const reader = new FileReader();
         reader.onload = function(e) {
-            currentImageUrl = e.target.result;
-            updateImageBackground();
+            currentBackgroundData.image.url = e.target.result;
+            currentBackgroundData.type = 'image';
+            applyCurrentBackground();
             // Show image controls
             document.getElementById('imageControls').style.display = 'block';
-            
             // Update save button state
             resetSaveButton();
         };
@@ -1210,23 +1229,61 @@ function handleImageUpload(input) {
 }
 
 function updateImageBackground() {
-    if (!currentImageUrl) return;
+    if (!currentBackgroundData.image.url) return;
     
+    const sizeElement = document.getElementById('imageSize');
+    const positionElement = document.getElementById('imagePosition');
+    const repeatElement = document.getElementById('imageRepeat');
+    
+    if (sizeElement) currentBackgroundData.image.size = sizeElement.value;
+    if (positionElement) currentBackgroundData.image.position = positionElement.value;
+    if (repeatElement) currentBackgroundData.image.repeat = repeatElement.value;
+    
+    applyCurrentBackground();
+    resetSaveButton();
+}
+
+function applyCurrentBackground() {
     const bg = document.getElementById('bg');
-    const size = document.getElementById('imageSize').value;
-    const position = document.getElementById('imagePosition').value;
-    const repeat = document.getElementById('imageRepeat').value;
+    if (!bg) return;
     
-    if (bg) {
-        bg.style.backgroundImage = `url(${currentImageUrl})`;
-        bg.style.backgroundSize = size;
-        bg.style.backgroundPosition = position;
-        bg.style.backgroundRepeat = repeat;
-        bg.style.background = ''; // Clear any gradient/solid background
-        console.log('Background image updated:', { size, position, repeat });
-        
-        // Update save button state
-        resetSaveButton();
+    // Clear all background styles first
+    bg.style.background = '';
+    bg.style.backgroundImage = '';
+    bg.style.backgroundSize = '';
+    bg.style.backgroundPosition = '';
+    bg.style.backgroundRepeat = '';
+    
+    switch (currentBackgroundData.type) {
+        case 'solid':
+            bg.style.background = currentBackgroundData.solid.color;
+            console.log('Applied solid background:', currentBackgroundData.solid.color);
+            break;
+            
+        case 'linear':
+            const linear = currentBackgroundData.linear;
+            const linearGradient = `linear-gradient(${linear.direction}, ${linear.color1} 0%, ${linear.color2} 100%)`;
+            bg.style.background = linearGradient;
+            console.log('Applied linear gradient:', linearGradient);
+            break;
+            
+        case 'radial':
+            const radial = currentBackgroundData.radial;
+            const radialGradient = `radial-gradient(${radial.size} at ${radial.position}, ${radial.color1} 0%, ${radial.color2} 100%)`;
+            bg.style.background = radialGradient;
+            console.log('Applied radial gradient:', radialGradient);
+            break;
+            
+        case 'image':
+            const image = currentBackgroundData.image;
+            if (image.url) {
+                bg.style.backgroundImage = `url(${image.url})`;
+                bg.style.backgroundSize = image.size;
+                bg.style.backgroundPosition = image.position;
+                bg.style.backgroundRepeat = image.repeat;
+                console.log('Applied image background:', image);
+            }
+            break;
     }
 }
 

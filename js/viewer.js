@@ -254,6 +254,46 @@ function isValidLayout(layout) {
     return true;
 }
 
+// Function to apply background from enhanced background data
+function applyBackgroundFromData(bgElement, backgroundData) {
+    if (!bgElement || !backgroundData) return;
+    
+    switch (backgroundData.type) {
+        case 'solid':
+            bgElement.style.background = backgroundData.solid.color;
+            console.log('Applied solid background:', backgroundData.solid.color);
+            break;
+            
+        case 'linear':
+            const linear = backgroundData.linear;
+            const linearGradient = `linear-gradient(${linear.direction}, ${linear.color1} 0%, ${linear.color2} 100%)`;
+            bgElement.style.background = linearGradient;
+            console.log('Applied linear gradient:', linearGradient);
+            break;
+            
+        case 'radial':
+            const radial = backgroundData.radial;
+            const radialGradient = `radial-gradient(${radial.size} at ${radial.position}, ${radial.color1} 0%, ${radial.color2} 100%)`;
+            bgElement.style.background = radialGradient;
+            console.log('Applied radial gradient:', radialGradient);
+            break;
+            
+        case 'image':
+            const image = backgroundData.image;
+            if (image.url) {
+                bgElement.style.backgroundImage = `url(${image.url})`;
+                bgElement.style.backgroundSize = image.size;
+                bgElement.style.backgroundPosition = image.position;
+                bgElement.style.backgroundRepeat = image.repeat;
+                console.log('Applied image background:', image);
+            }
+            break;
+            
+        default:
+            console.warn('Unknown background type:', backgroundData.type);
+    }
+}
+
 function loadDemoLayout() {
     // Create a demo layout to show functionality
     const demoLayout = {
@@ -300,7 +340,7 @@ function displayLayout(layout) {
     localStorage.setItem('currentLayoutData', JSON.stringify(layout));
     storedOriginalLayout = layout;
     
-    // Set background properly 
+    // Set background properly with enhanced system
     if (layout.background) {
         // Clear any existing background styles
         bg.style.background = '';
@@ -309,13 +349,21 @@ function displayLayout(layout) {
         bg.style.backgroundPosition = '';
         bg.style.backgroundRepeat = '';
         
-        if (layout.background.includes('url(')) {
-            bg.style.backgroundImage = layout.background;
-            bg.style.backgroundSize = 'cover';
-            bg.style.backgroundPosition = 'center';
-            bg.style.backgroundRepeat = 'no-repeat';
-        } else {
-            bg.style.background = layout.background;
+        // Check if it's the new background system (object with backgroundData)
+        if (typeof layout.background === 'object' && layout.background.backgroundData) {
+            const bgData = layout.background.backgroundData;
+            applyBackgroundFromData(bg, bgData);
+        } 
+        // Handle legacy background strings
+        else if (typeof layout.background === 'string') {
+            if (layout.background.includes('url(')) {
+                bg.style.backgroundImage = layout.background;
+                bg.style.backgroundSize = 'cover';
+                bg.style.backgroundPosition = 'center';
+                bg.style.backgroundRepeat = 'no-repeat';
+            } else {
+                bg.style.background = layout.background;
+            }
         }
     }
     
