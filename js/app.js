@@ -1693,8 +1693,8 @@ function enableResizeSnap(wrapper) {
             wrapper.classList.add('resizing');
             
             // Add cursor constraint styling during resize
-            document.body.style.cursor = 'nw-resize';
-            document.body.style.userSelect = 'none';
+            // document.body.style.cursor = 'nw-resize';
+            // document.body.style.userSelect = 'none';
             
             let resizeTimeout;
             const handleMouseMove = (e) => {
@@ -1706,27 +1706,8 @@ function enableResizeSnap(wrapper) {
                     resizeTimeout = null;
                 }, 16); // ~60fps throttling
                 
-                // Constrain mouse position to prevent dragging outside reasonable bounds
-                const canvas = document.getElementById('canvas');
-                const canvasRect = canvas.getBoundingClientRect();
-                const wrapperRect = wrapper.getBoundingClientRect();
-                
-                // Calculate maximum allowed mouse position based on widget position and max size
-                const wrapperLeft = parseInt(wrapper.style.left) || 0;
-                const wrapperTop = parseInt(wrapper.style.top) || 0;
-                const maxAllowedWidth = canvasRect.width - wrapperLeft - 20; // 20px buffer
-                const maxAllowedHeight = canvasRect.height - wrapperTop - 20;
-                
-                // Calculate maximum mouse position for resize
-                const maxMouseX = canvasRect.left + wrapperLeft + maxAllowedWidth;
-                const maxMouseY = canvasRect.top + wrapperTop + maxAllowedHeight;
-                
-                // Limit mouse coordinates to reasonable resize area
-                const constrainedX = Math.max(canvasRect.left + wrapperLeft + 200, Math.min(e.clientX, maxMouseX)); // Min 200px width
-                const constrainedY = Math.max(canvasRect.top + wrapperTop + 150, Math.min(e.clientY, maxMouseY)); // Min 150px height
-                
-                const deltaX = constrainedX - startX;
-                const deltaY = constrainedY - startY;
+                const deltaX = e.clientX - startX;
+                const deltaY = e.clientY - startY;
                 
                 let newWidth, newHeight;
                 
@@ -1783,8 +1764,8 @@ function enableResizeSnap(wrapper) {
                 syncHeaderWidth(wrapper); // Final sync after resize
                 
                 // Restore cursor and user selection
-                document.body.style.cursor = '';
-                document.body.style.userSelect = '';
+                // document.body.style.cursor = '';
+                // document.body.style.userSelect = '';
                 
                 // Check safe area bounds if visible
                 if (safeAreaVisible) {
@@ -1859,8 +1840,8 @@ function makeWidgetDraggable(wrapper, header) {
         wrapper.style.zIndex = '1001';
         
         // Set cursor for dragging
-        document.body.style.cursor = 'grabbing';
-        document.body.style.userSelect = 'none';
+        // document.body.style.cursor = 'grabbing';
+        // document.body.style.userSelect = 'none';
         
         // Remove any visual effects during drag (no glow, no enlargement)
 
@@ -1868,23 +1849,19 @@ function makeWidgetDraggable(wrapper, header) {
         const handleMouseMove = (e) => {
             if (!isDragging) return;
             
-            // Constrain mouse position to canvas area to prevent dragging outside bounds
-            const canvas = document.getElementById('canvas');
-            const canvasRect = canvas.getBoundingClientRect();
-            
-            // Limit mouse coordinates to canvas area
-            const constrainedClientX = Math.max(canvasRect.left, Math.min(e.clientX, canvasRect.right));
-            const constrainedClientY = Math.max(canvasRect.top, Math.min(e.clientY, canvasRect.bottom));
-            
-            let newX = startLeft + constrainedClientX - startX;
-            let newY = startTop + constrainedClientY - startY;
+            let newX = startLeft + e.clientX - startX;
+            let newY = startTop + e.clientY - startY;
             
             // Apply boundary constraints - prevent header from going beyond body boundaries
             const wrapperRect = wrapper.getBoundingClientRect();
+            const canvas = document.getElementById('canvas');
             
-            // Ensure widget stays within canvas boundaries
-            newX = Math.max(0, Math.min(newX, canvasRect.width - wrapperRect.width));
-            newY = Math.max(0, Math.min(newY, canvasRect.height - wrapperRect.height));
+            if (canvas) {
+                const canvasRect = canvas.getBoundingClientRect();
+                // Ensure widget stays within canvas boundaries
+                newX = Math.max(0, Math.min(newX, canvasRect.width - wrapperRect.width));
+                newY = Math.max(0, Math.min(newY, canvasRect.height - wrapperRect.height));
+            }
             
             // Apply position immediately for smooth dragging
             wrapper.style.left = newX + 'px';
@@ -1918,8 +1895,8 @@ function makeWidgetDraggable(wrapper, header) {
             wrapper.style.boxShadow = '';
             
             // Restore cursor and user selection
-            document.body.style.cursor = '';
-            document.body.style.userSelect = '';
+            // document.body.style.cursor = '';
+            // document.body.style.userSelect = '';
             
             // No dragging class to remove since we don't add it
             hideSnapIndicators();

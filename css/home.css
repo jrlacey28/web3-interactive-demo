@@ -17,7 +17,7 @@
   --spacing-lg: 24px;
   --spacing-xl: 40px;
   --spacing-2xl: 60px;
-  --text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+  --text-shadow: 0 2px 15px rgba(0, 0, 0, 0.6);
   --card-shadow: 0 20px 40px rgba(16, 0, 32, 0.6);
   --hover-transform: translateY(-4px);
   --space-dark: #0a0015;
@@ -86,7 +86,7 @@ html, body {
   color: white;
   margin: 0 0 var(--spacing-2xl) 0;
   text-shadow: var(--text-shadow);
-  line-height: 0.95;
+  line-height: 1.00;
   letter-spacing: -0.03em;
   white-space: nowrap;
   background: linear-gradient(180deg, #ffffff 0%, #e0aaff 40%, #c77dff 100%);
