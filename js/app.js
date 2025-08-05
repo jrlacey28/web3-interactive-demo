@@ -1103,38 +1103,57 @@ function applySolidColor(color) {
     const bg = document.getElementById('bg');
     if (bg) {
         bg.style.background = color;
-        bg.style.backgroundImage = 'none';
+        bg.style.backgroundImage = '';
+        bg.style.backgroundSize = '';
+        bg.style.backgroundPosition = '';
+        bg.style.backgroundRepeat = '';
         console.log('Background set to solid color:', color);
     }
 }
 
 function updateGradient() {
-    const color1 = document.getElementById('gradientColor1').value;
-    const color2 = document.getElementById('gradientColor2').value;
-    const direction = document.getElementById('gradientDirection').value;
+    const color1 = document.getElementById('gradientColor1');
+    const color2 = document.getElementById('gradientColor2');
+    const direction = document.getElementById('gradientDirection');
     
-    const gradient = `linear-gradient(${direction}, ${color1} 0%, ${color2} 100%)`;
+    if (!color1 || !color2 || !direction) {
+        console.error('Gradient elements not found');
+        return;
+    }
+    
+    const gradient = `linear-gradient(${direction.value}, ${color1.value} 0%, ${color2.value} 100%)`;
     
     const bg = document.getElementById('bg');
     if (bg) {
         bg.style.background = gradient;
-        bg.style.backgroundImage = 'none';
-        console.log('Background set to gradient:', gradient);
+        bg.style.backgroundImage = '';
+        bg.style.backgroundSize = '';
+        bg.style.backgroundPosition = '';
+        bg.style.backgroundRepeat = '';
+        console.log('Background set to linear gradient:', gradient);
     }
 }
 
 function updateRadialGradient() {
-    const color1 = document.getElementById('radialColor1').value;
-    const color2 = document.getElementById('radialColor2').value;
-    const position = document.getElementById('radialPosition').value;
-    const size = document.getElementById('radialSize').value;
+    const color1 = document.getElementById('radialColor1');
+    const color2 = document.getElementById('radialColor2');
+    const position = document.getElementById('radialPosition');
+    const size = document.getElementById('radialSize');
     
-    const gradient = `radial-gradient(${size} at ${position}, ${color1} 0%, ${color2} 100%)`;
+    if (!color1 || !color2 || !position || !size) {
+        console.error('Radial gradient elements not found');
+        return;
+    }
+    
+    const gradient = `radial-gradient(${size.value} at ${position.value}, ${color1.value} 0%, ${color2.value} 100%)`;
     
     const bg = document.getElementById('bg');
     if (bg) {
         bg.style.background = gradient;
-        bg.style.backgroundImage = 'none';
+        bg.style.backgroundImage = '';
+        bg.style.backgroundSize = '';
+        bg.style.backgroundPosition = '';
+        bg.style.backgroundRepeat = '';
         console.log('Background set to radial gradient:', gradient);
     }
 }

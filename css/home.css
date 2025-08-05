@@ -76,19 +76,20 @@ html, body {
 }
 
 .hero-content {
-  max-width: 600px;
+  max-width: 800px;
 }
 
 .hero-title {
   font-family: var(--font-display);
-  font-size: 5rem;
+  font-size: 6.5rem;
   font-weight: 800;
   color: white;
-  margin: 0;
+  margin: 0 0 var(--spacing-2xl) 0;
   text-shadow: var(--text-shadow);
-  line-height: 1.0;
+  line-height: 0.95;
   letter-spacing: -0.03em;
-  background: linear-gradient(135deg, #ffffff 0%, #c77dff 50%, #9d4edd 100%);
+  white-space: nowrap;
+  background: linear-gradient(180deg, #ffffff 0%, #e0aaff 40%, #c77dff 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -111,20 +112,23 @@ html, body {
 }
 
 .btn-primary {
-  font-family: var(--font-primary);
+  font-family: var(--font-display);
   background: var(--primary-gradient);
   color: white;
-  padding: 18px 32px;
+  padding: 22px 50px;
   border-radius: var(--border-radius-medium);
   text-decoration: none;
-  font-weight: 600;
-  font-size: 1.1rem;
+  font-weight: 700;
+  font-size: 1.3rem;
+  letter-spacing: -0.01em;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: var(--card-shadow);
   border: none;
   cursor: pointer;
   position: relative;
   overflow: hidden;
+  min-width: 180px;
+  text-align: center;
 }
 
 .btn-primary:hover {
@@ -134,23 +138,26 @@ html, body {
 }
 
 .btn-primary.large {
-  padding: 20px 40px;
-  font-size: 1.2rem;
+  padding: 24px 55px;
+  font-size: 1.4rem;
 }
 
 .btn-secondary {
-  font-family: var(--font-primary);
+  font-family: var(--font-display);
   background: rgba(255, 255, 255, 0.1);
   color: white;
-  padding: 18px 32px;
+  padding: 22px 50px;
   border-radius: var(--border-radius-medium);
   text-decoration: none;
   border: 1px solid rgba(255, 255, 255, 0.3);
-  font-weight: 500;
-  font-size: 1.1rem;
+  font-weight: 700;
+  font-size: 1.3rem;
+  letter-spacing: -0.01em;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(20px);
   cursor: pointer;
+  min-width: 180px;
+  text-align: center;
 }
 
 .btn-secondary:hover {
