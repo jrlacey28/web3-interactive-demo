@@ -892,8 +892,7 @@ function saveLayout() {
     
     const layout = {
         widgets: widgets,
-        background: document.getElementById('bg').style.backgroundImage || 
-                   document.getElementById('bg').style.background,
+        background: getCurrentBackground(),
         timestamp: new Date().toISOString()
     };
     
@@ -933,8 +932,7 @@ function publishLayout() {
     const layout = {
         id: layoutId,
         widgets: widgets,
-        background: document.getElementById('bg').style.backgroundImage || 
-                   document.getElementById('bg').style.background,
+        background: getCurrentBackground(),
         timestamp: new Date().toISOString(),
         published: true,
         creatorName: 'Anonymous Creator' // In production, this would come from user auth
@@ -1108,6 +1106,9 @@ function applySolidColor(color) {
         bg.style.backgroundPosition = '';
         bg.style.backgroundRepeat = '';
         console.log('Background set to solid color:', color);
+        
+        // Update save button state
+        resetSaveButton();
     }
 }
 
@@ -1131,6 +1132,9 @@ function updateGradient() {
         bg.style.backgroundPosition = '';
         bg.style.backgroundRepeat = '';
         console.log('Background set to linear gradient:', gradient);
+        
+        // Update save button state
+        resetSaveButton();
     }
 }
 
@@ -1155,11 +1159,38 @@ function updateRadialGradient() {
         bg.style.backgroundPosition = '';
         bg.style.backgroundRepeat = '';
         console.log('Background set to radial gradient:', gradient);
+        
+        // Update save button state
+        resetSaveButton();
     }
 }
 
 // Store current image URL for background updates
 let currentImageUrl = '';
+
+// Function to properly capture current background
+function getCurrentBackground() {
+    const bg = document.getElementById('bg');
+    if (!bg) return '';
+    
+    // Check for image background first
+    if (bg.style.backgroundImage && bg.style.backgroundImage !== '' && bg.style.backgroundImage !== 'none') {
+        return bg.style.backgroundImage;
+    }
+    
+    // Check for gradient or solid color background
+    if (bg.style.background && bg.style.background !== '') {
+        return bg.style.background;
+    }
+    
+    // Fallback to computed style
+    const computedStyle = window.getComputedStyle(bg);
+    if (computedStyle.backgroundImage !== 'none') {
+        return computedStyle.backgroundImage;
+    }
+    
+    return computedStyle.background || '';
+}
 
 function handleImageUpload(input) {
     const file = input.files[0];
@@ -1170,6 +1201,9 @@ function handleImageUpload(input) {
             updateImageBackground();
             // Show image controls
             document.getElementById('imageControls').style.display = 'block';
+            
+            // Update save button state
+            resetSaveButton();
         };
         reader.readAsDataURL(file);
     }
@@ -1188,7 +1222,11 @@ function updateImageBackground() {
         bg.style.backgroundSize = size;
         bg.style.backgroundPosition = position;
         bg.style.backgroundRepeat = repeat;
+        bg.style.background = ''; // Clear any gradient/solid background
         console.log('Background image updated:', { size, position, repeat });
+        
+        // Update save button state
+        resetSaveButton();
     }
 }
 
@@ -3269,8 +3307,7 @@ function publishLayout() {
     const layout = {
         id: layoutId,
         widgets: widgets,
-        background: document.getElementById('bg').style.backgroundImage || 
-                   document.getElementById('bg').style.background,
+        background: getCurrentBackground(),
         timestamp: new Date().toISOString(),
         published: true,
         creatorName: 'Anonymous Creator'
