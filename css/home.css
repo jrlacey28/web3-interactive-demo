@@ -76,12 +76,12 @@ html, body {
 }
 
 .hero-content {
-  max-width: 800px;
+  max-width: 1000px;
 }
 
 .hero-title {
   font-family: var(--font-display);
-  font-size: 6.5rem;
+  font-size: 6rem;
   font-weight: 800;
   color: white;
   margin: 0 0 var(--spacing-2xl) 0;
