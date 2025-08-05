@@ -86,7 +86,7 @@ html, body {
   color: white;
   margin: 0 0 var(--spacing-2xl) 0;
   text-shadow: var(--text-shadow);
-  line-height: 1.00;
+  line-height: 1.10;
   letter-spacing: -0.03em;
   white-space: nowrap;
   background: linear-gradient(180deg, #ffffff 0%, #e0aaff 40%, #c77dff 100%);
