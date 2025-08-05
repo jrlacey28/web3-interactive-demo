@@ -18,14 +18,11 @@
 
 /* Viewer Header */
 .viewer-header {
-  position: fixed;
+  position: relative;
   top: 0;
   left: 0;
   right: 0;
   z-index: 1000;
-  background: rgba(0, 0, 0, 0.15);
-  backdrop-filter: blur(6px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   height: 60px;
 }
 

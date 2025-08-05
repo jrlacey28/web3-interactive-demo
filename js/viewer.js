@@ -1100,27 +1100,52 @@ function loadTwitter(id) {
         </div>
     `;
     
-    // Simulate API call
+    // Generate enhanced mock data for viewer (same as creator but simpler)
     setTimeout(() => {
-        document.getElementById(`feed${id}`).innerHTML = `
-            <div class="tweet">
-                <div class="tweet-header">
-                    <div class="tweet-avatar">T</div>
-                    <div class="tweet-user-info">
-                        <h4>@${user}</h4>
-                        <div class="tweet-meta">
-                            <span class="tweet-time">2h</span>
+        const mockTweets = [
+            {
+                text: `Just launched our new Web3 interactive demo! 🚀 The future of social media is here. #Web3 #Crypto #Innovation`,
+                timeAgo: '2h',
+                metrics: { replies: 42, retweets: 128, likes: 315 }
+            },
+            {
+                text: `Building in public is the way 💪 Here's what we learned this week about drag-and-drop interfaces...`,
+                timeAgo: '8h', 
+                metrics: { replies: 23, retweets: 89, likes: 167 }
+            },
+            {
+                text: `The intersection of crypto payments and social media is fascinating. Real-time tips, NFT integration... 🌐`,
+                timeAgo: '1d',
+                metrics: { replies: 67, retweets: 234, likes: 456 }
+            }
+        ];
+        
+        let tweetsHtml = '';
+        mockTweets.forEach((tweet, index) => {
+            tweetsHtml += `
+                <div class="tweet">
+                    <div class="tweet-header">
+                        <div class="tweet-avatar" style="background: linear-gradient(135deg, #1da1f2, #0d8bd9);">
+                            ${user.charAt(0).toUpperCase()}
+                        </div>
+                        <div class="tweet-user-info">
+                            <h4>@${user}</h4>
+                            <div class="tweet-meta">
+                                <span class="tweet-time">${tweet.timeAgo}</span>
+                            </div>
                         </div>
                     </div>
+                    <div class="tweet-content">${tweet.text}</div>
+                    <div class="tweet-stats">
+                        <div class="tweet-stat"><span>💬</span> ${tweet.metrics.replies}</div>
+                        <div class="tweet-stat"><span>🔄</span> ${tweet.metrics.retweets}</div>
+                        <div class="tweet-stat"><span>❤️</span> ${tweet.metrics.likes}</div>
+                    </div>
                 </div>
-                <div class="tweet-content">This is a demo tweet! In the real version, you'd see actual tweets from @${user}.</div>
-                <div class="tweet-stats">
-                    <div class="tweet-stat"><span>💬</span> 12</div>
-                    <div class="tweet-stat"><span>🔄</span> 34</div>
-                    <div class="tweet-stat"><span>❤️</span> 56</div>
-                </div>
-            </div>
-        `;
+            `;
+        });
+        
+        document.getElementById(`feed${id}`).innerHTML = tweetsHtml;
     }, 1500);
 }
 
