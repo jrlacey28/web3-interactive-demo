@@ -11,8 +11,9 @@
   overflow: hidden;
 }
 
+/* Background will be set dynamically by JavaScript */
 .viewer-page .bg {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  /* Default background removed - will be set by layout data */
 }
 
 /* Viewer Header */
@@ -22,9 +23,9 @@
   left: 0;
   right: 0;
   z-index: 1000;
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   height: 60px;
 }
 
@@ -50,7 +51,7 @@
   font-size: 1.4rem;
   font-weight: 700;
   margin: 0;
-  text-shadow: var(--text-shadow);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8), 0 0 4px rgba(0, 0, 0, 0.6);
   font-family: var(--font-display, 'Space Grotesk', sans-serif);
   letter-spacing: -0.02em;
 }
@@ -89,6 +90,7 @@
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.2);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
 }
 
 .create-your-own:hover {
