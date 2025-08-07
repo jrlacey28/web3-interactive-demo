@@ -20,31 +20,41 @@ class SIWEAuth {
     // ========================================
     async signIn() {
         try {
+            console.log('🔐 Starting SIWE sign-in process...');
+            
             // Ensure wallet is connected first
             if (!this.wallet.isConnected) {
+                console.log('Wallet not connected, connecting first...');
                 const connectResult = await this.wallet.connectWallet();
                 if (!connectResult.success) {
                     throw new Error('Wallet connection required');
                 }
             }
 
+            console.log('✅ Wallet connected, generating nonce...');
             // Generate nonce for this sign-in attempt
             const nonce = this.generateNonce();
             
+            console.log('✅ Nonce generated, creating SIWE message...');
             // Create SIWE message
             const message = this.createSIWEMessage(this.wallet.currentAccount, nonce);
             
+            console.log('✅ SIWE message created, requesting signature...');
             // Request signature from user
             const signature = await this.requestSignature(message);
             
+            console.log('✅ Signature received, verifying...');
             // Verify signature and create session
             const authResult = await this.verifyAndCreateSession(message, signature, nonce);
             
             if (authResult.success) {
+                console.log('✅ Signature verified, creating session...');
                 this.isAuthenticated = true;
                 this.currentUser = authResult.user;
                 this.sessionToken = authResult.token;
                 this.saveSession();
+                
+                console.log('✅ Session created, triggering success callback...');
                 this.onAuthenticationSuccess();
                 return { success: true, user: this.currentUser };
             } else {
@@ -52,7 +62,7 @@ class SIWEAuth {
             }
 
         } catch (error) {
-            console.error('SIWE sign-in failed:', error);
+            console.error('❌ SIWE sign-in failed:', error);
             this.onAuthenticationError(error.message);
             return { success: false, error: error.message };
         }

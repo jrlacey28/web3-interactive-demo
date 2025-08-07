@@ -59,6 +59,14 @@ class WalletManager {
                 console.log('Wallet connected:', this.currentAccount);
                 this.updateWalletUI();
                 this.showConnectionSuccess();
+                
+                // Prompt network switch if needed
+                setTimeout(() => {
+                    if (!this.isCorrectNetwork()) {
+                        this.promptNetworkSwitch();
+                    }
+                }, 1000);
+                
                 return { success: true, account: this.currentAccount };
             }
         } catch (error) {
@@ -255,98 +263,90 @@ class WalletManager {
             '0x13881': 'Polygon Mumbai',
             '0xa': 'Optimism Mainnet',
             '0xa4b1': 'Arbitrum One',
-            '0x66eed': 'Arbitrum Goerli'
+            '0x66eed': 'Arbitrum Goerli (Deprecated)',
+            '0x66eee': 'Arbitrum Sepolia Testnet'
         };
         return networks[chainId] || 'Unknown Network';
+    }
+
+    isTestnet(chainId = this.chainId) {
+        const testnets = ['0x5', '0x13881', '0x66eed', '0x66eee'];
+        return testnets.includes(chainId);
     }
 
     // ========================================
     // ARBITRUM NETWORK MANAGEMENT
     // ========================================
-    async switchToArbitrum() {
+    async switchToArbitrumSepolia() {
         try {
-            // Try to switch to Arbitrum One
+            // Try to switch to Arbitrum Sepolia Testnet
             await window.ethereum.request({
                 method: 'wallet_switchEthereumChain',
-                params: [{ chainId: '0xa4b1' }],
+                params: [{ chainId: '0x66eee' }],
             });
             return true;
         } catch (switchError) {
-            // If Arbitrum isn't added to MetaMask, add it
+            // If Arbitrum Sepolia isn't added to MetaMask, add it
             if (switchError.code === 4902) {
-                return await this.addArbitrumNetwork();
+                return await this.addArbitrumSepoliaNetwork();
             }
             throw switchError;
         }
+    }
+
+    async addArbitrumSepoliaNetwork() {
+        try {
+            await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                    chainId: '0x66eee',
+                    chainName: 'Arbitrum Sepolia',
+                    nativeCurrency: {
+                        name: 'Ethereum',
+                        symbol: 'ETH',
+                        decimals: 18
+                    },
+                    rpcUrls: ['https://sepolia-rollup.arbitrum.io/rpc'],
+                    blockExplorerUrls: ['https://sepolia.arbiscan.io/']
+                }]
+            });
+            return true;
+        } catch (addError) {
+            console.error('Failed to add Arbitrum Sepolia network:', addError);
+            return false;
+        }
+    }
+
+    // Legacy method - kept for backward compatibility but updated to use Sepolia
+    async switchToArbitrum() {
+        return await this.switchToArbitrumSepolia();
     }
 
     async addArbitrumNetwork() {
-        try {
-            await window.ethereum.request({
-                method: 'wallet_addEthereumChain',
-                params: [{
-                    chainId: '0xa4b1',
-                    chainName: 'Arbitrum One',
-                    nativeCurrency: {
-                        name: 'Ethereum',
-                        symbol: 'ETH',
-                        decimals: 18
-                    },
-                    rpcUrls: ['https://arb1.arbitrum.io/rpc'],
-                    blockExplorerUrls: ['https://arbiscan.io/']
-                }]
-            });
-            return true;
-        } catch (addError) {
-            console.error('Failed to add Arbitrum network:', addError);
-            return false;
-        }
+        return await this.addArbitrumSepoliaNetwork();
     }
 
     async switchToArbitrumTestnet() {
-        try {
-            await window.ethereum.request({
-                method: 'wallet_switchEthereumChain',
-                params: [{ chainId: '0x66eed' }],
-            });
-            return true;
-        } catch (switchError) {
-            if (switchError.code === 4902) {
-                return await this.addArbitrumTestnet();
-            }
-            throw switchError;
-        }
+        // Redirect to Arbitrum Sepolia instead of deprecated Goerli
+        return await this.switchToArbitrumSepolia();
     }
 
     async addArbitrumTestnet() {
-        try {
-            await window.ethereum.request({
-                method: 'wallet_addEthereumChain',
-                params: [{
-                    chainId: '0x66eed',
-                    chainName: 'Arbitrum Goerli',
-                    nativeCurrency: {
-                        name: 'Ethereum',
-                        symbol: 'ETH',
-                        decimals: 18
-                    },
-                    rpcUrls: ['https://goerli-rollup.arbitrum.io/rpc'],
-                    blockExplorerUrls: ['https://goerli.arbiscan.io/']
-                }]
-            });
-            return true;
-        } catch (addError) {
-            console.error('Failed to add Arbitrum testnet:', addError);
-            return false;
-        }
+        // Redirect to Arbitrum Sepolia instead of deprecated Goerli
+        return await this.addArbitrumSepoliaNetwork();
     }
 
     isArbitrumNetwork() {
-        return this.chainId === '0xa4b1' || this.chainId === '0x66eed';
+        return this.chainId === '0xa4b1' || this.chainId === '0x66eed' || this.chainId === '0x66eee';
     }
 
-    async promptArbitrumSwitch() {
-        if (!this.isArbitrumNetwork()) {
+    isCorrectNetwork() {
+        // For development, we want Arbitrum Sepolia
+        return this.chainId === '0x66eee';
+    }
+
+    async promptNetworkSwitch() {
+        if (!this.isCorrectNetwork()) {
             const modal = document.createElement('div');
             modal.style.cssText = `
                 position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
@@ -354,21 +354,38 @@ class WalletManager {
                 align-items: center; justify-content: center;
             `;
             modal.innerHTML = `
-                <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 450px;">
-                    <h3 style="color: #2D374B; margin-bottom: 15px;">⚡ Switch to Arbitrum</h3>
-                    <p style="margin: 15px 0; color: #666;">For faster and cheaper transactions, switch to Arbitrum network</p>
-                    <div style="margin: 20px 0; padding: 15px; background: #f8f9ff; border-radius: 8px;">
-                        <strong>Benefits:</strong><br>
-                        • ~95% lower gas fees<br>
-                        • Near-instant transactions<br>
-                        • Full Ethereum compatibility
+                <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 500px;">
+                    <h3 style="color: #2D374B; margin-bottom: 15px;">🧪 Switch to Arbitrum Sepolia Testnet</h3>
+                    <p style="margin: 15px 0; color: #666;">GENESIS is currently running on Arbitrum Sepolia testnet for development and testing.</p>
+                    
+                    <div style="margin: 20px 0; padding: 15px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px;">
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px;">
+                            <span style="font-size: 1.2rem;">🧪</span>
+                            <strong style="color: #856404;">TESTNET MODE</strong>
+                        </div>
+                        <small style="color: #856404;">
+                            • Free testnet ETH for transactions<br>
+                            • Safe testing environment<br>
+                            • No real money involved
+                        </small>
                     </div>
-                    <button onclick="this.switchToArbitrum()" 
-                            style="background: #2D374B; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; margin: 10px;">
-                        Switch to Arbitrum
+                    
+                    <div style="margin: 20px 0; padding: 15px; background: #f8f9ff; border-radius: 8px;">
+                        <strong>Network Details:</strong><br>
+                        <small style="color: #666;">
+                            • Name: Arbitrum Sepolia<br>
+                            • RPC: sepolia-rollup.arbitrum.io<br>
+                            • Chain ID: 421614<br>
+                            • Explorer: sepolia.arbiscan.io
+                        </small>
+                    </div>
+                    
+                    <button onclick="this.switchToCorrectNetwork()" 
+                            style="background: #667eea; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; margin: 10px; font-weight: 600;">
+                        🔄 Switch to Arbitrum Sepolia
                     </button>
                     <button onclick="this.parentElement.parentElement.remove()" 
-                            style="background: #ccc; color: black; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; margin: 10px;">
+                            style="background: #f8f9ff; color: #667eea; border: 2px solid #e8f0ff; padding: 10px 24px; border-radius: 8px; cursor: pointer; margin: 10px;">
                         Continue on ${this.getNetworkName()}
                     </button>
                 </div>
@@ -376,10 +393,10 @@ class WalletManager {
             
             // Add switch functionality to the button
             modal.querySelector('button').onclick = async () => {
-                const success = await this.switchToArbitrum();
+                const success = await this.switchToArbitrumSepolia();
                 if (success) {
                     modal.remove();
-                    this.showToast('✅ Switched to Arbitrum!', 'success');
+                    this.showToast('✅ Switched to Arbitrum Sepolia Testnet!', 'success');
                 } else {
                     this.showToast('❌ Failed to switch networks', 'error');
                 }
@@ -387,6 +404,11 @@ class WalletManager {
             
             document.body.appendChild(modal);
         }
+    }
+
+    // Legacy method for backward compatibility
+    async promptArbitrumSwitch() {
+        return await this.promptNetworkSwitch();
     }
 
     // ========================================
@@ -397,13 +419,73 @@ class WalletManager {
         if (!walletBtn) return;
 
         if (this.isConnected) {
-            walletBtn.textContent = `✅ ${this.getShortAddress()}`;
+            const networkName = this.getNetworkName();
+            const isTestnet = this.isTestnet();
+            const testnetIndicator = isTestnet ? ' 🧪' : '';
+            
+            walletBtn.textContent = `✅ ${this.getShortAddress()}${testnetIndicator}`;
             walletBtn.classList.add('connected');
-            walletBtn.title = `Connected to ${this.getNetworkName()}`;
+            
+            if (isTestnet) {
+                walletBtn.classList.add('testnet');
+            } else {
+                walletBtn.classList.remove('testnet');
+            }
+            
+            walletBtn.title = `Connected to ${networkName}${isTestnet ? ' (Testnet)' : ''}`;
+            
+            // Check if user is on wrong network
+            if (!this.isCorrectNetwork()) {
+                walletBtn.classList.add('wrong-network');
+                walletBtn.title += '\n⚠️ Click to switch to the correct network';
+            } else {
+                walletBtn.classList.remove('wrong-network');
+            }
         } else {
             walletBtn.textContent = 'Connect Wallet';
-            walletBtn.classList.remove('connected');
+            walletBtn.classList.remove('connected', 'testnet', 'wrong-network');
             walletBtn.title = 'Connect your MetaMask wallet';
+        }
+        
+        // Add testnet indicator to page
+        this.updateTestnetIndicator();
+    }
+
+    updateTestnetIndicator() {
+        // Add or update testnet banner
+        let banner = document.getElementById('testnet-banner');
+        
+        if (this.isConnected && this.isTestnet()) {
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.id = 'testnet-banner';
+                banner.style.cssText = `
+                    position: fixed; top: 0; left: 0; right: 0; z-index: 99; 
+                    background: linear-gradient(90deg, #ff9500, #ff6b00); 
+                    color: white; padding: 8px; text-align: center; font-weight: 600; 
+                    font-size: 0.85rem; border-bottom: 1px solid rgba(255,255,255,0.3);
+                    backdrop-filter: blur(10px);
+                `;
+                banner.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <span>🧪</span>
+                        <span>TESTNET MODE - ${this.getNetworkName()} - No real funds at risk</span>
+                        <button onclick="this.parentElement.parentElement.remove()" 
+                                style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 2px 8px; border-radius: 3px; margin-left: 15px; cursor: pointer; font-size: 0.8rem;">
+                            ✕
+                        </button>
+                    </div>
+                `;
+                document.body.insertBefore(banner, document.body.firstChild);
+                
+                // Adjust body padding to account for banner
+                document.body.style.paddingTop = '40px';
+            }
+        } else {
+            if (banner) {
+                banner.remove();
+                document.body.style.paddingTop = '';
+            }
         }
     }
 

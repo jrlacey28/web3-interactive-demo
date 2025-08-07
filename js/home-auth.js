@@ -79,28 +79,40 @@ async function handleWalletConnect() {
 // ========================================
 async function handleAuth() {
     try {
+        console.log('🔐 Handle auth clicked...');
         const authBtn = document.getElementById('authBtn');
         
         if (authenticatedWallet.siwe.isAuthenticated) {
+            console.log('User already authenticated, showing menu...');
             // Show user menu
             showUserMenu();
         } else {
+            console.log('Starting authentication process...');
             // Sign in with SIWE
             authBtn.disabled = true;
             authBtn.textContent = 'Signing...';
             
             const result = await authenticatedWallet.siwe.signIn();
             
+            console.log('Authentication result:', result);
+            
             if (result.success) {
-                console.log('Authentication successful:', result.user);
+                console.log('✅ Authentication successful:', result.user);
+            } else {
+                console.error('❌ Authentication failed:', result.error);
             }
         }
         
     } catch (error) {
-        console.error('Authentication failed:', error);
+        console.error('❌ Authentication error:', error);
     } finally {
         const authBtn = document.getElementById('authBtn');
-        authBtn.disabled = false;
+        if (authBtn) {
+            authBtn.disabled = false;
+            if (!authenticatedWallet.siwe.isAuthenticated) {
+                authBtn.textContent = 'Sign In';
+            }
+        }
     }
 }
 
@@ -153,12 +165,21 @@ function handleAuthSuccess(event) {
     console.log('Authentication successful:', event.detail);
     updateAuthUI();
     
-    // Check if user needs profile setup
+    // Check if user needs profile setup or should go to dashboard
     const user = event.detail.user;
-    if (!user.profileComplete && !user.username) {
+    console.log('User profile status:', user);
+    
+    if (!user.username) {
+        // User needs to complete profile setup
         setTimeout(() => {
             showProfileSetupPrompt();
         }, 2000);
+    } else {
+        // User has completed profile setup, redirect to dashboard
+        setTimeout(() => {
+            console.log('Redirecting to dashboard...');
+            window.location.href = 'dashboard.html';
+        }, 1500);
     }
 }
 

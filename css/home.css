@@ -82,6 +82,25 @@
     transform: none;
 }
 
+.wallet-btn.testnet {
+    background: rgba(255, 149, 0, 0.2);
+    border-color: rgba(255, 149, 0, 0.5);
+    color: #ff9500;
+}
+
+.wallet-btn.wrong-network {
+    background: rgba(255, 71, 87, 0.2);
+    border-color: rgba(255, 71, 87, 0.5);
+    color: #ff4757;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
 /* CSS Custom Properties - Space Theme Design System */
 :root {
   --primary-gradient: linear-gradient(135deg, #9d4edd, #7b2cbf);
