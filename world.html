@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">Creator World - GENESIS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/world.css">
+</head>
+<body class="world-page">
+    <!-- Background -->
+    <div class="bg" id="worldBg"></div>
+    
+    <!-- Header -->
+    <header class="world-header">
+        <div class="header-nav">
+            <div class="nav-brand">
+                <a href="index.html" class="brand-link">
+                    <h1>GENESIS</h1>
+                </a>
+            </div>
+            <div class="nav-center">
+                <div class="world-breadcrumb" id="breadcrumb">
+                    <a href="index.html" class="breadcrumb-link">Home</a>
+                    <span class="breadcrumb-separator">></span>
+                    <span class="breadcrumb-current" id="currentBreadcrumb">World</span>
+                </div>
+            </div>
+            <div class="nav-actions">
+                <button class="tip-btn" id="tipBtn" onclick="openTipModal()">
+                    💰 Send Tip
+                </button>
+                <button class="share-btn" onclick="shareWorld()">
+                    📤 Share
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- World Content -->
+    <main class="world-main">
+        <!-- World Hero Section -->
+        <section class="world-hero" id="worldHero">
+            <div class="hero-banner" id="heroBanner">
+                <div class="banner-overlay">
+                    <div class="hero-content">
+                        <div class="creator-avatar" id="creatorAvatar">👤</div>
+                        <h1 class="world-title" id="worldTitle">Creator's World</h1>
+                        <p class="world-description" id="worldDescription">Welcome to this amazing creator space!</p>
+                        
+                        <div class="world-stats">
+                            <div class="stat-item">
+                                <span class="stat-value" id="viewCount">0</span>
+                                <span class="stat-label">Views</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value" id="tipTotal">0</span>
+                                <span class="stat-label">Tips Received</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value" id="worldAge">0d</span>
+                                <span class="stat-label">Days Active</span>
+                            </div>
+                        </div>
+
+                        <div class="world-actions">
+                            <button class="action-btn primary" onclick="openTipModal()">
+                                💰 Support Creator
+                            </button>
+                            <button class="action-btn secondary" onclick="followCreator()">
+                                ⭐ Follow
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sub-Worlds Navigation -->
+        <section class="sub-worlds-nav" id="subWorldsNav" style="display: none;">
+            <div class="container">
+                <div class="nav-header">
+                    <h3>Explore More</h3>
+                </div>
+                <div class="sub-worlds-list" id="subWorldsList">
+                    <!-- Sub-worlds will be loaded here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- World Content Area -->
+        <section class="world-content">
+            <div class="container">
+                <!-- NFT Collection (if available) -->
+                <div class="content-section nft-section" id="nftSection" style="display: none;">
+                    <div class="section-header">
+                        <h2>🖼️ NFT Collection</h2>
+                        <div class="section-subtitle">Digital artwork and collectibles</div>
+                    </div>
+                    <div class="nft-grid" id="nftGrid">
+                        <!-- NFTs will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Interactive Widgets -->
+                <div class="content-section widgets-section">
+                    <div class="section-header">
+                        <h2>🎮 Interactive Experience</h2>
+                        <div class="section-subtitle">Engage with dynamic content</div>
+                    </div>
+                    <div class="widgets-container" id="widgetsContainer">
+                        <!-- Widgets will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Creator Bio & Links -->
+                <div class="content-section bio-section">
+                    <div class="section-header">
+                        <h2>👤 About the Creator</h2>
+                    </div>
+                    <div class="creator-bio-card">
+                        <div class="bio-content">
+                            <div class="bio-avatar" id="bioAvatar">👤</div>
+                            <div class="bio-text">
+                                <h3 id="creatorName">Creator</h3>
+                                <p id="creatorBio">Creative professional building amazing digital experiences.</p>
+                                <div class="creator-links">
+                                    <div class="wallet-info">
+                                        <span class="wallet-label">Wallet:</span>
+                                        <span class="wallet-address" id="creatorWallet">0x0000...0000</span>
+                                        <button class="copy-wallet-btn" onclick="copyCreatorWallet()">📋</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Tip Modal -->
+    <div class="modal-overlay" id="tipModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>💰 Send Tip</h3>
+                <button class="close-btn" onclick="closeTipModal()">&times;</button>
+            </div>
+            
+            <div class="tip-content">
+                <div class="tip-recipient">
+                    <div class="recipient-avatar" id="tipRecipientAvatar">👤</div>
+                    <div class="recipient-info">
+                        <h4 id="tipRecipientName">Creator</h4>
+                        <p id="tipRecipientWallet">0x0000...0000</p>
+                    </div>
+                </div>
+
+                <form class="tip-form" id="tipForm">
+                    <div class="form-group">
+                        <label for="tipAmount">Amount (ETH)</label>
+                        <div class="amount-input-container">
+                            <input type="number" id="tipAmount" name="tipAmount" 
+                                   step="0.001" min="0.001" max="10" 
+                                   placeholder="0.01" required>
+                            <span class="currency-label">ETH</span>
+                        </div>
+                        <div class="amount-presets">
+                            <button type="button" class="preset-btn" onclick="setTipAmount(0.001)">0.001 ETH</button>
+                            <button type="button" class="preset-btn" onclick="setTipAmount(0.01)">0.01 ETH</button>
+                            <button type="button" class="preset-btn" onclick="setTipAmount(0.1)">0.1 ETH</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tipMessage">Message (Optional)</label>
+                        <textarea id="tipMessage" name="tipMessage" 
+                                  placeholder="Thanks for the amazing content!" 
+                                  maxlength="200" rows="3"></textarea>
+                        <small class="form-help"><span id="messageCount">0</span>/200 characters</small>
+                    </div>
+
+                    <div class="network-info" id="networkInfo">
+                        <div class="network-status">
+                            <span class="network-icon">⚠️</span>
+                            <span class="network-text">Please connect your wallet to send tips</span>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="closeTipModal()">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn-primary" id="sendTipBtn" disabled>
+                            🚀 Send Tip
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div class="modal-overlay" id="shareModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📤 Share This World</h3>
+                <button class="close-btn" onclick="closeShareModal()">&times;</button>
+            </div>
+            
+            <div class="share-content">
+                <div class="share-url">
+                    <label>World URL</label>
+                    <div class="url-container">
+                        <input type="text" id="shareUrl" readonly>
+                        <button class="copy-btn" onclick="copyShareUrl()">📋 Copy</button>
+                    </div>
+                </div>
+
+                <div class="share-options">
+                    <h4>Share on social media</h4>
+                    <div class="social-buttons">
+                        <button class="social-btn twitter" onclick="shareOnTwitter()">
+                            🐦 Twitter
+                        </button>
+                        <button class="social-btn facebook" onclick="shareOnFacebook()">
+                            📘 Facebook
+                        </button>
+                        <button class="social-btn discord" onclick="shareOnDiscord()">
+                            💬 Discord
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p id="loadingText">Loading world...</p>
+        </div>
+    </div>
+
+    <!-- Error State -->
+    <div class="error-state" id="errorState" style="display: none;">
+        <div class="error-content">
+            <div class="error-icon">🌍</div>
+            <h2>World Not Found</h2>
+            <p id="errorMessage">The world you're looking for doesn't exist or is private.</p>
+            <div class="error-actions">
+                <button class="btn-primary" onclick="window.location.href='index.html'">
+                    🏠 Go Home
+                </button>
+                <button class="btn-secondary" onclick="window.location.href='creator.html'">
+                    ✨ Create Your Own
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="config/api-keys.js"></script>
+    <script src="api/wallet.js"></script>
+    <script src="js/auth/siwe.js"></script>
+    <script src="js/world-viewer.js"></script>
+</body>
+</html>

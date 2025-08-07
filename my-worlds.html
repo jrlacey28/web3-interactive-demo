@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Worlds - GENESIS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/my-worlds.css">
+</head>
+<body class="my-worlds-page">
+    <div class="bg" id="bg"></div>
+    
+    <!-- Header -->
+    <header class="dashboard-header">
+        <div class="header-nav">
+            <div class="nav-brand">
+                <a href="index.html" class="brand-link">
+                    <h1>GENESIS</h1>
+                </a>
+            </div>
+            <div class="nav-center">
+                <nav class="dashboard-nav">
+                    <a href="dashboard.html" class="nav-link">🏠 Dashboard</a>
+                    <a href="my-worlds.html" class="nav-link active">🌍 My Worlds</a>
+                    <a href="creator.html" class="nav-link">✨ Create</a>
+                </nav>
+            </div>
+            <div class="nav-actions">
+                <div class="user-menu" id="userMenu">
+                    <div class="user-avatar" id="userAvatar">👤</div>
+                    <span class="user-name" id="userName">User</span>
+                    <div class="dropdown-arrow">▼</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="worlds-main">
+        <div class="container">
+            <!-- Page Header -->
+            <section class="page-header">
+                <div class="header-content">
+                    <h1>My Worlds</h1>
+                    <p>Manage your main world and sub-worlds. Your main world acts as your public creator profile.</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn-primary" onclick="createNewWorld()">
+                        ✨ Create Sub-World
+                    </button>
+                </div>
+            </section>
+
+            <!-- Main World Section -->
+            <section class="main-world-section">
+                <div class="section-header">
+                    <h2>🏠 Main World (Public Profile)</h2>
+                    <div class="main-world-url" id="mainWorldUrl">
+                        <span class="url-label">Public URL:</span>
+                        <span class="url-link" id="publicUrl">genesis.app/world/loading...</span>
+                        <button class="copy-url-btn" onclick="copyPublicUrl()">📋</button>
+                    </div>
+                </div>
+                
+                <div class="main-world-card" id="mainWorldCard">
+                    <div class="world-preview">
+                        <div class="world-banner" id="mainWorldBanner">
+                            <div class="banner-overlay">
+                                <button class="edit-banner-btn" onclick="editMainWorld()">
+                                    📷 Edit Banner
+                                </button>
+                            </div>
+                        </div>
+                        <div class="world-info">
+                            <div class="world-avatar" id="mainWorldAvatar">
+                                👤
+                            </div>
+                            <div class="world-details">
+                                <h3 class="world-title" id="mainWorldTitle">My World</h3>
+                                <p class="world-description" id="mainWorldDescription">Welcome to my creator space!</p>
+                                <div class="world-stats">
+                                    <span class="stat">👥 <span id="mainWorldViews">0</span> views</span>
+                                    <span class="stat">🌟 Public</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="world-actions">
+                        <button class="action-btn secondary" onclick="viewMainWorld()">
+                            👁️ View World
+                        </button>
+                        <button class="action-btn primary" onclick="editMainWorld()">
+                            ✏️ Customize
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sub-Worlds Section -->
+            <section class="sub-worlds-section">
+                <div class="section-header">
+                    <h2>📄 Sub-Worlds</h2>
+                    <div class="section-actions">
+                        <div class="view-toggle">
+                            <button class="toggle-btn active" data-view="grid" onclick="toggleView('grid')">
+                                <span class="toggle-icon">⚏</span>
+                            </button>
+                            <button class="toggle-btn" data-view="list" onclick="toggleView('list')">
+                                <span class="toggle-icon">☰</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="sub-worlds-grid" id="subWorldsGrid">
+                    <!-- Sub-worlds will be dynamically loaded here -->
+                </div>
+                
+                <!-- Empty State -->
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-icon">🌱</div>
+                    <h3>No Sub-Worlds Yet</h3>
+                    <p>Create additional worlds to showcase different aspects of your content. Perfect for galleries, exclusive content, or themed collections.</p>
+                    <button class="btn-primary" onclick="createNewWorld()">
+                        ✨ Create Your First Sub-World
+                    </button>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Create World Modal -->
+    <div class="modal-overlay" id="createWorldModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create New Sub-World</h3>
+                <button class="close-btn" onclick="closeCreateModal()">&times;</button>
+            </div>
+            
+            <form class="create-world-form" id="createWorldForm">
+                <div class="form-group">
+                    <label for="worldName">World Name</label>
+                    <input type="text" id="worldName" name="worldName" 
+                           placeholder="e.g., Gallery, Exclusive Content, Blog" 
+                           required maxlength="50">
+                    <small class="form-help">This will be part of your URL: /world/username/world-name</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="worldDescription">Description</label>
+                    <textarea id="worldDescription" name="worldDescription" 
+                              placeholder="Describe what visitors will find in this world..." 
+                              maxlength="200" rows="3"></textarea>
+                    <small class="form-help"><span id="descCount">0</span>/200 characters</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="worldPrivacy">Privacy Setting</label>
+                    <select id="worldPrivacy" name="worldPrivacy">
+                        <option value="public">🌟 Public - Anyone can view</option>
+                        <option value="private">🔒 Private - Only you can view</option>
+                        <option value="paywall" disabled>💰 Paywall - Coming Soon</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="worldTemplate">Template</label>
+                    <div class="template-grid">
+                        <div class="template-option active" data-template="gallery">
+                            <div class="template-preview gallery-preview"></div>
+                            <span>Gallery</span>
+                        </div>
+                        <div class="template-option" data-template="blog">
+                            <div class="template-preview blog-preview"></div>
+                            <span>Blog</span>
+                        </div>
+                        <div class="template-option" data-template="showcase">
+                            <div class="template-preview showcase-preview"></div>
+                            <span>Showcase</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closeCreateModal()">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn-primary">
+                        ✨ Create World
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Main World Modal -->
+    <div class="modal-overlay" id="editMainWorldModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Customize Main World</h3>
+                <button class="close-btn" onclick="closeEditMainModal()">&times;</button>
+            </div>
+            
+            <form class="edit-world-form" id="editMainWorldForm">
+                <div class="form-group">
+                    <label for="mainWorldName">World Title</label>
+                    <input type="text" id="mainWorldName" name="mainWorldName" 
+                           placeholder="e.g., John's Creative Space" 
+                           required maxlength="50">
+                </div>
+
+                <div class="form-group">
+                    <label for="mainWorldBio">Description</label>
+                    <textarea id="mainWorldBio" name="mainWorldBio" 
+                              placeholder="Welcome message and description of your creative space..." 
+                              maxlength="300" rows="4"></textarea>
+                    <small class="form-help"><span id="bioCount">0</span>/300 characters</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="worldTheme">Color Theme</label>
+                    <div class="theme-grid">
+                        <div class="theme-option active" data-theme="purple">
+                            <div class="theme-preview purple-theme"></div>
+                            <span>Purple</span>
+                        </div>
+                        <div class="theme-option" data-theme="blue">
+                            <div class="theme-preview blue-theme"></div>
+                            <span>Blue</span>
+                        </div>
+                        <div class="theme-option" data-theme="green">
+                            <div class="theme-preview green-theme"></div>
+                            <span>Green</span>
+                        </div>
+                        <div class="theme-option" data-theme="pink">
+                            <div class="theme-preview pink-theme"></div>
+                            <span>Pink</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Banner Image</label>
+                    <div class="banner-upload-section">
+                        <div class="current-banner" id="currentBannerPreview">
+                            <div class="banner-placeholder">Click to upload banner image</div>
+                        </div>
+                        <input type="file" id="bannerUpload" accept="image/*" style="display: none;">
+                        <button type="button" class="btn-upload" onclick="document.getElementById('bannerUpload').click()">
+                            📷 Choose Banner
+                        </button>
+                        <small class="form-help">Recommended size: 1200x400px. Max file size: 5MB</small>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closeEditMainModal()">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn-primary">
+                        💾 Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>Loading your worlds...</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="config/api-keys.js"></script>
+    <script src="api/wallet.js"></script>
+    <script src="js/auth/siwe.js"></script>
+    <script src="js/my-worlds.js"></script>
+</body>
+</html>

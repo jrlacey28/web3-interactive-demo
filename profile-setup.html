@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Setup - GENESIS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/profile.css">
+</head>
+<body class="profile-setup-page">
+    <div class="bg" id="bg"></div>
+    
+    <!-- Header -->
+    <header class="setup-header">
+        <div class="setup-nav">
+            <div class="nav-brand">
+                <a href="index.html" class="brand-link">
+                    <h1>GENESIS</h1>
+                </a>
+            </div>
+            <div class="auth-section">
+                <div class="wallet-status" id="walletStatus"></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="setup-container">
+        <div class="setup-card">
+            <div class="setup-header-content">
+                <h1>🎉 Welcome to GENESIS</h1>
+                <p>Let's set up your creator profile to get started</p>
+            </div>
+
+            <form id="profileSetupForm" class="setup-form">
+                <!-- Step 1: Basic Information -->
+                <div class="form-step active" id="step1">
+                    <h2>Basic Information</h2>
+                    
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" 
+                               placeholder="Enter your username" 
+                               minlength="3" maxlength="50" 
+                               pattern="[a-zA-Z0-9_]+" 
+                               required>
+                        <small class="form-help">3-50 characters, letters, numbers, and underscores only</small>
+                        <div class="username-status" id="usernameStatus"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bio">Bio (Optional)</label>
+                        <textarea id="bio" name="bio" 
+                                  placeholder="Tell us about yourself..." 
+                                  maxlength="500" 
+                                  rows="4"></textarea>
+                        <small class="form-help">
+                            <span id="bioCount">0</span>/500 characters
+                        </small>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-next" onclick="nextStep()">
+                            Continue
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Profile Picture -->
+                <div class="form-step" id="step2">
+                    <h2>Profile Picture</h2>
+                    
+                    <div class="profile-image-section">
+                        <div class="current-avatar" id="currentAvatar">
+                            <div class="avatar-placeholder">
+                                <span class="avatar-initials" id="avatarInitials">?</span>
+                            </div>
+                        </div>
+                        
+                        <div class="avatar-options">
+                            <button type="button" class="avatar-option" onclick="generateAvatar('geometric')">
+                                <div class="avatar-preview geometric"></div>
+                                <span>Geometric</span>
+                            </button>
+                            
+                            <button type="button" class="avatar-option" onclick="generateAvatar('gradient')">
+                                <div class="avatar-preview gradient"></div>
+                                <span>Gradient</span>
+                            </button>
+                            
+                            <button type="button" class="avatar-option" onclick="generateAvatar('initials')">
+                                <div class="avatar-preview initials"></div>
+                                <span>Initials</span>
+                            </button>
+                            
+                            <button type="button" class="avatar-option" onclick="generateAvatar('wallet')">
+                                <div class="avatar-preview wallet"></div>
+                                <span>Wallet Icon</span>
+                            </button>
+                        </div>
+
+                        <div class="upload-section">
+                            <p style="text-align: center; margin: 20px 0; color: #666;">
+                                Or upload your own image (coming soon)
+                            </p>
+                            <input type="file" id="profileImageUpload" accept="image/*" style="display: none;" disabled>
+                            <button type="button" class="btn-upload" onclick="document.getElementById('profileImageUpload').click()" disabled>
+                                📁 Upload Image (Coming Soon)
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-back" onclick="prevStep()">
+                            Back
+                        </button>
+                        <button type="button" class="btn-next" onclick="nextStep()">
+                            Continue
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Preferences -->
+                <div class="form-step" id="step3">
+                    <h2>Preferences</h2>
+                    
+                    <div class="form-group">
+                        <label>Theme</label>
+                        <div class="theme-options">
+                            <label class="theme-option">
+                                <input type="radio" name="theme" value="dark" checked>
+                                <div class="theme-preview dark">
+                                    <div class="theme-header"></div>
+                                    <div class="theme-content"></div>
+                                </div>
+                                <span>Dark</span>
+                            </label>
+                            
+                            <label class="theme-option">
+                                <input type="radio" name="theme" value="light">
+                                <div class="theme-preview light">
+                                    <div class="theme-header"></div>
+                                    <div class="theme-content"></div>
+                                </div>
+                                <span>Light</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-group">
+                            <input type="checkbox" name="notifications" checked>
+                            <span class="checkmark"></span>
+                            <div class="checkbox-content">
+                                <strong>Enable notifications</strong>
+                                <small>Get notified about tips, comments, and updates</small>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-group">
+                            <input type="checkbox" name="analytics" checked>
+                            <span class="checkmark"></span>
+                            <div class="checkbox-content">
+                                <strong>Help improve GENESIS</strong>
+                                <small>Share anonymous usage data to help us improve the platform</small>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-back" onclick="prevStep()">
+                            Back
+                        </button>
+                        <button type="button" class="btn-next" onclick="nextStep()">
+                            Continue
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 4: Terms and Completion -->
+                <div class="form-step" id="step4">
+                    <h2>Almost Done!</h2>
+                    
+                    <div class="profile-summary" id="profileSummary">
+                        <div class="summary-avatar">
+                            <div class="avatar-display" id="summaryAvatar"></div>
+                        </div>
+                        <div class="summary-info">
+                            <h3 id="summaryUsername">Username</h3>
+                            <p id="summaryBio">Bio will appear here</p>
+                            <div class="summary-wallet">
+                                <span class="wallet-icon">🔗</span>
+                                <span id="summaryWallet">Wallet address</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="terms-section">
+                        <label class="checkbox-group">
+                            <input type="checkbox" id="acceptTerms" required>
+                            <span class="checkmark"></span>
+                            <div class="checkbox-content">
+                                <strong>I agree to the Terms of Service and Privacy Policy</strong>
+                                <div class="terms-links">
+                                    <a href="#" onclick="showTerms()">Terms of Service</a> | 
+                                    <a href="#" onclick="showPrivacy()">Privacy Policy</a>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-back" onclick="prevStep()">
+                            Back
+                        </button>
+                        <button type="submit" class="btn-complete" id="completeBtn">
+                            🚀 Create My Profile
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Progress Indicator -->
+            <div class="progress-indicator">
+                <div class="progress-step active" data-step="1">
+                    <div class="step-number">1</div>
+                    <div class="step-label">Basic Info</div>
+                </div>
+                <div class="progress-step" data-step="2">
+                    <div class="step-number">2</div>
+                    <div class="step-label">Avatar</div>
+                </div>
+                <div class="progress-step" data-step="3">
+                    <div class="step-number">3</div>
+                    <div class="step-label">Preferences</div>
+                </div>
+                <div class="progress-step" data-step="4">
+                    <div class="step-number">4</div>
+                    <div class="step-label">Complete</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>Creating your profile...</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="config/api-keys.js"></script>
+    <script src="api/wallet.js"></script>
+    <script src="js/auth/siwe.js"></script>
+    <script src="js/profile-setup.js"></script>
+</body>
+</html>

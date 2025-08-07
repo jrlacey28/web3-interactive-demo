@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - GENESIS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body class="dashboard-page">
+    <div class="bg" id="bg"></div>
+    
+    <!-- Header -->
+    <header class="dashboard-header">
+        <div class="header-nav">
+            <div class="nav-brand">
+                <a href="index.html" class="brand-link">
+                    <h1>GENESIS</h1>
+                </a>
+            </div>
+            <div class="nav-center">
+                <nav class="dashboard-nav">
+                    <a href="dashboard.html" class="nav-link active">🏠 Dashboard</a>
+                    <a href="my-worlds.html" class="nav-link">🌍 My Worlds</a>
+                    <a href="creator.html" class="nav-link">✨ Create</a>
+                </nav>
+            </div>
+            <div class="nav-actions">
+                <div class="user-menu" id="userMenu">
+                    <div class="user-avatar" id="userAvatar">👤</div>
+                    <span class="user-name" id="userName">User</span>
+                    <div class="dropdown-arrow">▼</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <div class="container">
+            <!-- Welcome Section -->
+            <section class="welcome-section">
+                <div class="welcome-card">
+                    <div class="welcome-content">
+                        <h2 class="welcome-title">Welcome back, <span id="welcomeName">Creator</span>! 🎉</h2>
+                        <p class="welcome-subtitle">Ready to build something amazing today?</p>
+                    </div>
+                    <div class="welcome-actions">
+                        <button class="action-btn primary" onclick="window.location.href='creator.html'">
+                            ✨ Create New World
+                        </button>
+                        <button class="action-btn secondary" onclick="window.location.href='my-worlds.html'">
+                            🌍 View My Worlds
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Stats Overview -->
+            <section class="stats-section">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">🌍</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="worldCount">0</div>
+                            <div class="stat-label">Worlds Created</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="viewCount">0</div>
+                            <div class="stat-label">Total Views</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">💰</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="tipCount">0</div>
+                            <div class="stat-label">Tips Received</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">⭐</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="ratingValue">5.0</div>
+                            <div class="stat-label">Average Rating</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Recent Activity -->
+            <section class="activity-section">
+                <div class="section-header">
+                    <h3>Recent Activity</h3>
+                    <button class="view-all-btn">View All</button>
+                </div>
+                
+                <div class="activity-feed" id="activityFeed">
+                    <div class="activity-item">
+                        <div class="activity-icon">✨</div>
+                        <div class="activity-content">
+                            <div class="activity-title">Welcome to GENESIS!</div>
+                            <div class="activity-desc">Your account was created successfully</div>
+                            <div class="activity-time">Just now</div>
+                        </div>
+                    </div>
+                    
+                    <div class="activity-placeholder">
+                        <div class="placeholder-icon">📊</div>
+                        <div class="placeholder-content">
+                            <h4>Your activity will appear here</h4>
+                            <p>Create your first world to start seeing activity updates, tips, and viewer interactions.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Quick Actions -->
+            <section class="quick-actions-section">
+                <div class="section-header">
+                    <h3>Quick Actions</h3>
+                </div>
+                
+                <div class="quick-actions-grid">
+                    <div class="quick-action-card" onclick="window.location.href='creator.html'">
+                        <div class="action-icon">🎨</div>
+                        <h4>Create World</h4>
+                        <p>Build a new interactive experience</p>
+                    </div>
+                    
+                    <div class="quick-action-card" onclick="window.location.href='profile-setup.html'">
+                        <div class="action-icon">⚙️</div>
+                        <h4>Edit Profile</h4>
+                        <p>Update your creator profile</p>
+                    </div>
+                    
+                    <div class="quick-action-card" onclick="showAnalytics()">
+                        <div class="action-icon">📈</div>
+                        <h4>View Analytics</h4>
+                        <p>See detailed performance metrics</p>
+                    </div>
+                    
+                    <div class="quick-action-card" onclick="showHelp()">
+                        <div class="action-icon">❓</div>
+                        <h4>Get Help</h4>
+                        <p>Learn how to use GENESIS</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Profile Completion -->
+            <section class="profile-section" id="profileSection" style="display: none;">
+                <div class="profile-completion-card">
+                    <div class="completion-header">
+                        <h3>Complete Your Profile</h3>
+                        <div class="completion-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progressFill"></div>
+                            </div>
+                            <span class="progress-text" id="progressText">60% Complete</span>
+                        </div>
+                    </div>
+                    
+                    <div class="completion-tasks">
+                        <div class="task-item completed">
+                            <span class="task-icon">✅</span>
+                            <span class="task-text">Connect wallet</span>
+                        </div>
+                        <div class="task-item completed">
+                            <span class="task-icon">✅</span>
+                            <span class="task-text">Set username</span>
+                        </div>
+                        <div class="task-item">
+                            <span class="task-icon">⭕</span>
+                            <span class="task-text">Add profile bio</span>
+                        </div>
+                        <div class="task-item">
+                            <span class="task-icon">⭕</span>
+                            <span class="task-text">Create your first world</span>
+                        </div>
+                    </div>
+                    
+                    <button class="complete-profile-btn" onclick="window.location.href='profile-setup.html'">
+                        Complete Profile
+                    </button>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- User Menu Dropdown -->
+    <div class="user-dropdown" id="userDropdown" style="display: none;">
+        <div class="dropdown-content">
+            <div class="dropdown-header">
+                <div class="dropdown-avatar" id="dropdownAvatar">👤</div>
+                <div class="dropdown-info">
+                    <div class="dropdown-name" id="dropdownName">User</div>
+                    <div class="dropdown-wallet" id="dropdownWallet">0x0000...0000</div>
+                </div>
+            </div>
+            
+            <div class="dropdown-divider"></div>
+            
+            <div class="dropdown-menu">
+                <a href="profile-setup.html" class="dropdown-item">
+                    <span class="item-icon">⚙️</span>
+                    <span class="item-text">Edit Profile</span>
+                </a>
+                <a href="my-worlds.html" class="dropdown-item">
+                    <span class="item-icon">🌍</span>
+                    <span class="item-text">My Worlds</span>
+                </a>
+                <div class="dropdown-item" onclick="showAnalytics()">
+                    <span class="item-icon">📊</span>
+                    <span class="item-text">Analytics</span>
+                </div>
+                <div class="dropdown-item" onclick="showHelp()">
+                    <span class="item-icon">❓</span>
+                    <span class="item-text">Help & Support</span>
+                </div>
+                
+                <div class="dropdown-divider"></div>
+                
+                <div class="dropdown-item danger" onclick="signOut()">
+                    <span class="item-icon">🚪</span>
+                    <span class="item-text">Sign Out</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>Loading your dashboard...</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="config/api-keys.js"></script>
+    <script src="api/wallet.js"></script>
+    <script src="js/auth/siwe.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

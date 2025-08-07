@@ -14,6 +14,21 @@
     <div class="bg" id="bg"></div>
     
     <!-- Hero Section -->
+    <!-- Navigation -->
+    <nav class="home-nav">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="index.html" class="brand-link">
+                    <h1>GENESIS</h1>
+                </a>
+            </div>
+            <div class="nav-actions">
+                <button id="walletBtn" class="wallet-btn" onclick="handleWalletConnect()">Connect Wallet</button>
+                <button id="authBtn" class="auth-btn" onclick="handleAuth()" style="display: none;">Sign In</button>
+            </div>
+        </div>
+    </nav>
+
     <section class="hero">
         <div class="hero-content">
             <h1 class="hero-title">Forge Your Own World</h1>
@@ -95,6 +110,15 @@
         </div>
     </footer>
 
+    <!-- API Configuration -->
+    <script src="config/api-keys.js"></script>
+    
+    <!-- Core JavaScript Modules -->
+    <script src="api/wallet.js"></script>
+    <script src="js/auth/siwe.js"></script>
+    
+    <!-- Home Page JavaScript -->
     <script src="js/home.js"></script>
+    <script src="js/home-auth.js"></script>
 </body>
 </html>
