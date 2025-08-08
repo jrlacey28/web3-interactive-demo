@@ -135,7 +135,10 @@ Expiration Time: ${expirationTime}`;
     // ========================================
     async requestSignature(messageData) {
         try {
-            this.showSigningModal(messageData.message);
+            // Only show signing modal if document is visible to avoid white screen flicker
+            if (document.visibilityState === 'visible') {
+                this.showSigningModal(messageData.message);
+            }
 
             const signature = await window.ethereum.request({
                 method: 'personal_sign',
@@ -433,11 +436,13 @@ Expiration Time: ${expirationTime}`;
             detail: { user: this.currentUser }
         }));
 
-        // Check if user needs to complete profile setup
+        // Check if user needs to complete profile setup, but do not force navigation
         if (!this.currentUser.username) {
-            setTimeout(() => {
-                this.showProfileSetupPrompt();
-            }, 1500);
+            // Show a discreet prompt once per session
+            if (!sessionStorage.getItem('profile_prompt_shown')) {
+                sessionStorage.setItem('profile_prompt_shown', '1');
+                setTimeout(() => this.showProfileSetupPrompt(), 800);
+            }
         }
     }
 

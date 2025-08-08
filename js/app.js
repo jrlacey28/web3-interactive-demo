@@ -874,7 +874,7 @@ function captureWidgetState(widget) {
     return state;
 }
 
-function saveLayout() {
+function saveLayout(userMetadata) {
     const widgets = [];
     document.querySelectorAll('.widget-wrapper').forEach(wrapper => {
         const widget = wrapper.querySelector('.widget');
@@ -893,8 +893,30 @@ function saveLayout() {
     const layout = {
         widgets: widgets,
         background: getCurrentBackground(),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        owner: userMetadata && userMetadata.walletAddress ? userMetadata.walletAddress : null,
+        username: userMetadata && userMetadata.username ? userMetadata.username : null
     };
+    
+    // Save per-wallet if owner is present
+    if (layout.owner) {
+        try {
+            const allWorlds = JSON.parse(localStorage.getItem('user_worlds') || '{}');
+            if (!allWorlds[layout.owner]) {
+                allWorlds[layout.owner] = {};
+            }
+            if (!allWorlds[layout.owner].main) {
+                allWorlds[layout.owner].main = {};
+            }
+            allWorlds[layout.owner].main.content = allWorlds[layout.owner].main.content || {};
+            allWorlds[layout.owner].main.content.widgets = layout.widgets;
+            allWorlds[layout.owner].main.content.background = layout.background;
+            allWorlds[layout.owner].main.updatedAt = layout.timestamp;
+            localStorage.setItem('user_worlds', JSON.stringify(allWorlds));
+        } catch (e) {
+            console.error('Failed to save per-wallet layout:', e);
+        }
+    }
     
     localStorage.setItem('web3DemoLayout', JSON.stringify(layout));
     
@@ -909,7 +931,7 @@ function saveLayout() {
     }, 2000);
 }
 
-function publishLayout() {
+function publishLayout(currentUser) {
     // Get current layout
     const widgets = [];
     document.querySelectorAll('.widget-wrapper').forEach(wrapper => {
@@ -935,12 +957,33 @@ function publishLayout() {
         background: getCurrentBackground(),
         timestamp: new Date().toISOString(),
         published: true,
-        creatorName: 'Anonymous Creator' // In production, this would come from user auth
+        creatorName: currentUser && currentUser.username ? currentUser.username : 'Anonymous Creator',
+        owner: currentUser && currentUser.walletAddress ? currentUser.walletAddress : null
     };
     
     // Save as published layout
     localStorage.setItem('web3DemoPublishedLayout', JSON.stringify(layout));
     localStorage.setItem(layoutId, JSON.stringify(layout));
+    
+    // Also persist under user_worlds for owner
+    if (layout.owner) {
+        try {
+            const allWorlds = JSON.parse(localStorage.getItem('user_worlds') || '{}');
+            if (!allWorlds[layout.owner]) {
+                allWorlds[layout.owner] = {};
+            }
+            if (!allWorlds[layout.owner].main) {
+                allWorlds[layout.owner].main = {};
+            }
+            allWorlds[layout.owner].main.content = allWorlds[layout.owner].main.content || {};
+            allWorlds[layout.owner].main.content.widgets = layout.widgets;
+            allWorlds[layout.owner].main.content.background = layout.background;
+            allWorlds[layout.owner].main.updatedAt = layout.timestamp;
+            localStorage.setItem('user_worlds', JSON.stringify(allWorlds));
+        } catch (e) {
+            console.error('Failed to save published layout per-wallet:', e);
+        }
+    }
     
     // Generate shareable URL
     const baseUrl = window.location.origin + window.location.pathname.replace('creator.html', '');

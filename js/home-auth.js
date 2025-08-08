@@ -58,14 +58,10 @@ async function handleWalletConnect() {
             
             if (result.success) {
                 updateAuthUI();
-                
-                // Show authentication option after wallet connection
-                setTimeout(() => {
-                    if (authBtn) {
-                        authBtn.style.display = 'inline-block';
-                        showSignInPrompt();
-                    }
-                }, 1000);
+                // Show authentication option but do not auto-prompt
+                if (authBtn) {
+                    authBtn.style.display = 'inline-block';
+                }
             }
         }
         
@@ -171,13 +167,9 @@ function handleAuthSuccess(event) {
     // Check if user needs profile setup or should go to dashboard
     const user = event.detail.user;
     console.log('👤 User profile status:', user);
-    
-    // Always redirect to profile setup page for username configuration
-    // This allows users to set up or update their profile information
-    setTimeout(() => {
-        console.log('🚀 Redirecting to profile setup page...');
-        window.location.href = 'profile-setup.html?from=auth';
-    }, 1500);
+
+    // Do not auto-redirect. Show UI prompt handled by SIWE module instead.
+    // This avoids unexpected navigation and white-screen flickers.
 }
 
 function handleAuthError(event) {

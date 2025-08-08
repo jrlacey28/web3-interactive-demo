@@ -69,8 +69,7 @@ async function checkUserSession() {
             return true;
         } else if (authenticatedWallet.isConnected && !authenticatedWallet.siwe.isAuthenticated) {
             console.log('🔗 Wallet connected but not authenticated');
-            // Wallet is connected but user isn't signed in
-            setTimeout(() => showSignInPrompt(), 1000);
+            // Do not auto-prompt; wait for explicit click
         } else {
             console.log('📝 No existing session found');
         }
@@ -91,7 +90,7 @@ async function handleCreatorWalletConnect() {
         const walletBtn = document.getElementById('walletBtn');
         
         if (authenticatedWallet.isConnected && authenticatedWallet.siwe.isAuthenticated) {
-            // Already fully authenticated, show user menu
+            // Already fully authenticated, show user menu without additional prompts
             showCreatorUserMenu();
             return;
         }
@@ -111,10 +110,7 @@ async function handleCreatorWalletConnect() {
         if (result.success) {
             updateCreatorUI();
             
-            // Prompt for authentication after connection
-            setTimeout(() => {
-                showSignInPrompt();
-            }, 1000);
+            // Do not auto-prompt repeatedly; let user click to sign in
         }
         
     } catch (error) {
