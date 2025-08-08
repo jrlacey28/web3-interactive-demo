@@ -186,23 +186,26 @@ function handleSignOut(event) {
 // USER INTERFACE MODALS
 // ========================================
 function showWalletMenu() {
-    const modal = createModal('Wallet Connected', `
+    const user = authenticatedWallet.siwe?.currentUser;
+    const displayName = user?.username || authenticatedWallet.getShortAddress();
+    const modal = createModal('Profile', `
         <div style="text-align: center;">
             <div style="background: #f8f9ff; padding: 20px; border-radius: 10px; margin: 20px 0;">
-                <div style="font-size: 1.5rem; margin-bottom: 10px;">✅</div>
-                <strong>${authenticatedWallet.getShortAddress()}</strong>
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; font-weight: bold;">
+                    ${user?.username ? user.username.charAt(0).toUpperCase() : '👤'}
+                </div>
+                <strong>${displayName}</strong>
                 <div style="color: #666; font-size: 0.9rem; margin-top: 5px;">
                     ${authenticatedWallet.getNetworkName()}
                 </div>
             </div>
             
-            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
-                <button onclick="copyAddress()" class="modal-btn-secondary">
-                    📋 Copy Address
-                </button>
-                <button onclick="disconnectWallet()" class="modal-btn-primary">
-                    🔌 Disconnect
-                </button>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;">
+                <button onclick="goToDashboard()" class="modal-btn-primary">🏠 Dashboard</button>
+                <button onclick="goToProfile()" class="modal-btn-secondary">⚙️ Edit Profile</button>
+                <button onclick="showMyWorlds()" class="modal-btn-secondary">🌍 My Worlds</button>
+                <button onclick="copyAddress()" class="modal-btn-secondary">📋 Copy Address</button>
+                <button onclick="disconnectWallet()" class="modal-btn-danger">🔌 Disconnect</button>
             </div>
         </div>
     `);

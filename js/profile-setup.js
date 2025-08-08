@@ -44,10 +44,7 @@ async function initializeAuth() {
             
             // Check if user is authenticated
             if (!window.authenticatedWallet.siwe.isAuthenticated) {
-                console.log('❌ User not authenticated, redirecting to home');
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 2000);
+                console.log('❌ User not authenticated');
                 showAuthRequiredMessage();
                 return;
             }
@@ -70,10 +67,10 @@ async function initializeAuth() {
 
         // Listen for wallet changes
         if (typeof window.ethereum !== 'undefined') {
+            // Do not forcibly redirect on account change; just update status
             window.ethereum.on('accountsChanged', (accounts) => {
                 if (accounts.length === 0) {
-                    // Wallet disconnected, redirect to home
-                    window.location.href = 'index.html';
+                    updateWalletStatus();
                 } else {
                     updateWalletStatus();
                 }

@@ -25,7 +25,8 @@
                 <span class="creator-name" id="creatorName">Interactive Stream Layout</span>
             </div>
             <div class="viewer-actions">
-                <a href="creator.html" class="create-your-own">Create Your Own</a>
+                <button id="walletBtn" class="wallet-btn" onclick="handleWalletConnect()">Connect Wallet</button>
+                <button id="authBtn" class="auth-btn" onclick="handleAuth()" style="display: none;">Sign In</button>
             </div>
         </div>
     </header>
@@ -58,13 +59,17 @@
 
     <!-- API Configuration -->
     <script src="config/api-keys.js"></script>
-    
-    <!-- Core JavaScript Modules -->
-    <script src="js/api/wallet.js"></script>
-    <script src="js/api/twitter.js"></script>
-    <script src="js/api/instagram.js"></script>
-    <script src="js/api/storage.js"></script>
-    
+
+    <!-- Core JavaScript Modules (correct paths) -->
+    <script src="api/wallet.js"></script>
+    <script src="api/twitter.js"></script>
+    <script src="api/instagram.js"></script>
+    <script src="api/storage.js"></script>
+
+    <!-- Auth Integration -->
+    <script src="js/auth/siwe.js"></script>
+    <script src="js/home-auth.js"></script>
+
     <!-- Viewer JavaScript -->
     <script src="js/viewer.js"></script>
 </body>

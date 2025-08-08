@@ -62,12 +62,7 @@ class WalletManager {
                 this.updateWalletUI();
                 this.showConnectionSuccess();
                 
-                // Prompt network switch if needed
-                setTimeout(() => {
-                    if (!this.isCorrectNetwork()) {
-                        this.promptNetworkSwitch();
-                    }
-                }, 1000);
+                // Do not auto-prompt network switch; keep UI minimal
                 
                 return { success: true, account: this.currentAccount };
             }
@@ -515,46 +510,15 @@ class WalletManager {
             walletBtn.title = 'Connect your MetaMask wallet';
         }
         
-        // Add testnet indicator to page
+        // Remove banner testnet indicator for cleaner UI
         this.updateTestnetIndicator();
     }
 
     updateTestnetIndicator() {
-        // Add or update testnet banner
-        let banner = document.getElementById('testnet-banner');
-        
-        if (this.isConnected && this.isTestnet()) {
-            if (!banner) {
-                banner = document.createElement('div');
-                banner.id = 'testnet-banner';
-                banner.style.cssText = `
-                    position: fixed; top: 0; left: 0; right: 0; z-index: 99; 
-                    background: linear-gradient(90deg, #ff9500, #ff6b00); 
-                    color: white; padding: 8px; text-align: center; font-weight: 600; 
-                    font-size: 0.85rem; border-bottom: 1px solid rgba(255,255,255,0.3);
-                    backdrop-filter: blur(10px);
-                `;
-                banner.innerHTML = `
-                    <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-                        <span>🧪</span>
-                        <span>TESTNET MODE - ${this.getNetworkName()} - No real funds at risk</span>
-                        <button onclick="this.parentElement.parentElement.remove()" 
-                                style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 2px 8px; border-radius: 3px; margin-left: 15px; cursor: pointer; font-size: 0.8rem;">
-                            ✕
-                        </button>
-                    </div>
-                `;
-                document.body.insertBefore(banner, document.body.firstChild);
-                
-                // Adjust body padding to account for banner
-                document.body.style.paddingTop = '40px';
-            }
-        } else {
-            if (banner) {
-                banner.remove();
-                document.body.style.paddingTop = '';
-            }
-        }
+        // Disabled banner entirely
+        const banner = document.getElementById('testnet-banner');
+        if (banner) banner.remove();
+        if (document.body) document.body.style.paddingTop = '';
     }
 
     // ========================================
