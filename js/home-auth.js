@@ -28,6 +28,9 @@ async function initializeAuth() {
         window.addEventListener('siweAuthError', handleAuthError);
         window.addEventListener('siweSignOut', handleSignOut);
         
+        // Listen for network changes
+        window.addEventListener('networkChanged', handleNetworkChangeHome);
+        
         console.log('Authentication initialized');
         
     } catch (error) {
@@ -162,25 +165,19 @@ function updateAuthUI() {
 // EVENT HANDLERS
 // ========================================
 function handleAuthSuccess(event) {
-    console.log('Authentication successful:', event.detail);
+    console.log('🎉 Authentication successful:', event.detail);
     updateAuthUI();
     
     // Check if user needs profile setup or should go to dashboard
     const user = event.detail.user;
-    console.log('User profile status:', user);
+    console.log('👤 User profile status:', user);
     
-    if (!user.username) {
-        // User needs to complete profile setup
-        setTimeout(() => {
-            showProfileSetupPrompt();
-        }, 2000);
-    } else {
-        // User has completed profile setup, redirect to dashboard
-        setTimeout(() => {
-            console.log('Redirecting to dashboard...');
-            window.location.href = 'dashboard.html';
-        }, 1500);
-    }
+    // Always redirect to profile setup page for username configuration
+    // This allows users to set up or update their profile information
+    setTimeout(() => {
+        console.log('🚀 Redirecting to profile setup page...');
+        window.location.href = 'profile-setup.html?from=auth';
+    }, 1500);
 }
 
 function handleAuthError(event) {
@@ -380,6 +377,22 @@ function goToProfile() {
 
 function showMyWorlds() {
     window.location.href = 'my-worlds.html';
+}
+
+// ========================================
+// NETWORK CHANGE HANDLER
+// ========================================
+function handleNetworkChangeHome(event) {
+    console.log('🌐 Network changed in home page:', event.detail);
+    
+    // Update UI to reflect new network
+    updateAuthUI();
+    
+    // Show friendly notification
+    const networkName = event.detail.networkName;
+    if (authenticatedWallet) {
+        authenticatedWallet.showToast(`Switched to ${networkName}`, 'info');
+    }
 }
 
 // ========================================

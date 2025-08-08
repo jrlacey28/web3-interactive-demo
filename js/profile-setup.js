@@ -30,10 +30,30 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ========================================
 async function initializeAuth() {
     try {
+        console.log('🔐 Initializing profile setup authentication...');
+        
         // Wait for wallet manager to be ready
         if (typeof walletManager === 'undefined') {
-            console.error('Wallet manager not found');
+            setTimeout(initializeAuth, 100);
             return;
+        }
+
+        // Create authenticated wallet manager for session management
+        if (typeof AuthenticatedWalletManager !== 'undefined') {
+            window.authenticatedWallet = new AuthenticatedWalletManager();
+            
+            // Check if user is authenticated
+            if (!window.authenticatedWallet.siwe.isAuthenticated) {
+                console.log('❌ User not authenticated, redirecting to home');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 2000);
+                showAuthRequiredMessage();
+                return;
+            }
+            
+            // Load existing user data if available
+            loadExistingUserData();
         }
 
         // Update wallet status
@@ -41,10 +61,11 @@ async function initializeAuth() {
 
         // Check if user is coming from authentication flow
         const urlParams = new URLSearchParams(window.location.search);
-        const fromAuth = urlParams.get('auth') === 'true';
+        const fromAuth = urlParams.get('from') === 'auth';
         
         if (fromAuth) {
-            console.log('User came from authentication flow');
+            console.log('✅ User came from authentication flow');
+            showWelcomeMessage();
         }
 
         // Listen for wallet changes
@@ -59,8 +80,10 @@ async function initializeAuth() {
             });
         }
 
+        console.log('✅ Profile setup authentication initialized');
+
     } catch (error) {
-        console.error('Error initializing auth:', error);
+        console.error('❌ Error initializing auth:', error);
     }
 }
 
@@ -68,16 +91,148 @@ function updateWalletStatus() {
     const walletStatus = document.getElementById('walletStatus');
     if (!walletStatus) return;
 
-    if (walletManager && walletManager.isConnected) {
-        const shortAddress = walletManager.getShortAddress();
-        const networkName = walletManager.getNetworkName();
+    if (window.authenticatedWallet && window.authenticatedWallet.isConnected) {
+        const shortAddress = window.authenticatedWallet.getShortAddress();
+        const networkName = window.authenticatedWallet.getNetworkName();
+        const isTestnet = window.authenticatedWallet.isTestnet();
+        const testnetIndicator = isTestnet ? ' 🧪' : '';
+        
         walletStatus.innerHTML = `
-            <span>✅ ${shortAddress}</span>
-            <small style="display: block; opacity: 0.8; font-size: 0.8rem;">${networkName}</small>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="color: #00ff88; font-weight: 600;">✅ ${shortAddress}${testnetIndicator}</span>
+                <small style="color: #666; font-size: 0.8rem;">${networkName}</small>
+            </div>
         `;
     } else {
-        walletStatus.textContent = '❌ Not Connected';
+        walletStatus.innerHTML = `<span style="color: #ff4757;">❌ Not Connected</span>`;
     }
+}
+
+function loadExistingUserData() {
+    try {
+        if (!window.authenticatedWallet || !window.authenticatedWallet.siwe.isAuthenticated) {
+            return;
+        }
+
+        const currentUser = window.authenticatedWallet.getCurrentUser();
+        if (!currentUser) return;
+
+        console.log('📋 Loading existing user data:', currentUser);
+
+        // Pre-fill form with existing data
+        if (currentUser.username) {
+            const usernameInput = document.getElementById('username');
+            if (usernameInput) {
+                usernameInput.value = currentUser.username;
+                profileData.username = currentUser.username;
+            }
+        }
+
+        if (currentUser.bio) {
+            const bioInput = document.getElementById('bio');
+            const bioCounter = document.getElementById('bioCount');
+            if (bioInput) {
+                bioInput.value = currentUser.bio;
+                profileData.bio = currentUser.bio;
+                if (bioCounter) {
+                    bioCounter.textContent = currentUser.bio.length;
+                }
+            }
+        }
+
+        if (currentUser.preferences) {
+            // Set theme
+            if (currentUser.preferences.theme) {
+                const themeRadio = document.querySelector(`input[name="theme"][value="${currentUser.preferences.theme}"]`);
+                if (themeRadio) {
+                    themeRadio.checked = true;
+                    profileData.theme = currentUser.preferences.theme;
+                }
+            }
+
+            // Set notifications preference
+            if (typeof currentUser.preferences.notifications === 'boolean') {
+                const notificationsCheckbox = document.querySelector('input[name="notifications"]');
+                if (notificationsCheckbox) {
+                    notificationsCheckbox.checked = currentUser.preferences.notifications;
+                    profileData.notifications = currentUser.preferences.notifications;
+                }
+            }
+
+            // Set analytics preference
+            if (typeof currentUser.preferences.analytics === 'boolean') {
+                const analyticsCheckbox = document.querySelector('input[name="analytics"]');
+                if (analyticsCheckbox) {
+                    analyticsCheckbox.checked = currentUser.preferences.analytics;
+                    profileData.analytics = currentUser.preferences.analytics;
+                }
+            }
+        }
+
+        // Set profile image if exists
+        if (currentUser.profileImage) {
+            profileData.profileImage = currentUser.profileImage;
+        }
+
+        // Update avatar display
+        updateAvatarDisplay();
+
+    } catch (error) {
+        console.error('❌ Error loading existing user data:', error);
+    }
+}
+
+function showAuthRequiredMessage() {
+    const modal = createModal('Authentication Required', `
+        <div style="text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 20px;">🔐</div>
+            <h3 style="color: #2D374B; margin-bottom: 15px;">Sign In Required</h3>
+            <p style="margin: 15px 0; color: #666;">
+                You need to sign in with your wallet to set up your profile.
+            </p>
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+                <button onclick="window.location.href='index.html'" 
+                        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                    Go Home & Sign In
+                </button>
+            </div>
+        </div>
+    `);
+    document.body.appendChild(modal);
+}
+
+function showWelcomeMessage() {
+    setTimeout(() => {
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            position: fixed; top: 100px; right: 20px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; padding: 20px; border-radius: 15px; z-index: 10000;
+            max-width: 350px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            animation: slideInRight 0.3s ease;
+        `;
+        
+        toast.innerHTML = `
+            <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                <div style="font-size: 1.5rem; margin-right: 10px;">🎉</div>
+                <strong>Welcome to GENESIS!</strong>
+            </div>
+            <p style="margin: 0; font-size: 0.9rem; opacity: 0.9;">
+                Let's set up your creator profile to get started.
+            </p>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => toast.remove(), 300);
+            }
+        }, 5000);
+    }, 1000);
 }
 
 // ========================================

@@ -9,7 +9,9 @@
       "Bash(start viewer.html)",
       "Bash(explorer viewer.html)",
       "Bash(start \"C:\\Users\\bball\\Cursor Projects\\Web 3 App\\creator.html\")",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(node:*)",
+      "Bash(npx http-server:*)"
     ],
     "deny": []
   }

@@ -57,6 +57,8 @@ class WalletManager {
                 });
 
                 console.log('Wallet connected:', this.currentAccount);
+                console.log('Chain ID detected:', this.chainId);
+                console.log('Network name:', this.getNetworkName());
                 this.updateWalletUI();
                 this.showConnectionSuccess();
                 
@@ -139,6 +141,15 @@ class WalletManager {
             if (accounts.length > 0) {
                 this.currentAccount = accounts[0];
                 this.isConnected = true;
+                
+                // Get chain ID
+                this.chainId = await window.ethereum.request({
+                    method: 'eth_chainId'
+                });
+                
+                console.log('Existing connection - Chain ID:', this.chainId);
+                console.log('Network name:', this.getNetworkName());
+                
                 this.updateWalletUI();
             }
         } catch (error) {
@@ -223,11 +234,15 @@ class WalletManager {
     handleChainChanged(chainId) {
         this.chainId = chainId;
         console.log('Chain changed to:', chainId);
+        this.updateWalletUI();
         
-        // Reload page to reset state (recommended by MetaMask)
-        if (typeof window !== 'undefined') {
-            window.location.reload();
-        }
+        // Show network change notification instead of reloading
+        this.showToast(`Network switched to ${this.getNetworkName(chainId)}`, 'info');
+        
+        // Dispatch custom event for other components to handle
+        window.dispatchEvent(new CustomEvent('networkChanged', {
+            detail: { chainId: chainId, networkName: this.getNetworkName(chainId) }
+        }));
     }
 
     // ========================================
@@ -258,19 +273,66 @@ class WalletManager {
     getNetworkName(chainId = this.chainId) {
         const networks = {
             '0x1': 'Ethereum Mainnet',
-            '0x5': 'Goerli Testnet',
+            '0x5': 'Goerli Testnet', 
+            '0x11155111': 'Sepolia Testnet',
             '0x89': 'Polygon Mainnet',
             '0x13881': 'Polygon Mumbai',
             '0xa': 'Optimism Mainnet',
             '0xa4b1': 'Arbitrum One',
             '0x66eed': 'Arbitrum Goerli (Deprecated)',
-            '0x66eee': 'Arbitrum Sepolia Testnet'
+            '0x66eee': 'Arbitrum Sepolia Testnet',
+            // Add more common networks
+            '0x38': 'BSC Mainnet',
+            '0x61': 'BSC Testnet',
+            '0xfa': 'Fantom Opera',
+            '0xa86a': 'Avalanche C-Chain',
+            // Add common hex variations that might be returned
+            '66eee': 'Arbitrum Sepolia Testnet',  // Without 0x prefix
+            '421614': 'Arbitrum Sepolia Testnet'  // Decimal format
         };
-        return networks[chainId] || 'Unknown Network';
+        
+        // Enhanced debugging
+        console.log(`🔍 Chain ID Detection Debug:`);
+        console.log(`  Raw chainId parameter: ${chainId}`);
+        console.log(`  Type: ${typeof chainId}`);
+        console.log(`  this.chainId: ${this.chainId}`);
+        console.log(`  Available networks:`, Object.keys(networks));
+        
+        // Try multiple formats to ensure we match the network
+        let networkName = null;
+        const searchChainIds = [
+            chainId,                    // Original format
+            chainId?.toString(),        // String conversion
+            '0x' + chainId?.toString(), // Add 0x prefix
+            chainId?.replace?.('0x', ''), // Remove 0x prefix if present
+        ];
+        
+        // Also try converting from decimal to hex if it's a number
+        if (!isNaN(chainId)) {
+            const hexChainId = '0x' + parseInt(chainId).toString(16);
+            searchChainIds.push(hexChainId);
+        }
+        
+        console.log(`  Trying chain ID variations:`, searchChainIds);
+        
+        for (const searchId of searchChainIds) {
+            if (networks[searchId]) {
+                networkName = networks[searchId];
+                console.log(`  ✅ Found match with format: ${searchId} -> ${networkName}`);
+                break;
+            }
+        }
+        
+        if (!networkName) {
+            networkName = `Unknown Network (${chainId})`;
+            console.log(`  ❌ No match found for any format`);
+        }
+        
+        return networkName;
     }
 
     isTestnet(chainId = this.chainId) {
-        const testnets = ['0x5', '0x13881', '0x66eed', '0x66eee'];
+        const testnets = ['0x5', '0x11155111', '0x13881', '0x66eed', '0x66eee', '0x61'];
         return testnets.includes(chainId);
     }
 
@@ -487,6 +549,66 @@ class WalletManager {
                 document.body.style.paddingTop = '';
             }
         }
+    }
+
+    // ========================================
+    // TOAST NOTIFICATIONS
+    // ========================================
+    showToast(message, type = 'info', duration = 4000) {
+        const toastId = 'wallet-toast-' + Date.now();
+        const toast = document.createElement('div');
+        toast.id = toastId;
+        toast.className = `wallet-toast toast-${type}`;
+        
+        const colors = {
+            success: '#10b981',
+            error: '#ef4444', 
+            warning: '#f59e0b',
+            info: '#3b82f6'
+        };
+        
+        const icons = {
+            success: '✅',
+            error: '❌',
+            warning: '⚠️',
+            info: 'ℹ️'
+        };
+        
+        toast.style.cssText = `
+            position: fixed; top: 20px; right: 20px; z-index: 10001;
+            background: ${colors[type] || colors.info}; color: white;
+            padding: 15px 20px; border-radius: 10px; font-weight: 500;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            transform: translateX(100%); transition: transform 0.3s ease;
+            max-width: 400px; font-size: 0.9rem;
+            display: flex; align-items: center; gap: 10px;
+        `;
+        
+        toast.innerHTML = `
+            <span style="font-size: 1.1rem;">${icons[type] || icons.info}</span>
+            <span>${message}</span>
+            <button onclick="document.getElementById('${toastId}').remove()" 
+                    style="background: transparent; border: none; color: white; cursor: pointer; font-size: 1.2rem; margin-left: 10px;">
+                ×
+            </button>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // Animate in
+        setTimeout(() => {
+            toast.style.transform = 'translateX(0)';
+        }, 10);
+        
+        // Auto-remove
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => toast.remove(), 300);
+            }
+        }, duration);
+        
+        return toast;
     }
 
     // ========================================

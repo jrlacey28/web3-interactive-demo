@@ -304,7 +304,7 @@ Expiration Time: ${expirationTime}`;
     checkExistingSession() {
         try {
             const sessionData = localStorage.getItem('siwe_session');
-            if (!sessionData) return;
+            if (!sessionData) return false;
 
             const session = JSON.parse(sessionData);
             
@@ -313,29 +313,44 @@ Expiration Time: ${expirationTime}`;
             const maxSessionAge = 24 * 60 * 60 * 1000; // 24 hours
             
             if (sessionAge > maxSessionAge) {
-                // Session expired
+                console.log('Session expired, clearing...');
                 this.signOut();
-                return;
+                return false;
+            }
+
+            // Wait for wallet to be ready before checking address match
+            if (!this.wallet.isConnected) {
+                console.log('Wallet not connected yet, will check session later...');
+                // Try again after wallet loads
+                setTimeout(() => this.checkExistingSession(), 500);
+                return false;
             }
 
             // Check if wallet is still connected to the same address
-            if (this.wallet.isConnected && 
-                this.wallet.currentAccount?.toLowerCase() === session.user?.walletAddress?.toLowerCase()) {
-                
+            if (this.wallet.currentAccount?.toLowerCase() === session.user?.walletAddress?.toLowerCase()) {
+                console.log('Valid session found, restoring authentication...');
                 this.isAuthenticated = session.isAuthenticated;
                 this.currentUser = session.user;
                 this.sessionToken = session.token;
                 
                 if (this.isAuthenticated) {
                     this.onAuthenticationSuccess(true); // silent = true
+                    return true;
                 }
+            } else {
+                console.log('Wallet address mismatch, clearing session...');
+                this.signOut();
+                return false;
             }
 
         } catch (error) {
             console.error('Error checking existing session:', error);
             // Clear corrupted session data
             localStorage.removeItem('siwe_session');
+            return false;
         }
+        
+        return false;
     }
 
     // ========================================
