@@ -18,7 +18,8 @@
       "Bash(start \"C:\\Users\\bball\\Cursor Projects\\Web 3 App\\my-worlds.html\")",
       "Bash(del \"C:\\Users\\bball\\Cursor Projects\\Web 3 App\\api\\wallet.js\")",
       "Bash(del \"C:\\Users\\bball\\Cursor Projects\\Web 3 App\\js\\auth\\siwe.js\")",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(del \"C:\\Users\\bball\\Cursor Projects\\Web 3 App\\api\\substitute-env.js\")"
     ],
     "deny": []
   }
