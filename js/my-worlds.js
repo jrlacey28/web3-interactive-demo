@@ -1,7 +1,7 @@
 // My Worlds Management JavaScript
 let authenticatedWallet = null;
 let currentUser = null;
-let userWorlds = [];
+let userWorlds = {};
 let selectedTemplate = 'gallery';
 let selectedTheme = 'purple';
 
@@ -11,6 +11,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadUserWorlds();
     setupEventListeners();
     hideLoadingScreen();
+    
+    // Make functions globally accessible for onclick handlers
+    window.createNewWorld = createNewWorld;
+    window.editMainWorld = editMainWorld;
+    window.viewMainWorld = viewMainWorld;
+    window.viewSubWorld = viewSubWorld;
+    window.editSubWorld = editSubWorld;
+    window.deleteSubWorld = deleteSubWorld;
+    window.copyPublicUrl = copyPublicUrl;
+    window.toggleView = toggleView;
+    window.closeCreateModal = closeCreateModal;
+    window.closeEditMainModal = closeEditMainModal;
 });
 
 // ========================================
@@ -46,11 +58,14 @@ async function initializeAuth() {
         }
         
         if (!authenticatedWallet.siwe.isAuthenticated) {
-            redirectToHome();
-            return;
+            console.log('❌ Not authenticated after retries');
+            // Don't redirect immediately, let the user try to interact first
+            currentUser = null;
+        } else {
+            currentUser = authenticatedWallet.getCurrentUser();
+            console.log('✅ User authenticated:', currentUser);
         }
 
-        currentUser = authenticatedWallet.getCurrentUser();
         updateUserUI();
         
     } catch (error) {
@@ -327,36 +342,54 @@ function setupEventListeners() {
 // WORLD ACTIONS
 // ========================================
 function createNewWorld() {
-    document.getElementById('createWorldModal').style.display = 'flex';
+    console.log('➕ Create New World clicked');
+    const modal = document.getElementById('createWorldModal');
+    if (modal) {
+        modal.style.display = 'flex';
+    } else {
+        console.error('Create World Modal not found');
+    }
 }
 
 function editMainWorld() {
+    console.log('📝 Edit Main World clicked', { currentUser, userWorlds });
+    
     // For main world, "customize" means going to the creator page to edit the layout
     if (currentUser && currentUser.username) {
         // Check if there's a published layout to load
         const layoutId = userWorlds.main?.layoutId;
+        console.log('Found layout ID:', layoutId);
+        
         if (layoutId) {
             // Open creator page with the layout loaded for editing
+            console.log('Opening creator with layout:', layoutId);
             window.open(`creator.html?edit=${layoutId}`, '_blank');
         } else {
             // No existing layout, just go to creator page
+            console.log('No layout found, opening blank creator page');
             window.open('creator.html', '_blank');
         }
+    } else if (currentUser) {
+        alert('Please set up your username first to customize your world.');
+        window.location.href = 'profile-setup.html?from=auth';
     } else {
         alert('Please sign in to customize your world.');
-        redirectToHome();
+        window.location.href = 'index.html';
     }
 }
 
 function viewMainWorld() {
+    console.log('👁️ View Main World clicked', { currentUser });
+    
     if (currentUser && currentUser.username) {
+        console.log('Opening world for user:', currentUser.username);
         window.open(`world.html?user=${currentUser.username}`, '_blank');
     } else if (currentUser) {
         alert('Please set up your username first to view your world.');
         window.location.href = 'profile-setup.html?from=auth';
     } else {
         alert('Please sign in to view your world.');
-        redirectToHome();
+        window.location.href = 'index.html';
     }
 }
 
