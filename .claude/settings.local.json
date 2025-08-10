@@ -11,7 +11,9 @@
       "Bash(start \"C:\\Users\\bball\\Cursor Projects\\Web 3 App\\creator.html\")",
       "Bash(cat:*)",
       "Bash(node:*)",
-      "Bash(npx http-server:*)"
+      "Bash(npx http-server:*)",
+      "Bash(start \"C:\\Users\\bball\\Cursor Projects\\Web 3 App\\index.html\")",
+      "Bash(start \"C:\\Users\\bball\\Cursor Projects\\Web 3 App\\viewer.html\")"
     ],
     "deny": []
   }

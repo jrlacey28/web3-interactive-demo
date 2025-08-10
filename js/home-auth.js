@@ -361,12 +361,8 @@ function goToDashboard() {
 }
 
 function goToProfile() {
-    // Ensure user is authenticated; otherwise go through auth
-    if (authenticatedWallet && authenticatedWallet.siwe.isAuthenticated) {
-        window.location.href = 'profile-setup.html';
-    } else {
-        handleWalletConnect();
-    }
+    // If called from user menu, user is already authenticated - just navigate
+    window.location.href = 'profile-setup.html';
 }
 
 function showMyWorlds() {

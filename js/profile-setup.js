@@ -90,7 +90,7 @@ async function initializeAuth() {
 }
 
 // Wait up to maxWaitMs for SIWE session to restore after redirect
-async function waitForAuthentication(maxWaitMs = 2000) {
+async function waitForAuthentication(maxWaitMs = 3000) {
     const start = Date.now();
     while (Date.now() - start < maxWaitMs) {
         try {
@@ -102,7 +102,7 @@ async function waitForAuthentication(maxWaitMs = 2000) {
         } catch (e) {
             // ignore transient errors
         }
-        await new Promise(r => setTimeout(r, 200));
+        await new Promise(r => setTimeout(r, 300));
     }
     return window.authenticatedWallet?.siwe?.isAuthenticated === true;
 }

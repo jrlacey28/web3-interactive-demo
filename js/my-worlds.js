@@ -20,21 +20,34 @@ async function initializeAuth() {
     try {
         // Check authentication
         if (typeof walletManager === 'undefined') {
-            // Wait briefly for wallet manager to initialize instead of redirecting immediately
-            await new Promise(r => setTimeout(r, 300));
+            // Wait longer for wallet manager to initialize
+            await new Promise(r => setTimeout(r, 1000));
         }
 
         // Create authenticated wallet manager
         authenticatedWallet = new AuthenticatedWalletManager();
         
-        // Check if user is authenticated
-        if (!authenticatedWallet.siwe.isAuthenticated) {
-            // Try restoring session once before redirect
-            const restored = authenticatedWallet.siwe.checkExistingSession();
-            if (!restored || !authenticatedWallet.siwe.isAuthenticated) {
-                redirectToHome();
-                return;
+        // Give more time for authentication state to be restored
+        let retryCount = 0;
+        const maxRetries = 5;
+        
+        while (!authenticatedWallet.siwe.isAuthenticated && retryCount < maxRetries) {
+            // Try restoring session
+            try {
+                authenticatedWallet.siwe.checkExistingSession();
+            } catch (e) {
+                // ignore errors during session restoration
             }
+            
+            if (!authenticatedWallet.siwe.isAuthenticated) {
+                await new Promise(r => setTimeout(r, 500));
+                retryCount++;
+            }
+        }
+        
+        if (!authenticatedWallet.siwe.isAuthenticated) {
+            redirectToHome();
+            return;
         }
 
         currentUser = authenticatedWallet.getCurrentUser();
