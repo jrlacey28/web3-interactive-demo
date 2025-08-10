@@ -17,6 +17,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize page analytics (optional)
     initializeAnalytics();
+    // Quick share hook for header button
+    window.shareCurrentWorld = function() {
+        const url = window.location.href;
+        navigator.clipboard.writeText(url).then(() => {
+            showToast('✅ Link copied to clipboard!', 'success');
+        }).catch(() => {
+            showToast('❌ Failed to copy link', 'error');
+        });
+    };
 });
 
 // Performance monitoring for optimization

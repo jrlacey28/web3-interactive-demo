@@ -42,11 +42,16 @@ async function initializeAuth() {
         if (typeof AuthenticatedWalletManager !== 'undefined') {
             window.authenticatedWallet = new AuthenticatedWalletManager();
             
-            // Check if user is authenticated
+            // If not yet authenticated, wait briefly for session restore
             if (!window.authenticatedWallet.siwe.isAuthenticated) {
-                console.log('❌ User not authenticated');
-                showAuthRequiredMessage();
-                return;
+                const urlParams = new URLSearchParams(window.location.search);
+                const fromAuth = urlParams.get('from') === 'auth' || urlParams.get('auth') === 'true';
+                const restored = await waitForAuthentication(fromAuth ? 4000 : 2000);
+                if (!restored) {
+                    console.log('❌ User not authenticated');
+                    showAuthRequiredMessage();
+                    return;
+                }
             }
             
             // Load existing user data if available
@@ -82,6 +87,24 @@ async function initializeAuth() {
     } catch (error) {
         console.error('❌ Error initializing auth:', error);
     }
+}
+
+// Wait up to maxWaitMs for SIWE session to restore after redirect
+async function waitForAuthentication(maxWaitMs = 2000) {
+    const start = Date.now();
+    while (Date.now() - start < maxWaitMs) {
+        try {
+            // Let SIWE attempt to restore existing session
+            const hasSession = window.authenticatedWallet?.siwe?.checkExistingSession?.();
+            if (window.authenticatedWallet?.siwe?.isAuthenticated) {
+                return true;
+            }
+        } catch (e) {
+            // ignore transient errors
+        }
+        await new Promise(r => setTimeout(r, 200));
+    }
+    return window.authenticatedWallet?.siwe?.isAuthenticated === true;
 }
 
 function updateWalletStatus() {
@@ -534,8 +557,8 @@ function updateSummary() {
         summaryBio.style.opacity = profileData.bio ? '1' : '0.6';
     }
     
-    if (summaryWallet && walletManager && walletManager.isConnected) {
-        summaryWallet.textContent = walletManager.getShortAddress();
+    if (summaryWallet && window.authenticatedWallet && window.authenticatedWallet.isConnected) {
+        summaryWallet.textContent = window.authenticatedWallet.getShortAddress();
     }
     
     updateAvatarDisplay();
@@ -558,7 +581,7 @@ async function handleFormSubmit(event) {
         completeBtn.disabled = true;
         
         // Validate wallet connection
-        if (!walletManager || !walletManager.isConnected) {
+        if (!window.authenticatedWallet || !window.authenticatedWallet.isConnected) {
             throw new Error('Wallet not connected');
         }
         
@@ -590,13 +613,8 @@ async function handleFormSubmit(event) {
 
 async function createUserProfile() {
     try {
-        // Get or create SIWE auth instance
-        let siweAuth;
-        if (typeof walletManager.siwe !== 'undefined') {
-            siweAuth = walletManager.siwe;
-        } else {
-            siweAuth = new SIWEAuth(walletManager);
-        }
+        // Get SIWE auth instance from authenticated wallet
+        const siweAuth = window.authenticatedWallet.siwe;
         
         // Update user profile with collected data
         const profileUpdates = {
@@ -614,26 +632,35 @@ async function createUserProfile() {
         
         // Save to localStorage (in production, this would be sent to backend)
         const users = JSON.parse(localStorage.getItem('siwe_users') || '{}');
-        const walletAddress = walletManager.currentAccount;
+        const walletAddress = window.authenticatedWallet.currentAccount || siweAuth.currentUser?.walletAddress;
         
-        if (users[walletAddress]) {
-            users[walletAddress] = {
-                ...users[walletAddress],
-                ...profileUpdates
+        // Ensure user record exists
+        if (!users[walletAddress]) {
+            users[walletAddress] = siweAuth.currentUser || {
+                id: 'user_' + Date.now(),
+                walletAddress: walletAddress,
+                username: null,
+                bio: null,
+                profileImage: null,
+                isVerified: false,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                worlds: [],
+                preferences: { theme: 'dark', notifications: true, analytics: true }
             };
-            
-            localStorage.setItem('siwe_users', JSON.stringify(users));
-            
-            // Update current user in SIWE auth
-            if (siweAuth.currentUser) {
-                siweAuth.currentUser = users[walletAddress];
-                siweAuth.saveSession();
-            }
-            
-            return { success: true, user: users[walletAddress] };
-        } else {
-            throw new Error('User not found');
         }
+        users[walletAddress] = {
+            ...users[walletAddress],
+            ...profileUpdates
+        };
+        
+        localStorage.setItem('siwe_users', JSON.stringify(users));
+        
+        // Update current user in SIWE auth and persist session
+        siweAuth.currentUser = users[walletAddress];
+        siweAuth.saveSession();
+        
+        return { success: true, user: users[walletAddress] };
         
     } catch (error) {
         return { success: false, error: error.message };

@@ -3646,7 +3646,7 @@ function showPublishSuccessModal(shareableUrl) {
             <div style="background: rgba(0, 0, 0, 0.5); padding: 10px; border-radius: 8px; font-family: monospace; font-size: 14px; word-break: break-all; border: 1px solid rgba(0, 212, 255, 0.3);" id="shareableLink">${shareableUrl}</div>
         </div>
         
-        <div style="display: flex; gap: 10px; justify-content: center; margin: 25px 0;">
+        <div style="display: flex; gap: 10px; justify-content: center; margin: 25px 0; flex-wrap: wrap;">
             <button onclick="copyToClipboard('${shareableUrl}')" style="
                 background: linear-gradient(135deg, #00d4ff, #0099cc);
                 color: white;
@@ -3672,6 +3672,19 @@ function showPublishSuccessModal(shareableUrl) {
                 transition: transform 0.2s ease;
             " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                 👁️ Preview
+            </button>
+            <button onclick="window.location.href='creator.html'" style="
+                background: linear-gradient(135deg, #9d4edd, #7b2cbf);
+                color: white;
+                border: none;
+                padding: 12px 20px;
+                border-radius: 10px;
+                cursor: pointer;
+                font-weight: bold;
+                font-size: 14px;
+                transition: transform 0.2s ease;
+            " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                ✨ Create Another World
             </button>
         </div>
         
