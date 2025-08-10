@@ -697,40 +697,17 @@ function closeSidebar() {
     }
 }
 
+// Legacy function - now handled by Moralis wallet manager
+// This function is kept for backward compatibility but should not be used
 async function connectWallet() {
-    const btn = document.getElementById('walletBtn');
+    console.warn('⚠️ Legacy connectWallet() called - use Moralis authentication instead');
     
-    if (typeof window.ethereum !== 'undefined') {
-        try {
-            await window.ethereum.request({ method: 'eth_requestAccounts' });
-            walletConnected = true;
-            
-            // Get account address
-            const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-            const shortAddress = accounts[0] ? 
-                `${accounts[0].slice(0, 6)}...${accounts[0].slice(-4)}` : '';
-            
-            // Get current network
-            const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-            const networkName = getNetworkName(chainId);
-            
-            btn.textContent = `✅ ${shortAddress}`;
-            btn.classList.add('connected');
-            btn.title = `Connected to ${networkName}`;
-            
-            // Show Arbitrum switch prompt if not on Arbitrum
-            if (chainId !== '0xa4b1' && chainId !== '0x66eed') {
-                setTimeout(() => {
-                    showArbitrumSwitchModal();
-                }, 1000);
-            }
-            
-        } catch (error) {
-            alert('Failed to connect wallet: ' + error.message);
-        }
+    // Redirect to Moralis authentication
+    if (window.walletManager) {
+        return await window.walletManager.authenticate();
     } else {
-        alert('MetaMask is not installed. Please install MetaMask to connect your wallet.');
-        window.open('https://metamask.io/download/', '_blank');
+        console.error('❌ Moralis wallet manager not available');
+        return { success: false, error: 'Wallet manager not initialized' };
     }
 }
 

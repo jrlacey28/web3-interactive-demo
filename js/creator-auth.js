@@ -20,8 +20,8 @@ async function initializeCreatorAuth() {
             return;
         }
 
-        // Create authenticated wallet manager
-        authenticatedWallet = new AuthenticatedWalletManager();
+        // Use Moralis wallet manager
+        authenticatedWallet = walletManager;
         
         // Check for existing session
         await checkUserSession();
@@ -56,10 +56,10 @@ async function checkUserSession() {
             attempts++;
         }
         
-        // Check existing session
-        const hasValidSession = authenticatedWallet.siwe.checkExistingSession();
+        // Check for existing Moralis authentication
+        await authenticatedWallet.checkExistingSession();
         
-        if (hasValidSession && authenticatedWallet.siwe.isAuthenticated) {
+        if (authenticatedWallet.isAuthenticated) {
             currentUser = authenticatedWallet.getCurrentUser();
             console.log('✅ Found existing authenticated session:', currentUser);
             
@@ -67,7 +67,7 @@ async function checkUserSession() {
             showSessionRestoreToast();
             
             return true;
-        } else if (authenticatedWallet.isConnected && !authenticatedWallet.siwe.isAuthenticated) {
+        } else if (authenticatedWallet.isConnected && !authenticatedWallet.isAuthenticated) {
             console.log('🔗 Wallet connected but not authenticated');
             // Do not auto-prompt; wait for explicit click
         } else {
@@ -89,7 +89,7 @@ async function handleCreatorWalletConnect() {
     try {
         const walletBtn = document.getElementById('walletBtn');
         
-        if (authenticatedWallet.isConnected && authenticatedWallet.siwe.isAuthenticated) {
+        if (authenticatedWallet.isConnected && authenticatedWallet.isAuthenticated) {
             // Already fully authenticated, show user menu without additional prompts
             showCreatorUserMenu();
             return;
@@ -105,12 +105,19 @@ async function handleCreatorWalletConnect() {
         walletBtn.disabled = true;
         walletBtn.textContent = 'Connecting...';
         
-        const result = await authenticatedWallet.connectWallet();
+        const result = await authenticatedWallet.authenticate();
         
         if (result.success) {
+            currentUser = result.user;
             updateCreatorUI();
+            showAuthSuccessToast();
             
-            // Do not auto-prompt repeatedly; let user click to sign in
+            // If no username, redirect to profile setup
+            if (!currentUser.username) {
+                window.location.href = 'profile-setup.html?from=auth';
+            }
+        } else {
+            throw new Error(result.error);
         }
         
     } catch (error) {
@@ -133,12 +140,17 @@ async function handleCreatorAuth() {
             throw new Error('Wallet must be connected first');
         }
         
-        const result = await authenticatedWallet.siwe.signIn();
+        const result = await authenticatedWallet.authenticate();
         
         if (result.success) {
             currentUser = result.user;
             updateCreatorUI();
             showAuthSuccessToast();
+            
+            // If no username, redirect to profile setup
+            if (!currentUser.username) {
+                window.location.href = 'profile-setup.html?from=auth';
+            }
         } else {
             throw new Error(result.error);
         }
@@ -156,7 +168,7 @@ function updateCreatorUI() {
     const walletBtn = document.getElementById('walletBtn');
     if (!walletBtn) return;
     
-    if (authenticatedWallet.isConnected && authenticatedWallet.siwe.isAuthenticated) {
+    if (authenticatedWallet.isAuthenticated) {
         // Fully authenticated
         const displayName = currentUser.username || authenticatedWallet.getShortAddress();
         walletBtn.textContent = `👤 ${displayName}`;
@@ -311,7 +323,7 @@ async function signOutUser() {
         console.log('🚪 Signing out from creator page...');
         document.querySelector('.modal-overlay')?.remove();
         
-        await authenticatedWallet.siwe.signOut();
+        await authenticatedWallet.signOut();
         currentUser = null;
         updateCreatorUI();
         
@@ -328,7 +340,7 @@ async function signOutUser() {
 // Override the original save function to include user authentication
 const originalSaveLayout = window.saveLayout;
 window.saveLayout = function() {
-    if (authenticatedWallet.isConnected && authenticatedWallet.siwe.isAuthenticated) {
+    if (authenticatedWallet.isAuthenticated) {
         console.log('💾 Saving layout for authenticated user:', currentUser);
         
         // Add user info to saved data
@@ -353,7 +365,7 @@ window.saveLayout = function() {
 // Override the original publish function
 const originalPublishLayout = window.publishLayout;
 window.publishLayout = function() {
-    if (authenticatedWallet.isConnected && authenticatedWallet.siwe.isAuthenticated) {
+    if (authenticatedWallet.isAuthenticated) {
         console.log('🚀 Publishing layout for authenticated user:', currentUser);
         
         // Show world naming modal before publishing
@@ -507,7 +519,7 @@ function handleNetworkChange(event) {
     updateCreatorUI();
     
     // If user is authenticated, check if session is still valid
-    if (authenticatedWallet.siwe.isAuthenticated) {
+    if (authenticatedWallet.isAuthenticated) {
         // Just update the UI, don't disrupt the user's work
         const networkName = event.detail.networkName;
         authenticatedWallet.showToast(`Switched to ${networkName}`, 'info');

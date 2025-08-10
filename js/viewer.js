@@ -714,16 +714,16 @@ function showErrorState(errorMessage = 'Layout not found', layoutId = null) {
 
 // Initialize wallet for viewer (tips functionality)
 async function initializeWalletForViewer() {
-    // Auto-detect if wallet is available
-    if (typeof window.ethereum !== 'undefined') {
+    // Wait for Moralis wallet manager to be available
+    if (typeof walletManager !== 'undefined') {
         try {
-            const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-            if (accounts.length > 0) {
+            await walletManager.checkExistingSession();
+            if (walletManager.isAuthenticated) {
                 walletConnected = true;
-                console.log('Wallet already connected for tips');
+                console.log('Moralis wallet already connected for tips');
             }
         } catch (error) {
-            console.log('Wallet not connected');
+            console.log('Moralis wallet not connected');
         }
     }
 }
@@ -769,34 +769,41 @@ function sendTip(widgetId) {
     sendBtn.disabled = true;
     sendBtn.textContent = 'Sending...';
     
-    // Check wallet connection
-    if (typeof window.ethereum !== 'undefined') {
-        window.ethereum.request({ method: 'eth_requestAccounts' })
-            .then(() => {
-                setTimeout(() => {
-                    resultDiv.innerHTML = `Thank you for your $${amount} tip!${message ? `<br><em>"${message}"</em>` : ''}`;
-                    resultDiv.className = 'tip-result success';
-                    
-                    // Show success animation
-                    showTipSuccess(amount);
-                    
-                    // Reset form
+    // Check Moralis wallet connection
+    if (typeof walletManager !== 'undefined') {
+        walletManager.authenticate()
+            .then((result) => {
+                if (result.success) {
                     setTimeout(() => {
-                        const buttons = document.getElementById(`w${widgetId}`).querySelectorAll('.tip-amount-btn');
-                        buttons.forEach(btn => btn.classList.remove('selected'));
-                        document.getElementById(`tipMsg${widgetId}`).value = '';
-                        document.getElementById(`charCount${widgetId}`).textContent = '0';
-                        sendBtn.disabled = true;
-                        sendBtn.textContent = 'Send Tip';
-                        selectedTipAmounts[widgetId] = null;
+                        resultDiv.innerHTML = `Thank you for your $${amount} tip!${message ? `<br><em>"${message}"</em>` : ''}`;
+                        resultDiv.className = 'tip-result success';
                         
-                        // Clear result after a few seconds
+                        // Show success animation
+                        showTipSuccess(amount);
+                        
+                        // Reset form
                         setTimeout(() => {
-                            resultDiv.innerHTML = '';
-                            resultDiv.className = 'tip-result';
-                        }, 5000);
-                    }, 2000);
-                }, 1000);
+                            const buttons = document.getElementById(`w${widgetId}`).querySelectorAll('.tip-amount-btn');
+                            buttons.forEach(btn => btn.classList.remove('selected'));
+                            document.getElementById(`tipMsg${widgetId}`).value = '';
+                            document.getElementById(`charCount${widgetId}`).textContent = '0';
+                            sendBtn.disabled = true;
+                            sendBtn.textContent = 'Send Tip';
+                            selectedTipAmounts[widgetId] = null;
+                            
+                            // Clear result after a few seconds
+                            setTimeout(() => {
+                                resultDiv.innerHTML = '';
+                                resultDiv.className = 'tip-result';
+                            }, 5000);
+                        }, 2000);
+                    }, 1000);
+                } else {
+                    resultDiv.innerHTML = 'Please authenticate your wallet to send tips';
+                    resultDiv.className = 'tip-result error';
+                    sendBtn.disabled = false;
+                    sendBtn.textContent = 'Send Tip';
+                }
             })
             .catch(() => {
                 resultDiv.innerHTML = 'Please connect your wallet to send tips';
@@ -805,7 +812,7 @@ function sendTip(widgetId) {
                 sendBtn.textContent = 'Send Tip';
             });
     } else {
-        resultDiv.innerHTML = 'Please install MetaMask to send tips';
+        resultDiv.innerHTML = 'Please connect your wallet to send tips';
         resultDiv.className = 'tip-result error';
         sendBtn.disabled = false;
         sendBtn.textContent = 'Send Tip';
@@ -967,24 +974,24 @@ function getMinWidgetHeight_viewer(widgetType) {
     return minimums[widgetType] || 150;
 }
 
-// Old tip functions (deprecated but kept for compatibility)
+// Legacy tip function - updated to use Moralis
 function tip(amount, id) {
     if (!walletConnected) {
         connectWalletForTips();
         return;
     }
     
-    window.ethereum.request({ method: 'eth_chainId' }).then(chainId => {
-        const isArbitrum = chainId === '0xa4b1' || chainId === '0x66eed';
+    if (typeof walletManager !== 'undefined' && walletManager.isAuthenticated) {
         const msg = document.getElementById(`msg${id}`).value;
         const message = msg ? ` with message: "${msg}"` : '';
-        const networkInfo = isArbitrum ? ' (⚡ Fast & cheap on Arbitrum!)' : ' (Consider switching to Arbitrum for lower fees)';
         
-        document.getElementById(`result${id}`).innerHTML = `<div class="success">Thanks for the ${amount} tip${message}! 🚀${networkInfo}</div>`;
+        document.getElementById(`result${id}`).innerHTML = `<div class="success">Thanks for the ${amount} tip${message}! 🚀</div>`;
         
         // Show success animation
         showTipSuccess(amount);
-    });
+    } else {
+        connectWalletForTips();
+    }
 }
 
 function customTip(id) {
@@ -996,34 +1003,37 @@ function customTip(id) {
         return;
     }
     
-    window.ethereum.request({ method: 'eth_chainId' }).then(chainId => {
-        const isArbitrum = chainId === '0xa4b1' || chainId === '0x66eed';
+    if (typeof walletManager !== 'undefined' && walletManager.isAuthenticated) {
         const msg = document.getElementById(`msg${id}`).value;
         const message = msg ? ` with message: "${msg}"` : '';
-        const networkInfo = isArbitrum ? ' (⚡ Fast & cheap on Arbitrum!)' : ' (Consider switching to Arbitrum for lower fees)';
         
-        document.getElementById(`result${id}`).innerHTML = `<div class="success">Thanks for the ${amount} tip${message}! 🚀${networkInfo}</div>`;
+        document.getElementById(`result${id}`).innerHTML = `<div class="success">Thanks for the ${amount} tip${message}! 🚀</div>`;
         
         // Clear input
         document.getElementById(`amt${id}`).value = '';
         
         // Show success animation
         showTipSuccess(amount);
-    });
+    } else {
+        connectWalletForTips();
+    }
 }
 
 async function connectWalletForTips() {
-    if (typeof window.ethereum !== 'undefined') {
+    if (typeof walletManager !== 'undefined') {
         try {
-            await window.ethereum.request({ method: 'eth_requestAccounts' });
-            walletConnected = true;
-            showToast('✅ Wallet connected! You can now send tips.', 'success');
+            const result = await walletManager.authenticate();
+            if (result.success) {
+                walletConnected = true;
+                showToast('✅ Wallet connected! You can now send tips.', 'success');
+            } else {
+                showToast('❌ Failed to authenticate wallet', 'error');
+            }
         } catch (error) {
             showToast('❌ Failed to connect wallet', 'error');
         }
     } else {
-        alert('MetaMask is not installed. Please install MetaMask to send tips.');
-        window.open('https://metamask.io/download/', '_blank');
+        showToast('❌ Please ensure wallet manager is loaded', 'error');
     }
 }
 
