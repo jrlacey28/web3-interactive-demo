@@ -356,16 +356,146 @@ window.publishLayout = function() {
     if (authenticatedWallet.isConnected && authenticatedWallet.siwe.isAuthenticated) {
         console.log('🚀 Publishing layout for authenticated user:', currentUser);
         
-        if (originalPublishLayout) {
-            originalPublishLayout.call(this, currentUser);
-        }
-        
-        authenticatedWallet.showToast('🚀 Layout published! Others can now view your world.', 'success');
+        // Show world naming modal before publishing
+        showWorldNamingModal((worldName) => {
+            if (originalPublishLayout) {
+                originalPublishLayout.call(this, currentUser, worldName);
+                
+                // Save world to user's worlds list
+                saveWorldToUsersList(worldName, currentUser);
+            }
+            
+            authenticatedWallet.showToast('🚀 World published! Others can now view your creation.', 'success');
+        });
     } else {
         // Show prompt to sign in first
         showSignInPrompt();
     }
 };
+
+// ========================================
+// WORLD NAMING AND MANAGEMENT
+// ========================================
+function showWorldNamingModal(onPublish) {
+    const modal = createCreatorModal('Name Your World', `
+        <div style="text-align: left;">
+            <div style="margin-bottom: 20px;">
+                <label for="worldNameInput" style="display: block; color: #2D374B; font-weight: 600; margin-bottom: 8px;">
+                    World Name
+                </label>
+                <input type="text" id="worldNameInput" 
+                       placeholder="Enter a name for your world..." 
+                       style="width: 100%; padding: 12px 16px; border: 2px solid #e1e5e9; border-radius: 10px; font-size: 1rem; box-sizing: border-box;"
+                       maxlength="50" required>
+                <small style="color: #666; font-size: 0.85rem; margin-top: 5px; display: block;">
+                    This will appear as "${currentUser.username}'s [World Name]" when others view it.
+                </small>
+            </div>
+            
+            <div style="background: #f8f9ff; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                    <span style="font-size: 1.2rem; margin-right: 8px;">📋</span>
+                    <strong style="color: #2D374B;">Publishing Checklist:</strong>
+                </div>
+                <ul style="margin: 0; padding-left: 20px; color: #666; line-height: 1.6;">
+                    <li>Your world will be saved to "My Worlds"</li>
+                    <li>Others can view it using your shareable link</li>
+                    <li>You can edit or update it anytime</li>
+                </ul>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 25px;">
+                <button onclick="this.closest('.modal-overlay').remove()" 
+                        style="background: #f8f9ff; color: #667eea; border: 2px solid #e8f0ff; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                    Cancel
+                </button>
+                <button onclick="handleWorldPublish()" 
+                        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                    🚀 Publish World
+                </button>
+            </div>
+        </div>
+    `);
+    
+    // Store the callback function globally so the button can access it
+    window.currentPublishCallback = onPublish;
+    
+    document.body.appendChild(modal);
+    
+    // Focus the input
+    setTimeout(() => {
+        const input = document.getElementById('worldNameInput');
+        if (input) input.focus();
+    }, 100);
+}
+
+function handleWorldPublish() {
+    const input = document.getElementById('worldNameInput');
+    const worldName = input.value.trim();
+    
+    if (!worldName) {
+        alert('Please enter a name for your world.');
+        input.focus();
+        return;
+    }
+    
+    // Close modal
+    document.querySelector('.modal-overlay').remove();
+    
+    // Call the publish callback
+    if (window.currentPublishCallback) {
+        window.currentPublishCallback(worldName);
+        window.currentPublishCallback = null;
+    }
+}
+
+function saveWorldToUsersList(worldName, user) {
+    try {
+        // Get user's worlds
+        const allWorlds = JSON.parse(localStorage.getItem('user_worlds') || '{}');
+        if (!allWorlds[user.walletAddress]) {
+            allWorlds[user.walletAddress] = {};
+        }
+        
+        // Create world data
+        const worldId = worldName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+        const worldData = {
+            id: worldId,
+            type: 'sub',
+            name: worldName,
+            description: `Created with GENESIS world builder`,
+            theme: 'purple',
+            privacy: 'public',
+            template: 'custom',
+            banner: null,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            stats: {
+                views: 0,
+                likes: 0,
+                tips: 0
+            },
+            content: {
+                widgets: [],
+                layout: 'custom'
+            },
+            published: true,
+            layoutId: `${user.username}_${worldId}_${Date.now()}`
+        };
+        
+        // Add to user's worlds
+        allWorlds[user.walletAddress][worldId] = worldData;
+        localStorage.setItem('user_worlds', JSON.stringify(allWorlds));
+        
+        console.log('✅ World saved to user worlds list:', worldData);
+        
+    } catch (error) {
+        console.error('❌ Failed to save world to user list:', error);
+    }
+}
+
+// Make functions globally available
+window.handleWorldPublish = handleWorldPublish;
 
 // ========================================
 // NETWORK CHANGE HANDLER

@@ -3433,6 +3433,9 @@ document.addEventListener('DOMContentLoaded', function() {
     createLayerManagementButton();
     initializeResizeSnap(); // Initialize resize snap functionality
     
+    // Check for edit parameter to load existing layout
+    checkForEditLayout();
+    
     // Close button is now in HTML
     
     // Click outside sidebar to close
@@ -3545,7 +3548,7 @@ function markLayoutAsUnsaved() {
     }
 }
 
-function publishLayout() {
+function publishLayout(currentUser, worldName) {
     // Get current layout
     const widgets = [];
     document.querySelectorAll('.widget-wrapper').forEach(wrapper => {
@@ -3564,7 +3567,7 @@ function publishLayout() {
     });
     
     // Generate unique layout ID
-    const layoutId = Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    const layoutId = worldName ? `${currentUser?.username || 'anonymous'}_${worldName.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}` : Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     
     const layout = {
         id: layoutId,
@@ -3572,7 +3575,9 @@ function publishLayout() {
         background: getCurrentBackground(),
         timestamp: new Date().toISOString(),
         published: true,
-        creatorName: 'Anonymous Creator'
+        creatorName: currentUser?.username || 'Anonymous Creator',
+        worldName: worldName || 'Untitled World',
+        creatorAddress: currentUser?.walletAddress
     };
     
     // Save as published layout with correct key format
@@ -3597,6 +3602,219 @@ function publishLayout() {
         btn.textContent = originalText;
         btn.style.background = originalBackground;
     }, 3000);
+}
+
+// ========================================
+// EDIT LAYOUT FUNCTIONALITY
+// ========================================
+function checkForEditLayout() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const editLayoutId = urlParams.get('edit');
+    
+    if (editLayoutId) {
+        console.log('🔧 Loading layout for editing:', editLayoutId);
+        loadLayoutForEditing(editLayoutId);
+    }
+}
+
+function loadLayoutForEditing(layoutId) {
+    try {
+        // Try to find the layout in localStorage
+        const layout = JSON.parse(localStorage.getItem(`layout_${layoutId}`)) || 
+                      JSON.parse(localStorage.getItem('web3DemoPublishedLayout'));
+        
+        if (layout && layout.id === layoutId) {
+            console.log('✅ Found layout to edit:', layout);
+            
+            // Clear existing widgets
+            document.getElementById('canvas').innerHTML = '';
+            
+            // Set background
+            if (layout.background) {
+                applyBackground(layout.background);
+            }
+            
+            // Restore widgets
+            if (layout.widgets && layout.widgets.length > 0) {
+                layout.widgets.forEach((widgetData, index) => {
+                    restoreWidget(widgetData, index);
+                });
+            }
+            
+            // Show success message
+            const worldName = layout.worldName || 'your world';
+            showToast(`📝 Loaded "${worldName}" for editing. Make your changes and publish when ready!`, 'success');
+            
+        } else {
+            console.log('❌ Layout not found for ID:', layoutId);
+            showToast('⚠️ Could not find the requested world to edit.', 'error');
+        }
+        
+    } catch (error) {
+        console.error('❌ Failed to load layout for editing:', error);
+        showToast('❌ Failed to load world for editing.', 'error');
+    }
+}
+
+function applyBackground(backgroundData) {
+    const bg = document.getElementById('bg');
+    if (bg && backgroundData) {
+        if (backgroundData.type === 'solid') {
+            bg.style.background = backgroundData.color;
+        } else if (backgroundData.type === 'linear-gradient') {
+            bg.style.background = `linear-gradient(${backgroundData.direction}, ${backgroundData.colors.join(', ')})`;
+        } else if (backgroundData.type === 'radial-gradient') {
+            bg.style.background = `radial-gradient(${backgroundData.shape} at ${backgroundData.position}, ${backgroundData.colors.join(', ')})`;
+        } else if (backgroundData.type === 'image') {
+            bg.style.background = `url(${backgroundData.url})`;
+            bg.style.backgroundSize = backgroundData.size || 'cover';
+            bg.style.backgroundPosition = backgroundData.position || 'center';
+            bg.style.backgroundRepeat = backgroundData.repeat || 'no-repeat';
+        }
+    }
+}
+
+function restoreWidget(widgetData, index) {
+    // This function would recreate widgets from saved data
+    // Implementation depends on how widgets are originally created
+    console.log('🔄 Restoring widget:', widgetData);
+    
+    // Basic implementation - create widget wrapper
+    const wrapper = document.createElement('div');
+    wrapper.className = 'widget-wrapper';
+    wrapper.id = widgetData.id || `widget${counter++}`;
+    wrapper.style.left = widgetData.x;
+    wrapper.style.top = widgetData.y;
+    wrapper.style.width = widgetData.width;
+    wrapper.style.height = widgetData.height;
+    
+    // Create the actual widget based on type
+    const widget = createWidgetByType(widgetData.type);
+    if (widget) {
+        widget.dataset.type = widgetData.type;
+        wrapper.appendChild(widget);
+        
+        // Apply customization if available
+        if (widgetData.customization) {
+            applyWidgetCustomization(widget, widgetData.customization);
+        }
+        
+        // Restore widget state if available
+        if (widgetData.state) {
+            restoreWidgetState(widget, widgetData.state, widgetData.type);
+        }
+        
+        document.getElementById('canvas').appendChild(wrapper);
+        
+        // Make it draggable and resizable
+        makeDraggable(wrapper);
+        makeResizable(wrapper);
+    }
+}
+
+function createWidgetByType(type) {
+    // Create a basic widget element based on type
+    const widget = document.createElement('div');
+    widget.className = 'widget';
+    
+    switch(type) {
+        case 'crypto':
+            widget.innerHTML = '<div class="tip-container"><div class="tip-header">💰 Tips</div><div class="tip-buttons"><button class="tip-btn">$1</button><button class="tip-btn">$5</button><button class="tip-btn">$10</button></div></div>';
+            break;
+        case 'twitter':
+            widget.innerHTML = '<div class="twitter-container"><div class="twitter-header">🐦 Twitter Feed</div><div class="twitter-content">Latest tweets will appear here</div></div>';
+            break;
+        case 'instagram':
+            widget.innerHTML = '<div class="instagram-container"><div class="instagram-header">📷 Instagram</div><div class="instagram-content">Instagram posts will appear here</div></div>';
+            break;
+        case 'youtube':
+            widget.innerHTML = '<div class="youtube-container"><iframe src="about:blank" frameborder="0"></iframe></div>';
+            break;
+        case 'livestream':
+            widget.innerHTML = '<div class="livestream-container"><div class="livestream-placeholder">📺 Live Stream</div></div>';
+            break;
+        case 'video':
+            widget.innerHTML = '<div class="video-container"><video controls><source src="" type="video/mp4">Your browser does not support video.</video></div>';
+            break;
+        case 'discord':
+            widget.innerHTML = '<div class="discord-container"><div class="discord-header">💬 Discord</div><div class="discord-content">Discord integration</div></div>';
+            break;
+        default:
+            widget.innerHTML = '<div class="default-widget">Widget Content</div>';
+    }
+    
+    return widget;
+}
+
+function applyWidgetCustomization(widget, customization) {
+    if (!customization) return;
+    
+    // Apply background color and opacity
+    if (customization.opacity !== undefined) {
+        const opacity = customization.opacity;
+        const bgColor = customization.bgColor || '#000000';
+        const borderColor = customization.borderColor || '#00d4ff';
+        
+        // Convert hex to rgba for opacity
+        const r = parseInt(bgColor.substr(1,2), 16);
+        const g = parseInt(bgColor.substr(3,2), 16);
+        const b = parseInt(bgColor.substr(5,2), 16);
+        
+        widget.style.backgroundColor = `rgba(${r}, ${g}, ${b}, ${opacity})`;
+        widget.style.borderColor = borderColor;
+    }
+    
+    // Apply button customization
+    if (customization.buttonColor || customization.buttonTextColor) {
+        const buttons = widget.querySelectorAll('button');
+        buttons.forEach(button => {
+            if (customization.buttonColor) {
+                button.style.backgroundColor = customization.buttonColor;
+            }
+            if (customization.buttonTextColor) {
+                button.style.color = customization.buttonTextColor;
+            }
+        });
+    }
+}
+
+function restoreWidgetState(widget, state, type) {
+    // Restore widget-specific state
+    if (type === 'youtube' && state.videoId) {
+        const iframe = widget.querySelector('iframe');
+        if (iframe) {
+            iframe.src = `https://www.youtube.com/embed/${state.videoId}`;
+        }
+    }
+    // Add more state restoration logic for other widget types as needed
+}
+
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    const bgColor = type === 'success' ? '#00ff88' : 
+                   type === 'error' ? '#ff4757' : 
+                   type === 'info' ? '#667eea' : '#667eea';
+    
+    toast.style.cssText = `
+        position: fixed; top: 20px; right: 20px; background: ${bgColor}; 
+        color: white; padding: 15px 20px; border-radius: 10px; z-index: 10001;
+        font-weight: 600; box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        transform: translateX(100%); transition: transform 0.3s ease;
+        max-width: 350px;
+    `;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    // Animate in
+    setTimeout(() => {
+        toast.style.transform = 'translateX(0)';
+    }, 100);
+    
+    // Remove after delay
+    setTimeout(() => {
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
 }
 
 function showPublishSuccessModal(shareableUrl) {

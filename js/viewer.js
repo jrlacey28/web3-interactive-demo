@@ -376,10 +376,11 @@ function displayLayout(layout) {
         }
     }
     
-    // Set creator name
+    // Set creator name and world name
     if (layout.creatorName) {
-        document.getElementById('creatorName').textContent = `${layout.creatorName}'s Stream Layout`;
-        document.title = `${layout.creatorName}'s Stream - GENESIS`;
+        const worldTitle = layout.worldName ? `${layout.creatorName}'s ${layout.worldName}` : `${layout.creatorName}'s Stream Layout`;
+        document.getElementById('creatorName').textContent = worldTitle;
+        document.title = layout.worldName ? `${layout.creatorName}'s ${layout.worldName} - GENESIS` : `${layout.creatorName}'s Stream - GENESIS`;
     }
     
     // Clear existing widgets

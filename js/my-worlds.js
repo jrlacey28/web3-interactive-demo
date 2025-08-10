@@ -331,28 +331,32 @@ function createNewWorld() {
 }
 
 function editMainWorld() {
-    const modal = document.getElementById('editMainWorldModal');
-    if (!modal || !userWorlds.main) return;
-
-    // Populate form with current data
-    const nameInput = document.getElementById('mainWorldName');
-    const bioInput = document.getElementById('mainWorldBio');
-    
-    if (nameInput) nameInput.value = userWorlds.main.name || '';
-    if (bioInput) bioInput.value = userWorlds.main.description || '';
-
-    // Set theme
-    selectTheme(userWorlds.main.theme || 'purple');
-    
-    modal.style.display = 'flex';
+    // For main world, "customize" means going to the creator page to edit the layout
+    if (currentUser && currentUser.username) {
+        // Check if there's a published layout to load
+        const layoutId = userWorlds.main?.layoutId;
+        if (layoutId) {
+            // Open creator page with the layout loaded for editing
+            window.open(`creator.html?edit=${layoutId}`, '_blank');
+        } else {
+            // No existing layout, just go to creator page
+            window.open('creator.html', '_blank');
+        }
+    } else {
+        alert('Please sign in to customize your world.');
+        redirectToHome();
+    }
 }
 
 function viewMainWorld() {
-    if (currentUser.username) {
+    if (currentUser && currentUser.username) {
         window.open(`world.html?user=${currentUser.username}`, '_blank');
-    } else {
+    } else if (currentUser) {
         alert('Please set up your username first to view your world.');
         window.location.href = 'profile-setup.html?from=auth';
+    } else {
+        alert('Please sign in to view your world.');
+        redirectToHome();
     }
 }
 

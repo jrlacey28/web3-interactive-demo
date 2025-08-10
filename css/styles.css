@@ -204,7 +204,7 @@ body {
 .save-btn { 
     position: fixed; 
     bottom: 20px; 
-    right: 140px; 
+    right: 180px; 
     background: linear-gradient(135deg, #00d4ff, #0099cc); 
     color: white; 
     border: none; 
