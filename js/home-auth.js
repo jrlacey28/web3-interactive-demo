@@ -11,30 +11,31 @@ document.addEventListener('DOMContentLoaded', () => {
 // ========================================
 async function initializeAuth() {
     try {
-        // Wait for wallet manager to be available
+        // Wait for Moralis wallet manager to be available
         if (typeof walletManager === 'undefined') {
             setTimeout(initializeAuth, 100);
             return;
         }
 
-        // Create authenticated wallet manager
-        authenticatedWallet = new AuthenticatedWalletManager();
+        // Use Moralis wallet manager
+        authenticatedWallet = walletManager;
+        
+        // Wait for Moralis initialization
+        if (!authenticatedWallet.initialized) {
+            setTimeout(initializeAuth, 100);
+            return;
+        }
         
         // Update UI based on current state
         updateAuthUI();
         
-        // Listen for SIWE authentication events
-        window.addEventListener('siweAuthSuccess', handleAuthSuccess);
-        window.addEventListener('siweAuthError', handleAuthError);
-        window.addEventListener('siweSignOut', handleSignOut);
-        
         // Listen for network changes
         window.addEventListener('networkChanged', handleNetworkChangeHome);
         
-        console.log('Authentication initialized');
+        console.log('✅ Moralis authentication initialized');
         
     } catch (error) {
-        console.error('Failed to initialize authentication:', error);
+        console.error('❌ Failed to initialize authentication:', error);
     }
 }
 
@@ -45,50 +46,51 @@ async function handleWalletConnect() {
     try {
         const walletBtn = document.getElementById('walletBtn');
         
-        if (authenticatedWallet.isConnected) {
-            // Show disconnect options
-            // If already authenticated, open quick menu; otherwise offer sign-in
-            if (authenticatedWallet.siwe.isAuthenticated) {
-                showUserMenu();
-            } else {
-                const result = await authenticatedWallet.siwe.signIn();
-                if (result.success) {
-                    // If no username, take to profile setup
-                    const user = result.user;
-                    if (!user.username) {
-                        window.location.href = 'profile-setup.html?from=auth';
-                    } else {
-                        window.location.href = 'dashboard.html';
-                    }
+        if (authenticatedWallet.isAuthenticated) {
+            // Already authenticated, show user menu
+            showUserMenu();
+        } else if (authenticatedWallet.isConnected) {
+            // Connected but not authenticated, start Moralis auth
+            walletBtn.disabled = true;
+            walletBtn.textContent = 'Authenticating...';
+            
+            const result = await authenticatedWallet.authenticate();
+            if (result.success) {
+                // If no username, take to profile setup
+                const user = result.user;
+                if (!user.username) {
+                    window.location.href = 'profile-setup.html?from=auth';
+                } else {
+                    window.location.href = 'dashboard.html';
                 }
+            } else {
+                authenticatedWallet.showToast('❌ Authentication failed: ' + result.error, 'error');
             }
         } else {
-            // Connect wallet
+            // Connect and authenticate in one step
             walletBtn.disabled = true;
             walletBtn.textContent = 'Connecting...';
             
-            const result = await authenticatedWallet.connectWallet();
-            
-            if (result.success) {
-                updateAuthUI();
-                // Auto prompt SIWE sign-in after connecting so user continues seamlessly
-                const authResult = await authenticatedWallet.siwe.signIn();
-                if (authResult.success) {
-                    const user = authResult.user;
-                    if (!user.username) {
-                        window.location.href = 'profile-setup.html?from=auth';
-                    } else {
-                        window.location.href = 'dashboard.html';
-                    }
+            const authResult = await authenticatedWallet.authenticate();
+            if (authResult.success) {
+                const user = authResult.user;
+                if (!user.username) {
+                    window.location.href = 'profile-setup.html?from=auth';
+                } else {
+                    window.location.href = 'dashboard.html';
                 }
+            } else {
+                authenticatedWallet.showToast('❌ Connection failed: ' + authResult.error, 'error');
             }
         }
         
     } catch (error) {
-        console.error('Wallet connection failed:', error);
+        console.error('❌ Wallet connection failed:', error);
+        authenticatedWallet.showToast('❌ Connection failed: ' + error.message, 'error');
     } finally {
         const walletBtn = document.getElementById('walletBtn');
         walletBtn.disabled = false;
+        updateAuthUI();
     }
 }
 
@@ -131,20 +133,32 @@ async function handleAuth() {
 // ========================================
 function updateAuthUI() {
     const walletBtn = document.getElementById('walletBtn');
-    const authBtn = null;
     if (!walletBtn) return;
     
     // Update wallet button
-    if (authenticatedWallet.isConnected) {
-        const shortAddress = authenticatedWallet.getShortAddress();
-        walletBtn.textContent = `✅ ${shortAddress}`;
+    if (authenticatedWallet.isAuthenticated) {
+        // Fully authenticated with Moralis
+        const currentUser = authenticatedWallet.getCurrentUser();
+        const displayName = currentUser?.username || authenticatedWallet.getShortAddress();
+        walletBtn.textContent = `👤 ${displayName}`;
         walletBtn.classList.add('connected');
-        walletBtn.title = `Connected to ${authenticatedWallet.getNetworkName()}`;
+        walletBtn.title = `Authenticated as ${displayName}`;
         
-        // Update create button text depending on auth state
+        // Update create button to show authenticated state
         const createBtn = document.getElementById('createBtn');
         if (createBtn) {
-            createBtn.textContent = authenticatedWallet.siwe.isAuthenticated ? 'Create a New World' : 'Create Your World';
+            createBtn.textContent = 'Open Creator Studio';
+        }
+    } else if (authenticatedWallet.isConnected) {
+        // Connected but not authenticated
+        const shortAddress = authenticatedWallet.getShortAddress();
+        walletBtn.textContent = `🔐 ${shortAddress}`;
+        walletBtn.classList.add('connected');
+        walletBtn.title = 'Connected - Click to authenticate';
+        
+        const createBtn = document.getElementById('createBtn');
+        if (createBtn) {
+            createBtn.textContent = 'Authenticate to Create';
         }
     } else {
         walletBtn.textContent = 'Connect Wallet';

@@ -18,9 +18,9 @@ async function initializeAuth() {
     try {
         console.log('🔐 Initializing dashboard authentication...');
         
-        // Check authentication - wait for wallet manager to be available
+        // Wait for Moralis wallet manager to be available
         if (typeof walletManager === 'undefined') {
-            console.log('⏳ Waiting for wallet manager...');
+            console.log('⏳ Waiting for Moralis wallet manager...');
             await new Promise(r => setTimeout(r, 1000));
             if (typeof walletManager === 'undefined') {
                 console.log('❌ Wallet manager not found, redirecting to home');
@@ -29,30 +29,30 @@ async function initializeAuth() {
             }
         }
 
-        // Create authenticated wallet manager
-        authenticatedWallet = new AuthenticatedWalletManager();
+        // Use Moralis wallet manager
+        authenticatedWallet = walletManager;
         
-        // Give more time for authentication state to be restored
+        // Wait for Moralis initialization
         let retryCount = 0;
         const maxRetries = 8;
         
-        while (!authenticatedWallet.siwe.isAuthenticated && retryCount < maxRetries) {
-            // Try restoring session
-            try {
-                authenticatedWallet.siwe.checkExistingSession();
-            } catch (e) {
-                // ignore errors during session restoration
-            }
-            
-            if (!authenticatedWallet.siwe.isAuthenticated) {
-                console.log(`⏳ Attempt ${retryCount + 1}/${maxRetries} - waiting for authentication...`);
-                await new Promise(r => setTimeout(r, 400));
-                retryCount++;
-            }
+        while (!authenticatedWallet.initialized && retryCount < maxRetries) {
+            console.log(`⏳ Attempt ${retryCount + 1}/${maxRetries} - waiting for Moralis initialization...`);
+            await new Promise(r => setTimeout(r, 400));
+            retryCount++;
         }
         
-        if (!authenticatedWallet.siwe.isAuthenticated) {
-            console.log('❌ User not authenticated after retries, redirecting to home');
+        if (!authenticatedWallet.initialized) {
+            console.log('❌ Moralis not initialized, redirecting to home');
+            redirectToHome();
+            return;
+        }
+        
+        // Check for existing authentication
+        await authenticatedWallet.checkExistingSession();
+        
+        if (!authenticatedWallet.isAuthenticated) {
+            console.log('❌ User not authenticated, redirecting to home');
             redirectToHome();
             return;
         }
@@ -317,7 +317,7 @@ async function signOut() {
         const dropdown = document.getElementById('userDropdown');
         if (dropdown) dropdown.style.display = 'none';
         
-        await authenticatedWallet.siwe.signOut();
+        await authenticatedWallet.signOut();
         redirectToHome();
         
     } catch (error) {
