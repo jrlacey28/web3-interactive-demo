@@ -13,7 +13,9 @@
       "Bash(node:*)",
       "Bash(npx http-server:*)",
       "Bash(start \"C:\\Users\\bball\\Cursor Projects\\Web 3 App\\index.html\")",
-      "Bash(start \"C:\\Users\\bball\\Cursor Projects\\Web 3 App\\viewer.html\")"
+      "Bash(start \"C:\\Users\\bball\\Cursor Projects\\Web 3 App\\viewer.html\")",
+      "Bash(start \"C:\\Users\\bball\\Cursor Projects\\Web 3 App\\dashboard.html\")",
+      "Bash(start \"C:\\Users\\bball\\Cursor Projects\\Web 3 App\\my-worlds.html\")"
     ],
     "deny": []
   }

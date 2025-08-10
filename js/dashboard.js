@@ -18,32 +18,54 @@ async function initializeAuth() {
     try {
         console.log('🔐 Initializing dashboard authentication...');
         
-        // Check authentication
+        // Check authentication - wait for wallet manager to be available
         if (typeof walletManager === 'undefined') {
-            console.log('❌ Wallet manager not found, redirecting to home');
-            redirectToHome();
-            return;
+            console.log('⏳ Waiting for wallet manager...');
+            await new Promise(r => setTimeout(r, 1000));
+            if (typeof walletManager === 'undefined') {
+                console.log('❌ Wallet manager not found, redirecting to home');
+                redirectToHome();
+                return;
+            }
         }
 
         // Create authenticated wallet manager
         authenticatedWallet = new AuthenticatedWalletManager();
         
-        // Check if user is authenticated
-        if (!authenticatedWallet.siwe.isAuthenticated) {
-            console.log('❌ User not authenticated, redirecting to home');
-            redirectToHome();
-            return;
+        // Give more time for authentication state to be restored
+        let retryCount = 0;
+        const maxRetries = 8;
+        
+        while (!authenticatedWallet.siwe.isAuthenticated && retryCount < maxRetries) {
+            // Try restoring session
+            try {
+                authenticatedWallet.siwe.checkExistingSession();
+            } catch (e) {
+                // ignore errors during session restoration
+            }
+            
+            if (!authenticatedWallet.siwe.isAuthenticated) {
+                console.log(`⏳ Attempt ${retryCount + 1}/${maxRetries} - waiting for authentication...`);
+                await new Promise(r => setTimeout(r, 400));
+                retryCount++;
+            }
         }
-
-        // Ensure username exists; if not, force profile setup first
-        if (!authenticatedWallet.siwe.currentUser?.username) {
-            console.log('ℹ️ No username set. Redirecting to profile setup.');
-            window.location.href = 'profile-setup.html?from=auth';
+        
+        if (!authenticatedWallet.siwe.isAuthenticated) {
+            console.log('❌ User not authenticated after retries, redirecting to home');
+            redirectToHome();
             return;
         }
 
         currentUser = authenticatedWallet.getCurrentUser();
         console.log('✅ User authenticated:', currentUser);
+
+        // If no username, redirect to profile setup
+        if (!currentUser?.username) {
+            console.log('ℹ️ No username set. Redirecting to profile setup.');
+            window.location.href = 'profile-setup.html?from=auth';
+            return;
+        }
         
         updateUserUI();
         
