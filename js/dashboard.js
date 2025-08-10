@@ -35,6 +35,13 @@ async function initializeAuth() {
             return;
         }
 
+        // Ensure username exists; if not, force profile setup first
+        if (!authenticatedWallet.siwe.currentUser?.username) {
+            console.log('ℹ️ No username set. Redirecting to profile setup.');
+            window.location.href = 'profile-setup.html?from=auth';
+            return;
+        }
+
         currentUser = authenticatedWallet.getCurrentUser();
         console.log('✅ User authenticated:', currentUser);
         

@@ -436,14 +436,8 @@ Expiration Time: ${expirationTime}`;
             detail: { user: this.currentUser }
         }));
 
-        // Check if user needs to complete profile setup, but do not force navigation
-        if (!this.currentUser.username) {
-            // Show a discreet prompt once per session
-            if (!sessionStorage.getItem('profile_prompt_shown')) {
-                sessionStorage.setItem('profile_prompt_shown', '1');
-                setTimeout(() => this.showProfileSetupPrompt(), 800);
-            }
-        }
+        // Check if user needs to complete profile setup, but do not force navigation here.
+        // Navigation will be handled by the page-level flow right after sign-in.
     }
 
     onAuthenticationError(message) {
@@ -496,7 +490,7 @@ Expiration Time: ${expirationTime}`;
                 <h3 style="color: #2D374B; margin-bottom: 15px;">🎉 Welcome to GENESIS!</h3>
                 <p style="margin: 15px 0; color: #666;">Complete your profile to get started with creating and sharing your digital worlds.</p>
                 
-                <button onclick="window.location.href='profile-setup.html'" 
+                <button onclick="window.location.href='profile-setup.html?from=auth'" 
                         style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; margin: 10px; font-weight: bold;">
                     Complete Profile
                 </button>

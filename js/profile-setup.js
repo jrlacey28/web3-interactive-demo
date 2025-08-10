@@ -58,7 +58,7 @@ async function initializeAuth() {
 
         // Check if user is coming from authentication flow
         const urlParams = new URLSearchParams(window.location.search);
-        const fromAuth = urlParams.get('from') === 'auth';
+        const fromAuth = urlParams.get('from') === 'auth' || urlParams.get('auth') === 'true';
         
         if (fromAuth) {
             console.log('✅ User came from authentication flow');

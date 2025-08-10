@@ -14,27 +14,14 @@
     <div class="bg" id="bg"></div>
     
     <!-- Hero Section -->
-    <!-- Navigation -->
-    <nav class="home-nav">
-        <div class="nav-container">
-            <div class="nav-brand">
-                <a href="index.html" class="brand-link">
-                    <h1>GENESIS</h1>
-                </a>
-            </div>
-            <div class="nav-actions">
-                <button id="walletBtn" class="wallet-btn" onclick="handleWalletConnect()">Connect Wallet</button>
-                <button id="authBtn" class="auth-btn" onclick="handleAuth()" style="display: none;">Sign In</button>
-            </div>
-        </div>
-    </nav>
 
     <section class="hero">
         <div class="hero-content">
             <h1 class="hero-title">Forge Your Own World</h1>
             <div class="hero-actions">
-                <a href="creator.html" class="btn-primary">CREATE</a>
-                <a href="viewer.html" class="btn-secondary">EXPLORE</a>
+                <a id="createBtn" href="creator.html" class="btn-primary">Create Your World</a>
+                <button id="walletBtn" class="wallet-btn" onclick="handleWalletConnect()">Connect Wallet</button>
+                <a href="viewer.html" class="btn-secondary">Explore</a>
             </div>
         </div>
     </section>

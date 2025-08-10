@@ -44,11 +44,24 @@ async function initializeAuth() {
 async function handleWalletConnect() {
     try {
         const walletBtn = document.getElementById('walletBtn');
-        const authBtn = document.getElementById('authBtn');
         
         if (authenticatedWallet.isConnected) {
             // Show disconnect options
-            showWalletMenu();
+            // If already authenticated, open quick menu; otherwise offer sign-in
+            if (authenticatedWallet.siwe.isAuthenticated) {
+                showUserMenu();
+            } else {
+                const result = await authenticatedWallet.siwe.signIn();
+                if (result.success) {
+                    // If no username, take to profile setup
+                    const user = result.user;
+                    if (!user.username) {
+                        window.location.href = 'profile-setup.html?from=auth';
+                    } else {
+                        window.location.href = 'dashboard.html';
+                    }
+                }
+            }
         } else {
             // Connect wallet
             walletBtn.disabled = true;
@@ -58,9 +71,15 @@ async function handleWalletConnect() {
             
             if (result.success) {
                 updateAuthUI();
-                // Show authentication option but do not auto-prompt
-                if (authBtn) {
-                    authBtn.style.display = 'inline-block';
+                // Auto prompt SIWE sign-in after connecting so user continues seamlessly
+                const authResult = await authenticatedWallet.siwe.signIn();
+                if (authResult.success) {
+                    const user = authResult.user;
+                    if (!user.username) {
+                        window.location.href = 'profile-setup.html?from=auth';
+                    } else {
+                        window.location.href = 'dashboard.html';
+                    }
                 }
             }
         }
@@ -79,7 +98,7 @@ async function handleWalletConnect() {
 async function handleAuth() {
     try {
         console.log('🔐 Handle auth clicked...');
-        const authBtn = document.getElementById('authBtn');
+        // Deprecated: separate auth button removed
         
         if (authenticatedWallet.siwe.isAuthenticated) {
             console.log('User already authenticated, showing menu...');
@@ -87,9 +106,7 @@ async function handleAuth() {
             showUserMenu();
         } else {
             console.log('Starting authentication process...');
-            // Sign in with SIWE
-            authBtn.disabled = true;
-            authBtn.textContent = 'Signing...';
+            // Sign in with SIWE via wallet connect flow
             
             const result = await authenticatedWallet.siwe.signIn();
             
@@ -105,13 +122,7 @@ async function handleAuth() {
     } catch (error) {
         console.error('❌ Authentication error:', error);
     } finally {
-        const authBtn = document.getElementById('authBtn');
-        if (authBtn) {
-            authBtn.disabled = false;
-            if (!authenticatedWallet.siwe.isAuthenticated) {
-                authBtn.textContent = 'Sign In';
-            }
-        }
+        // No separate auth button to reset
     }
 }
 
@@ -120,9 +131,8 @@ async function handleAuth() {
 // ========================================
 function updateAuthUI() {
     const walletBtn = document.getElementById('walletBtn');
-    const authBtn = document.getElementById('authBtn');
-    
-    if (!walletBtn || !authBtn) return;
+    const authBtn = null;
+    if (!walletBtn) return;
     
     // Update wallet button
     if (authenticatedWallet.isConnected) {
@@ -131,29 +141,21 @@ function updateAuthUI() {
         walletBtn.classList.add('connected');
         walletBtn.title = `Connected to ${authenticatedWallet.getNetworkName()}`;
         
-        // Show auth button
-        authBtn.style.display = 'inline-block';
-        
-        // Update auth button
-        if (authenticatedWallet.siwe.isAuthenticated) {
-            const user = authenticatedWallet.getCurrentUser();
-            const displayName = user.username || shortAddress;
-            authBtn.textContent = `👤 ${displayName}`;
-            authBtn.classList.add('authenticated');
-            authBtn.title = `Signed in as ${displayName}`;
-        } else {
-            authBtn.textContent = 'Sign In';
-            authBtn.classList.remove('authenticated');
-            authBtn.title = 'Sign in with your wallet';
+        // Update create button text depending on auth state
+        const createBtn = document.getElementById('createBtn');
+        if (createBtn) {
+            createBtn.textContent = authenticatedWallet.siwe.isAuthenticated ? 'Create a New World' : 'Create Your World';
         }
     } else {
         walletBtn.textContent = 'Connect Wallet';
         walletBtn.classList.remove('connected');
         walletBtn.title = 'Connect your Web3 wallet';
         
-        // Hide auth button
-        authBtn.style.display = 'none';
-        authBtn.classList.remove('authenticated');
+        // Update create button text when logged out
+        const createBtn = document.getElementById('createBtn');
+        if (createBtn) {
+            createBtn.textContent = 'Create Your World';
+        }
     }
 }
 
@@ -230,18 +232,10 @@ function showUserMenu() {
             </div>
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;">
-                <button onclick="goToDashboard()" class="modal-btn-primary">
-                    🏠 My Dashboard
-                </button>
-                <button onclick="goToProfile()" class="modal-btn-secondary">
-                    ⚙️ Edit Profile
-                </button>
-                <button onclick="showMyWorlds()" class="modal-btn-secondary">
-                    🌍 My Worlds
-                </button>
-                <button onclick="signOutUser()" class="modal-btn-danger">
-                    🚪 Sign Out
-                </button>
+                <button onclick="goToDashboard()" class="modal-btn-primary">🏠 My Dashboard</button>
+                <button onclick="goToProfile()" class="modal-btn-secondary">⚙️ Edit Profile</button>
+                <button onclick="showMyWorlds()" class="modal-btn-secondary">🌍 My Worlds</button>
+                <button onclick="signOutUser()" class="modal-btn-danger">🚪 Sign Out</button>
             </div>
         </div>
     `);
@@ -367,7 +361,12 @@ function goToDashboard() {
 }
 
 function goToProfile() {
-    window.location.href = 'profile-setup.html';
+    // Ensure user is authenticated; otherwise go through auth
+    if (authenticatedWallet && authenticatedWallet.siwe.isAuthenticated) {
+        window.location.href = 'profile-setup.html';
+    } else {
+        handleWalletConnect();
+    }
 }
 
 function showMyWorlds() {

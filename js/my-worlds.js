@@ -335,7 +335,7 @@ function viewMainWorld() {
         window.open(`world.html?user=${currentUser.username}`, '_blank');
     } else {
         alert('Please set up your username first to view your world.');
-        window.location.href = 'profile-setup.html';
+        window.location.href = 'profile-setup.html?from=auth';
     }
 }
 

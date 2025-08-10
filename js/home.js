@@ -14,23 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Add scroll effect to navigation
-    let lastScrollY = window.scrollY;
-    const nav = document.querySelector('.home-nav');
-    
-    window.addEventListener('scroll', () => {
-        const currentScrollY = window.scrollY;
-        
-        if (currentScrollY > 100) {
-            nav.style.background = 'rgba(0, 0, 0, 0.9)';
-            nav.style.backdropFilter = 'blur(20px)';
-        } else {
-            nav.style.background = 'rgba(0, 0, 0, 0.1)';
-            nav.style.backdropFilter = 'blur(10px)';
-        }
-        
-        lastScrollY = currentScrollY;
-    });
+    // Remove navigation scroll effects since header is removed
 
     // Animate feature cards on scroll
     const observerOptions = {
