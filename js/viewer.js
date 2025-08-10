@@ -385,8 +385,8 @@ function displayLayout(layout) {
     // Clear existing widgets
     canvas.innerHTML = '';
     
-    // Create widgets
-    layout.widgets.forEach((widgetData, index) => {
+  // Create widgets (no extra vertical offset)
+  layout.widgets.forEach((widgetData, index) => {
         createViewerWidget(widgetData, index + 1);
     });
     

@@ -20,8 +20,8 @@ async function initializeAuth() {
     try {
         // Check authentication
         if (typeof walletManager === 'undefined') {
-            redirectToHome();
-            return;
+            // Wait briefly for wallet manager to initialize instead of redirecting immediately
+            await new Promise(r => setTimeout(r, 300));
         }
 
         // Create authenticated wallet manager
@@ -29,8 +29,12 @@ async function initializeAuth() {
         
         // Check if user is authenticated
         if (!authenticatedWallet.siwe.isAuthenticated) {
-            redirectToHome();
-            return;
+            // Try restoring session once before redirect
+            const restored = authenticatedWallet.siwe.checkExistingSession();
+            if (!restored || !authenticatedWallet.siwe.isAuthenticated) {
+                redirectToHome();
+                return;
+            }
         }
 
         currentUser = authenticatedWallet.getCurrentUser();
