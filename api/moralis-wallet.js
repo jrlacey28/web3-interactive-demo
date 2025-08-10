@@ -10,23 +10,45 @@ class MoralisWalletManager {
         this.isAuthenticated = false;
         this.initialized = false;
         
-        // Initialize Moralis
-        this.initializeMoralis();
+        // Initialize Moralis - don't await here to avoid blocking constructor
+        this.initializeMoralis().catch(error => {
+            console.error('❌ Moralis initialization failed in constructor:', error);
+            this.initialized = false;
+        });
     }
 
     async initializeMoralis() {
         try {
             console.log('🚀 Initializing Moralis...');
             
-            // Check if API_CONFIG is available
-            if (typeof API_CONFIG === 'undefined') {
-                console.log('⏳ Waiting for API_CONFIG to load...');
-                // Wait a bit for API config to load
+            // Wait for API_CONFIG to be available with better retry logic
+            let attempts = 0;
+            const maxAttempts = 50; // 5 seconds max
+            
+            while (typeof API_CONFIG === 'undefined' && attempts < maxAttempts) {
+                console.log(`⏳ Waiting for API_CONFIG to load... (attempt ${attempts + 1}/${maxAttempts})`);
                 await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            // If still not available, throw error
+            if (typeof API_CONFIG === 'undefined') {
+                throw new Error('API_CONFIG not found. Make sure config/api-keys.js is loaded before moralis-wallet.js');
+            }
+            
+            console.log('✅ API_CONFIG found, starting Moralis...');
+            
+            // Check if Moralis SDK is available
+            if (typeof Moralis === 'undefined') {
+                console.log('⏳ Waiting for Moralis SDK...');
+                let moralisAttempts = 0;
+                while (typeof Moralis === 'undefined' && moralisAttempts < 30) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    moralisAttempts++;
+                }
                 
-                // If still not available, throw error
-                if (typeof API_CONFIG === 'undefined') {
-                    throw new Error('API_CONFIG not found. Make sure config/api-keys.js is loaded before moralis-wallet.js');
+                if (typeof Moralis === 'undefined') {
+                    throw new Error('Moralis SDK not found. Make sure Moralis script is loaded.');
                 }
             }
             
@@ -43,6 +65,7 @@ class MoralisWalletManager {
             
         } catch (error) {
             console.error('❌ Failed to initialize Moralis:', error);
+            this.initialized = false;
             throw error;
         }
     }
