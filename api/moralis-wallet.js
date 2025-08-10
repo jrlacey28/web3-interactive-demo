@@ -18,6 +18,18 @@ class MoralisWalletManager {
         try {
             console.log('🚀 Initializing Moralis...');
             
+            // Check if API_CONFIG is available
+            if (typeof API_CONFIG === 'undefined') {
+                console.log('⏳ Waiting for API_CONFIG to load...');
+                // Wait a bit for API config to load
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // If still not available, throw error
+                if (typeof API_CONFIG === 'undefined') {
+                    throw new Error('API_CONFIG not found. Make sure config/api-keys.js is loaded before moralis-wallet.js');
+                }
+            }
+            
             // Initialize Moralis with API key
             await Moralis.start({
                 apiKey: API_CONFIG.MORALIS.API_KEY,
@@ -332,13 +344,31 @@ class MoralisWalletManager {
 let moralisWallet = null;
 
 // Initialize when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    moralisWallet = new MoralisWalletManager();
-    moralisWallet.setupEventListeners();
-    
-    // Make available globally for backward compatibility
-    window.walletManager = moralisWallet;
-    window.AuthenticatedWalletManager = MoralisWalletManager;
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        console.log('🔄 Starting Moralis wallet manager initialization...');
+        moralisWallet = new MoralisWalletManager();
+        
+        // Wait for Moralis initialization to complete
+        let attempts = 0;
+        while (!moralisWallet.initialized && attempts < 20) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (!moralisWallet.initialized) {
+            console.error('❌ Moralis failed to initialize after 2 seconds');
+        } else {
+            moralisWallet.setupEventListeners();
+            console.log('✅ Moralis wallet manager ready');
+        }
+        
+        // Make available globally for backward compatibility
+        window.walletManager = moralisWallet;
+        window.AuthenticatedWalletManager = MoralisWalletManager;
+    } catch (error) {
+        console.error('❌ Failed to initialize Moralis wallet manager:', error);
+    }
 });
 
 // Export for use in other modules

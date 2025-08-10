@@ -1,0 +1,13 @@
+{
+  "functions": {
+    "api/substitute-env.js": {
+      "runtime": "@vercel/node@3"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/config/api-keys.js",
+      "destination": "/api/substitute-env"
+    }
+  ]
+}
