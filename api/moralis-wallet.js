@@ -10,47 +10,31 @@ class MoralisWalletManager {
         this.isAuthenticated = false;
         this.initialized = false;
         
-        // Initialize Moralis - don't await here to avoid blocking constructor
+        // Initialize Moralis immediately - this is now called by Web3InitializationManager
         this.initializeMoralis().catch(error => {
-            console.error('❌ Moralis initialization failed in constructor:', error);
+            console.error('❌ Moralis initialization failed:', error);
             this.initialized = false;
         });
     }
 
     async initializeMoralis() {
         try {
-            console.log('🚀 Initializing Moralis...');
+            console.log('🔐 Moralis Wallet Manager initializing...');
             
-            // Wait for API_CONFIG to be available with better retry logic
-            let attempts = 0;
-            const maxAttempts = 50; // 5 seconds max
-            
-            while (typeof API_CONFIG === 'undefined' && attempts < maxAttempts) {
-                console.log(`⏳ Waiting for API_CONFIG to load... (attempt ${attempts + 1}/${maxAttempts})`);
-                await new Promise(resolve => setTimeout(resolve, 100));
-                attempts++;
-            }
-            
-            // If still not available, throw error
+            // Dependencies should already be checked by Web3InitializationManager
             if (typeof API_CONFIG === 'undefined') {
-                throw new Error('API_CONFIG not found. Make sure config/api-keys.js is loaded before moralis-wallet.js');
+                throw new Error('API_CONFIG not available - initialization system failed');
             }
             
-            console.log('✅ API_CONFIG found, starting Moralis...');
-            
-            // Check if Moralis SDK is available
             if (typeof Moralis === 'undefined') {
-                console.log('⏳ Waiting for Moralis SDK...');
-                let moralisAttempts = 0;
-                while (typeof Moralis === 'undefined' && moralisAttempts < 30) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    moralisAttempts++;
-                }
-                
-                if (typeof Moralis === 'undefined') {
-                    throw new Error('Moralis SDK not found. Make sure Moralis script is loaded.');
-                }
+                throw new Error('Moralis SDK not available - initialization system failed');
             }
+            
+            if (!API_CONFIG.MORALIS?.API_KEY) {
+                throw new Error('Moralis API key not found in configuration');
+            }
+            
+            console.log('🚀 Starting Moralis with API key...');
             
             // Initialize Moralis with API key
             await Moralis.start({
@@ -366,31 +350,31 @@ class MoralisWalletManager {
 // Create global instance
 let moralisWallet = null;
 
-// Initialize when DOM is ready
-document.addEventListener('DOMContentLoaded', async () => {
-    try {
-        console.log('🔄 Starting Moralis wallet manager initialization...');
+// Initialize when called by Web3InitializationManager
+function createMoralisWalletManager() {
+    if (!moralisWallet) {
+        console.log('🔄 Creating Moralis wallet manager instance...');
         moralisWallet = new MoralisWalletManager();
         
-        // Wait for Moralis initialization to complete
-        let attempts = 0;
-        while (!moralisWallet.initialized && attempts < 20) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
-        }
+        // Set up event listeners
+        moralisWallet.setupEventListeners();
         
-        if (!moralisWallet.initialized) {
-            console.error('❌ Moralis failed to initialize after 2 seconds');
-        } else {
-            moralisWallet.setupEventListeners();
-            console.log('✅ Moralis wallet manager ready');
-        }
-        
-        // Make available globally for backward compatibility
+        // Make available globally
         window.walletManager = moralisWallet;
         window.AuthenticatedWalletManager = MoralisWalletManager;
-    } catch (error) {
-        console.error('❌ Failed to initialize Moralis wallet manager:', error);
+        
+        console.log('✅ Moralis wallet manager instance created');
+    }
+    return moralisWallet;
+}
+
+// Legacy DOM initialization (will be replaced by Web3InitializationManager)
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('⚠️ Legacy Moralis initialization - this should be replaced by Web3InitializationManager');
+    
+    // Only initialize if Web3InitializationManager hasn't already done it
+    if (!window.web3Init || !window.web3Init.isReady()) {
+        createMoralisWalletManager();
     }
 });
 

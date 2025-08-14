@@ -11,19 +11,23 @@ document.addEventListener('DOMContentLoaded', () => {
 // ========================================
 async function initializeAuth() {
     try {
-        // Wait for Moralis wallet manager to be available
-        if (typeof walletManager === 'undefined') {
-            setTimeout(initializeAuth, 100);
+        console.log('🔄 Initializing home page authentication...');
+        
+        // Wait for Web3 initialization to complete
+        if (window.web3Init) {
+            await window.web3Init.waitForReady();
+        } else {
+            // Fallback for legacy initialization
+            console.log('⚠️ Web3InitializationManager not found, using legacy initialization');
+            await legacyInitializeAuth();
             return;
         }
 
-        // Use Moralis wallet manager
-        authenticatedWallet = walletManager;
+        // Use the initialized wallet manager
+        authenticatedWallet = window.walletManager;
         
-        // Wait for Moralis initialization
-        if (!authenticatedWallet.initialized) {
-            setTimeout(initializeAuth, 100);
-            return;
+        if (!authenticatedWallet) {
+            throw new Error('Wallet manager not available after Web3 initialization');
         }
         
         // Update UI based on current state
@@ -32,11 +36,41 @@ async function initializeAuth() {
         // Listen for network changes
         window.addEventListener('networkChanged', handleNetworkChangeHome);
         
-        console.log('✅ Moralis authentication initialized');
+        console.log('✅ Home authentication initialized with Web3 system');
         
     } catch (error) {
         console.error('❌ Failed to initialize authentication:', error);
+        // Try legacy initialization as fallback
+        await legacyInitializeAuth();
     }
+}
+
+// Legacy initialization for backward compatibility
+async function legacyInitializeAuth() {
+    console.log('🔄 Using legacy authentication initialization...');
+    
+    // Wait for Moralis wallet manager to be available
+    if (typeof walletManager === 'undefined') {
+        setTimeout(initializeAuth, 100);
+        return;
+    }
+
+    // Use Moralis wallet manager
+    authenticatedWallet = walletManager;
+    
+    // Wait for Moralis initialization
+    if (!authenticatedWallet.initialized) {
+        setTimeout(initializeAuth, 100);
+        return;
+    }
+    
+    // Update UI based on current state
+    updateAuthUI();
+    
+    // Listen for network changes
+    window.addEventListener('networkChanged', handleNetworkChangeHome);
+    
+    console.log('✅ Legacy Moralis authentication initialized');
 }
 
 // ========================================

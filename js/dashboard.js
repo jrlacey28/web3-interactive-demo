@@ -18,6 +18,58 @@ async function initializeAuth() {
     try {
         console.log('🔐 Initializing dashboard authentication...');
         
+        // Wait for Web3 initialization to complete
+        if (window.web3Init) {
+            console.log('⏳ Waiting for Web3 system to be ready...');
+            await window.web3Init.waitForReady();
+        } else {
+            console.log('⚠️ Web3InitializationManager not found, using legacy initialization');
+            await legacyDashboardAuth();
+            return;
+        }
+
+        // Use the initialized wallet manager
+        authenticatedWallet = window.walletManager;
+        
+        if (!authenticatedWallet) {
+            console.log('❌ Wallet manager not available after Web3 initialization');
+            redirectToHome();
+            return;
+        }
+        
+        // Check for existing authentication
+        await authenticatedWallet.checkExistingSession();
+        
+        if (!authenticatedWallet.isAuthenticated) {
+            console.log('❌ User not authenticated, redirecting to home');
+            redirectToHome();
+            return;
+        }
+
+        currentUser = authenticatedWallet.getCurrentUser();
+        console.log('✅ User authenticated:', currentUser);
+
+        // If no username, redirect to profile setup
+        if (!currentUser?.username) {
+            console.log('ℹ️ No username set. Redirecting to profile setup.');
+            window.location.href = 'profile-setup.html?from=auth';
+            return;
+        }
+        
+        updateUserUI();
+        
+    } catch (error) {
+        console.error('❌ Dashboard authentication failed:', error);
+        // Try legacy initialization as fallback
+        await legacyDashboardAuth();
+    }
+}
+
+// Legacy dashboard authentication for backward compatibility
+async function legacyDashboardAuth() {
+    try {
+        console.log('🔄 Using legacy dashboard authentication...');
+        
         // Wait for Moralis wallet manager to be available
         if (typeof walletManager === 'undefined') {
             console.log('⏳ Waiting for Moralis wallet manager...');
@@ -70,7 +122,7 @@ async function initializeAuth() {
         updateUserUI();
         
     } catch (error) {
-        console.error('❌ Dashboard authentication failed:', error);
+        console.error('❌ Legacy dashboard authentication failed:', error);
         redirectToHome();
     }
 }
