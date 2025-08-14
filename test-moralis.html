@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Moralis Connection Test</title>
+</head>
+<body>
+    <h1>Moralis Connection Test</h1>
+    <button onclick="testConnection()">Test Moralis Connection</button>
+    <div id="results"></div>
+
+    <script src="https://unpkg.com/moralis/dist/moralis.js"></script>
+    <script>
+        const API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjkzNmEwYmYzLWE3NTEtNDI5Ni1hNmFkLTRhNTlhZDc1NjE4MCIsIm9yZ0lkIjoiNDY0Mzk2IiwidXNlcklkIjoiNDc3NzYxIiwidHlwZUlkIjoiYzVlMTk4ZTgtNTAzNy00YjcxLWFkNGItYTAyOTU4MDcyYmFiIiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3NTQ4NTA2NjQsImV4cCI6NDkxMDYxMDY2NH0.MPO2RBT_JWZR6laF8VkAXMxUx7f6-U9_ueCJuNdbe8I';
+        
+        async function testConnection() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>Testing...</p>';
+            
+            try {
+                console.log('🔧 Testing Moralis initialization...');
+                
+                // Test 1: Initialize Moralis
+                await Moralis.start({
+                    apiKey: API_KEY
+                });
+                
+                results.innerHTML += '<p>✅ Moralis initialized successfully</p>';
+                console.log('✅ Moralis initialized');
+                
+                // Test 2: Check if MetaMask is available
+                if (typeof window.ethereum !== 'undefined') {
+                    results.innerHTML += '<p>✅ MetaMask detected</p>';
+                    console.log('✅ MetaMask detected');
+                    
+                    // Test 3: Try to authenticate
+                    try {
+                        const user = await Moralis.authenticate({
+                            signingMessage: "Test authentication for GENESIS",
+                            provider: "metamask"
+                        });
+                        
+                        results.innerHTML += '<p>✅ Authentication successful!</p>';
+                        results.innerHTML += '<p>Address: ' + user.get('ethAddress') + '</p>';
+                        console.log('✅ Authentication successful:', user);
+                        
+                    } catch (authError) {
+                        results.innerHTML += '<p>❌ Authentication failed: ' + authError.message + '</p>';
+                        console.error('❌ Authentication failed:', authError);
+                    }
+                    
+                } else {
+                    results.innerHTML += '<p>❌ MetaMask not detected</p>';
+                    console.error('❌ MetaMask not detected');
+                }
+                
+            } catch (error) {
+                results.innerHTML += '<p>❌ Moralis initialization failed: ' + error.message + '</p>';
+                console.error('❌ Moralis initialization failed:', error);
+            }
+        }
+    </script>
+</body>
+</html>
