@@ -52,18 +52,18 @@ async function initializeAuth() {
         if (window.authenticatedWallet && window.authenticatedWallet.account) {
             console.log('✅ Wallet has account, proceeding with profile setup');
             
-            // Check if user already has a complete profile (unless in edit mode)
+            // Check if this is edit mode or first-time setup
             const urlParams = new URLSearchParams(window.location.search);
             const editMode = urlParams.get('edit') === 'true';
             const currentUsername = window.authenticatedWallet.getUsername();
             
             if (currentUsername && !editMode) {
-                console.log(`👤 User already has username: ${currentUsername}`);
+                console.log(`👤 User already has custom username: ${currentUsername}`);
                 showExistingProfileOptions(currentUsername);
                 return;
             }
             
-            console.log('🆕 No username found, showing profile creation form');
+            console.log('🎨 Showing profile creation/edit form');
             // Continue with normal profile setup flow below
             
         } else {

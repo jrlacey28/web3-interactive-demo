@@ -104,31 +104,24 @@ Timestamp: ${new Date().toISOString()}`;
 
             console.log('✅ Authentication successful!');
             
-            // Check if user has a username/profile
+            // Check if user has a custom username, if not use wallet address as default
             const username = this.checkUsernameAssociation();
             if (!username) {
-                console.log('🆕 No username found - redirecting to profile setup');
-                this.showSuccess('Wallet connected! Setting up your profile...');
-                setTimeout(() => {
-                    window.location.href = 'profile-setup.html';
-                }, 2000);
-                return {
-                    success: true,
-                    account: this.account,
-                    signature: signature,
-                    redirecting: true
-                };
+                console.log('🆕 No custom username found - using wallet address as default');
+                this.showSuccess('Wallet connected! You can edit your profile anytime.');
+            } else {
+                console.log(`✅ Found custom username: ${username}`);
+                this.showSuccess(`Welcome back, ${username}!`);
             }
             
-            this.showSuccess(`Welcome back, ${username}!`);
-            
-            // Update UI
+            // Update UI to show connected state
             this.updateWalletUI();
 
             return {
                 success: true,
                 account: this.account,
-                signature: signature
+                signature: signature,
+                redirecting: false
             };
 
         } catch (error) {
@@ -344,8 +337,8 @@ Timestamp: ${new Date().toISOString()}`;
             const displayName = this.getDisplayName();
             const shortAddress = this.getShortAddress();
             
-            // Show username if available, otherwise show address
-            walletBtn.textContent = displayName ? `${displayName} (${shortAddress})` : shortAddress;
+            // Show username if available, otherwise show short wallet address
+            walletBtn.textContent = displayName || shortAddress;
             walletBtn.className = 'wallet-btn connected';
             walletBtn.onclick = () => this.showWalletMenu();
         } else {
@@ -426,9 +419,9 @@ Timestamp: ${new Date().toISOString()}`;
             </style>
             <div class="wallet-menu-header">
                 <div style="font-weight: 600; font-size: 16px;">
-                    ${this.getDisplayName() ? this.getDisplayName() : 'Wallet Connected'}
+                    ${this.getDisplayName() || this.getShortAddress()}
                 </div>
-                <div class="wallet-address">${this.getShortAddress()}</div>
+                <div class="wallet-address">${this.account}</div>
                 <div class="wallet-network">${this.getNetworkName()}</div>
             </div>
             <div class="wallet-menu-item" onclick="window.location.href='dashboard.html'">
