@@ -99,7 +99,24 @@ Timestamp: ${new Date().toISOString()}`;
             });
 
             console.log('✅ Authentication successful!');
-            this.showSuccess('Successfully connected to GENESIS!');
+            
+            // Check if user has a username/profile
+            const username = this.checkUsernameAssociation();
+            if (!username) {
+                console.log('🆕 No username found - redirecting to profile setup');
+                this.showSuccess('Wallet connected! Setting up your profile...');
+                setTimeout(() => {
+                    window.location.href = 'profile-setup.html';
+                }, 2000);
+                return {
+                    success: true,
+                    account: this.account,
+                    signature: signature,
+                    redirecting: true
+                };
+            }
+            
+            this.showSuccess(`Welcome back, ${username}!`);
             
             // Update UI
             this.updateWalletUI();
