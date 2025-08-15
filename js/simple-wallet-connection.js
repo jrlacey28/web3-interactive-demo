@@ -107,21 +107,16 @@ Timestamp: ${new Date().toISOString()}`;
             // Check if user has a username/profile
             const username = this.checkUsernameAssociation();
             if (!username) {
-                console.log('🆕 No username found - but NOT auto-redirecting for debugging');
-                this.showSuccess('Wallet connected! Click your wallet address to access profile setup.');
-                // TEMPORARILY DISABLED auto-redirect for debugging
-                // setTimeout(() => {
-                //     window.location.href = 'profile-setup.html';
-                // }, 2000);
-                
-                // Update UI to show connected state
-                this.updateWalletUI();
-                
+                console.log('🆕 No username found - redirecting to profile setup');
+                this.showSuccess('Wallet connected! Setting up your profile...');
+                setTimeout(() => {
+                    window.location.href = 'profile-setup.html';
+                }, 2000);
                 return {
                     success: true,
                     account: this.account,
                     signature: signature,
-                    redirecting: false
+                    redirecting: true
                 };
             }
             

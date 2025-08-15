@@ -41,21 +41,20 @@ async function initializeAuth() {
         // Use the new Genesis wallet system
         window.authenticatedWallet = window.genesisWallet;
             
-            // If not yet authenticated, wait briefly for session restore
-            if (!window.authenticatedWallet.isAuthenticated) {
-                const urlParams = new URLSearchParams(window.location.search);
-                const fromAuth = urlParams.get('from') === 'auth' || urlParams.get('auth') === 'true';
-                const restored = await waitForAuthentication(fromAuth ? 4000 : 2000);
-                if (!restored) {
-                    console.log('❌ User not authenticated');
-                    showAuthRequiredMessage();
-                    return;
-                }
+        // If not yet authenticated, wait briefly for session restore
+        if (!window.authenticatedWallet.isAuthenticated) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const fromAuth = urlParams.get('from') === 'auth' || urlParams.get('auth') === 'true';
+            const restored = await waitForAuthentication(fromAuth ? 4000 : 2000);
+            if (!restored) {
+                console.log('❌ User not authenticated');
+                showAuthRequiredMessage();
+                return;
             }
-            
-            // Load existing user data if available
-            loadExistingUserData();
         }
+            
+        // Load existing user data if available
+        loadExistingUserData();
 
         // Update wallet status
         updateWalletStatus();

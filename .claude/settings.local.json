@@ -39,7 +39,8 @@
       "Bash(python:*)",
       "Bash(start clear-all.html)",
       "Bash(start debug-wallet-state.html)",
-      "Bash(start test-fresh-state.html)"
+      "Bash(start test-fresh-state.html)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"
