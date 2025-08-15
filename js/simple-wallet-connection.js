@@ -191,13 +191,50 @@ Timestamp: ${new Date().toISOString()}`;
         this.isAuthenticated = false;
         
         // Clear session
-        localStorage.removeItem('genesis_wallet_session');
+        this.clearSession();
         
         // Update UI
         this.updateWalletUI();
         
         console.log('🚪 Wallet disconnected');
         this.showSuccess('Wallet disconnected');
+    }
+
+    // Force clear all wallet data (for debugging/reset purposes)
+    async forceReset() {
+        console.log('🧹 Force resetting all wallet data...');
+        
+        // Clear local state
+        this.connected = false;
+        this.account = null;
+        this.chainId = null;
+        this.isAuthenticated = false;
+        
+        // Clear all localStorage data
+        this.clearSession();
+        localStorage.removeItem('siwe_users');
+        localStorage.removeItem('web3_session');
+        localStorage.removeItem('wallet_session');
+        localStorage.removeItem('moralis_session');
+        
+        // Try to revoke MetaMask permissions
+        try {
+            if (window.ethereum) {
+                await window.ethereum.request({
+                    method: 'wallet_revokePermissions',
+                    params: [{ eth_accounts: {} }]
+                });
+                console.log('✅ MetaMask permissions revoked');
+            }
+        } catch (error) {
+            console.log('⚠️ Could not revoke MetaMask permissions (this is normal for some wallets)');
+        }
+        
+        // Update UI
+        this.updateWalletUI();
+        
+        console.log('🎉 Complete wallet reset performed');
+        this.showSuccess('All wallet data cleared! You can now start fresh.');
     }
 
     // Get network name
@@ -462,14 +499,42 @@ Timestamp: ${new Date().toISOString()}`;
         }
     }
 
+    // Clear session from localStorage
+    clearSession() {
+        try {
+            localStorage.removeItem('genesis_wallet_session');
+            console.log('🧹 Session cleared from localStorage');
+        } catch (error) {
+            console.error('Failed to clear session:', error);
+        }
+    }
+
     // Check for existing session on page load
     async checkExistingSession() {
         const session = this.loadSession();
-        if (session && session.account) {
-            // Verify wallet is still connected
+        
+        // Only restore if we have a valid session with authentication signature
+        if (session && session.account && session.signature && session.authenticatedAt) {
+            console.log('🔍 Found existing session, verifying...');
+            
             try {
                 const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                
+                // IMPORTANT: Only auto-restore if:
+                // 1. The session account is still connected in MetaMask
+                // 2. We have a valid username association (prevents orphaned sessions)
+                // 3. The session has authentication proof
                 if (accounts.includes(session.account)) {
+                    
+                    // Check if there's a valid username association for this wallet
+                    const hasValidUser = this.hasValidUserAssociation(session.account);
+                    
+                    if (!hasValidUser) {
+                        console.log('⚠️ No valid user association found, clearing session');
+                        this.clearSession();
+                        return false;
+                    }
+                    
                     this.account = session.account;
                     this.chainId = session.chainId;
                     this.connected = true;
@@ -479,14 +544,47 @@ Timestamp: ${new Date().toISOString()}`;
                     this.checkUsernameAssociation();
                     
                     this.updateWalletUI();
-                    console.log('🔄 Restored wallet session:', this.getShortAddress());
+                    console.log('🔄 Restored authenticated session:', this.getShortAddress());
                     return true;
+                } else {
+                    console.log('⚠️ Session account not in connected accounts, clearing session');
+                    this.clearSession();
                 }
             } catch (error) {
-                console.log('Failed to restore session:', error);
+                console.log('❌ Failed to verify session:', error);
+                this.clearSession();
             }
+        } else {
+            console.log('ℹ️ No valid authenticated session found');
         }
+        
         return false;
+    }
+
+    // Check if a wallet has a valid user association (helper method)
+    hasValidUserAssociation(walletAddress) {
+        try {
+            const users = JSON.parse(localStorage.getItem('siwe_users') || '{}');
+            const address = walletAddress.toLowerCase();
+            
+            // Method 1: Check new format - username as key
+            for (const [username, userData] of Object.entries(users)) {
+                if (userData.walletAddress && userData.walletAddress.toLowerCase() === address) {
+                    return true;
+                }
+            }
+            
+            // Method 2: Check old format - wallet address as key
+            const userByAddress = users[walletAddress] || users[address];
+            if (userByAddress && userByAddress.username) {
+                return true;
+            }
+            
+            return false;
+        } catch (error) {
+            console.error('Error checking user association:', error);
+            return false;
+        }
     }
 
     // Check if wallet is associated with a username

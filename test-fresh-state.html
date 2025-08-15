@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Fresh State - No Auto-Login</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f0f2f5; }
+        .container { max-width: 700px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #333; text-align: center; }
+        .test-section { margin: 30px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; background: #f8f9fa; }
+        button { padding: 15px 25px; margin: 10px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: 600; }
+        .primary { background: #007bff; color: white; }
+        .danger { background: #dc3545; color: white; }
+        .success { background: #28a745; color: white; }
+        .result { margin: 15px 0; padding: 15px; border-radius: 5px; }
+        .success-msg { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error-msg { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info-msg { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 5px; font-size: 12px; overflow-x: auto; }
+        .status { font-weight: bold; padding: 5px 10px; border-radius: 5px; }
+        .connected { background: #d4edda; color: #155724; }
+        .disconnected { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Fresh State Test</h1>
+        <p>This page tests whether the wallet auto-connection has been properly fixed.</p>
+        
+        <div class="test-section">
+            <h3>Current Status</h3>
+            <div id="currentStatus">Loading...</div>
+        </div>
+
+        <div class="test-section">
+            <h3>Test Controls</h3>
+            <button onclick="testFreshConnection()" class="primary">🔗 Test Manual Connection</button>
+            <button onclick="forceReset()" class="danger">🧹 Force Reset All Data</button>
+            <button onclick="checkCurrentState()" class="success">🔍 Check Current State</button>
+        </div>
+
+        <div class="test-section">
+            <h3>Browser Storage Check</h3>
+            <button onclick="checkStorageState()" class="primary">📦 Check All Storage</button>
+            <div id="storageResults"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>MetaMask Connection Test</h3>
+            <button onclick="checkMetaMaskState()" class="primary">🦊 Check MetaMask State</button>
+            <div id="metamaskResults"></div>
+        </div>
+
+        <div id="testResults"></div>
+    </div>
+
+    <script src="js/simple-wallet-connection.js"></script>
+    <script>
+        function addResult(containerId, message, type = 'info') {
+            const container = document.getElementById(containerId);
+            const div = document.createElement('div');
+            div.className = `result ${type}-msg`;
+            div.innerHTML = message;
+            container.appendChild(div);
+        }
+
+        function updateStatus() {
+            const status = document.getElementById('currentStatus');
+            
+            if (window.genesisWallet) {
+                const connected = window.genesisWallet.connected;
+                const authenticated = window.genesisWallet.isAuthenticated;
+                const account = window.genesisWallet.account;
+                
+                status.innerHTML = `
+                    <div>Connected: <span class="${connected ? 'connected' : 'disconnected'} status">${connected ? 'Yes' : 'No'}</span></div>
+                    <div>Authenticated: <span class="${authenticated ? 'connected' : 'disconnected'} status">${authenticated ? 'Yes' : 'No'}</span></div>
+                    <div>Account: <span class="status">${account || 'None'}</span></div>
+                `;
+                
+                if (!connected && !authenticated) {
+                    addResult('testResults', '✅ PERFECT! Wallet is NOT auto-connecting', 'success');
+                } else {
+                    addResult('testResults', '❌ ISSUE: Wallet auto-connected when it should not have', 'error');
+                }
+            } else {
+                status.innerHTML = '<span class="disconnected status">Wallet system not ready</span>';
+            }
+        }
+
+        async function testFreshConnection() {
+            const results = document.getElementById('testResults');
+            results.innerHTML = '';
+            
+            addResult('testResults', '🔄 Testing manual wallet connection...', 'info');
+            
+            try {
+                const result = await window.genesisWallet.connect();
+                if (result.success) {
+                    addResult('testResults', `✅ Manual connection successful: ${result.account}`, 'success');
+                } else {
+                    addResult('testResults', `❌ Connection failed: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                addResult('testResults', `❌ Connection error: ${error.message}`, 'error');
+            }
+            
+            updateStatus();
+        }
+
+        async function forceReset() {
+            const results = document.getElementById('testResults');
+            results.innerHTML = '';
+            
+            addResult('testResults', '🧹 Performing complete reset...', 'info');
+            
+            try {
+                await window.genesisWallet.forceReset();
+                addResult('testResults', '✅ Complete reset performed successfully', 'success');
+                
+                // Wait a bit and check status
+                setTimeout(() => {
+                    updateStatus();
+                    addResult('testResults', 'Now refresh the page to test if auto-connection is prevented', 'info');
+                }, 1000);
+                
+            } catch (error) {
+                addResult('testResults', `❌ Reset error: ${error.message}`, 'error');
+            }
+        }
+
+        function checkCurrentState() {
+            const results = document.getElementById('testResults');
+            results.innerHTML = '';
+            
+            updateStatus();
+            
+            const session = window.genesisWallet.loadSession();
+            if (session) {
+                addResult('testResults', 'Session found in localStorage:', 'info');
+                const pre = document.createElement('pre');
+                pre.textContent = JSON.stringify(session, null, 2);
+                document.getElementById('testResults').appendChild(pre);
+            } else {
+                addResult('testResults', '✅ No session found in localStorage', 'success');
+            }
+        }
+
+        function checkStorageState() {
+            const container = document.getElementById('storageResults');
+            container.innerHTML = '';
+            
+            const keys = ['siwe_users', 'genesis_wallet_session', 'web3_session', 'wallet_session', 'moralis_session'];
+            
+            addResult('storageResults', '<h4>localStorage Check:</h4>', 'info');
+            let hasData = false;
+            
+            keys.forEach(key => {
+                const data = localStorage.getItem(key);
+                if (data) {
+                    hasData = true;
+                    addResult('storageResults', `📦 ${key}: Found`, 'error');
+                    const pre = document.createElement('pre');
+                    try {
+                        pre.textContent = JSON.stringify(JSON.parse(data), null, 2);
+                    } catch {
+                        pre.textContent = data;
+                    }
+                    document.getElementById('storageResults').appendChild(pre);
+                } else {
+                    addResult('storageResults', `✅ ${key}: Not found`, 'success');
+                }
+            });
+
+            if (!hasData) {
+                addResult('storageResults', '🎉 All storage is clean!', 'success');
+            }
+        }
+
+        async function checkMetaMaskState() {
+            const container = document.getElementById('metamaskResults');
+            container.innerHTML = '';
+            
+            try {
+                if (typeof window.ethereum === 'undefined') {
+                    addResult('metamaskResults', '❌ MetaMask not detected', 'error');
+                    return;
+                }
+
+                addResult('metamaskResults', '✅ MetaMask detected', 'success');
+
+                // Check eth_accounts (this is what causes auto-connect)
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                addResult('metamaskResults', `📋 eth_accounts returned: ${accounts.length} accounts`, 'info');
+                
+                if (accounts.length > 0) {
+                    addResult('metamaskResults', `⚠️ Accounts still connected to this site:`, 'error');
+                    accounts.forEach((account, i) => {
+                        addResult('metamaskResults', `${i + 1}. ${account}`, 'error');
+                    });
+                    addResult('metamaskResults', '<strong>This explains why wallet might auto-connect!</strong>', 'error');
+                } else {
+                    addResult('metamaskResults', '✅ No accounts connected - should not auto-connect', 'success');
+                }
+
+            } catch (error) {
+                addResult('metamaskResults', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                updateStatus();
+                checkStorageState();
+                checkMetaMaskState();
+                
+                // Show instructions
+                addResult('testResults', 'This page loaded without auto-connecting to wallet. If status shows "Connected: No" and "Authenticated: No", the fix is working!', 'info');
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

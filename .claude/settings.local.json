@@ -37,7 +37,9 @@
       "Bash(start debug-users.html)",
       "Bash(start simple-username-test.html)",
       "Bash(python:*)",
-      "Bash(start clear-all.html)"
+      "Bash(start clear-all.html)",
+      "Bash(start debug-wallet-state.html)",
+      "Bash(start test-fresh-state.html)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

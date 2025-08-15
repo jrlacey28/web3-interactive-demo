@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Wallet State</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; background: #f8f9fa; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 12px; }
+        button { padding: 10px 20px; margin: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .error { color: red; }
+        .success { color: green; }
+        .warning { color: orange; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug Wallet State</h1>
+    <p>This will show exactly what's happening when your wallet "auto-connects"</p>
+
+    <div class="section">
+        <h3>MetaMask Status</h3>
+        <button onclick="checkMetaMask()">Check MetaMask</button>
+        <div id="metamaskStatus"></div>
+    </div>
+
+    <div class="section">
+        <h3>Browser Storage</h3>
+        <button onclick="checkStorage()">Check All Storage</button>
+        <div id="storageStatus"></div>
+    </div>
+
+    <div class="section">
+        <h3>Wallet Auto-Connection Test</h3>
+        <button onclick="testAutoConnection()">Test What Auto-Connects</button>
+        <div id="autoConnectionStatus"></div>
+    </div>
+
+    <script src="js/simple-wallet-connection.js"></script>
+    
+    <script>
+        function addOutput(containerId, message, type = 'info') {
+            const container = document.getElementById(containerId);
+            const div = document.createElement('div');
+            div.className = type;
+            div.innerHTML = message;
+            container.appendChild(div);
+        }
+
+        async function checkMetaMask() {
+            const container = document.getElementById('metamaskStatus');
+            container.innerHTML = '';
+
+            try {
+                if (typeof window.ethereum === 'undefined') {
+                    addOutput('metamaskStatus', '❌ MetaMask not detected', 'error');
+                    return;
+                }
+
+                addOutput('metamaskStatus', '✅ MetaMask detected', 'success');
+
+                // Check eth_accounts (this is what auto-connects)
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                addOutput('metamaskStatus', `📋 eth_accounts returned: ${accounts.length} accounts`, 'info');
+                
+                if (accounts.length > 0) {
+                    addOutput('metamaskStatus', `⚠️ Accounts still connected to this site:`, 'warning');
+                    accounts.forEach((account, i) => {
+                        addOutput('metamaskStatus', `${i + 1}. ${account}`, 'warning');
+                    });
+                    addOutput('metamaskStatus', '<strong>This is why wallet auto-connects!</strong>', 'warning');
+                } else {
+                    addOutput('metamaskStatus', '✅ No accounts connected - should not auto-connect', 'success');
+                }
+
+            } catch (error) {
+                addOutput('metamaskStatus', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        function checkStorage() {
+            const container = document.getElementById('storageStatus');
+            container.innerHTML = '';
+
+            // Check localStorage
+            const keys = ['siwe_users', 'genesis_wallet_session', 'web3_session', 'wallet_session', 'moralis_session'];
+            
+            addOutput('storageStatus', '<h4>localStorage:</h4>', 'info');
+            let hasData = false;
+            
+            keys.forEach(key => {
+                const data = localStorage.getItem(key);
+                if (data) {
+                    hasData = true;
+                    addOutput('storageStatus', `📦 ${key}:`, 'warning');
+                    const pre = document.createElement('pre');
+                    pre.textContent = JSON.stringify(JSON.parse(data), null, 2);
+                    document.getElementById('storageStatus').appendChild(pre);
+                }
+            });
+
+            if (!hasData) {
+                addOutput('storageStatus', '✅ No relevant data in localStorage', 'success');
+            }
+
+            // Check sessionStorage
+            addOutput('storageStatus', '<h4>sessionStorage:</h4>', 'info');
+            if (sessionStorage.length === 0) {
+                addOutput('storageStatus', '✅ sessionStorage is empty', 'success');
+            } else {
+                for (let i = 0; i < sessionStorage.length; i++) {
+                    const key = sessionStorage.key(i);
+                    addOutput('storageStatus', `📦 ${key}: ${sessionStorage.getItem(key)}`, 'warning');
+                }
+            }
+        }
+
+        async function testAutoConnection() {
+            const container = document.getElementById('autoConnectionStatus');
+            container.innerHTML = '';
+
+            addOutput('autoConnectionStatus', '🔄 Testing auto-connection process...', 'info');
+
+            // Step 1: Check if wallet system exists
+            if (typeof window.genesisWallet === 'undefined') {
+                addOutput('autoConnectionStatus', '❌ genesisWallet not found', 'error');
+                return;
+            }
+
+            addOutput('autoConnectionStatus', '✅ genesisWallet found', 'success');
+
+            // Step 2: Check initial state
+            addOutput('autoConnectionStatus', `📊 Initial state:`, 'info');
+            addOutput('autoConnectionStatus', `- Connected: ${window.genesisWallet.connected}`, 'info');
+            addOutput('autoConnectionStatus', `- Authenticated: ${window.genesisWallet.isAuthenticated}`, 'info');
+            addOutput('autoConnectionStatus', `- Account: ${window.genesisWallet.account || 'null'}`, 'info');
+
+            // Step 3: Check session
+            const session = window.genesisWallet.loadSession();
+            addOutput('autoConnectionStatus', `📋 Session data:`, 'info');
+            if (session) {
+                const pre = document.createElement('pre');
+                pre.textContent = JSON.stringify(session, null, 2);
+                document.getElementById('autoConnectionStatus').appendChild(pre);
+            } else {
+                addOutput('autoConnectionStatus', 'No session found', 'success');
+            }
+
+            // Step 4: Test checkExistingSession
+            addOutput('autoConnectionStatus', '🔍 Testing checkExistingSession()...', 'info');
+            try {
+                const restored = await window.genesisWallet.checkExistingSession();
+                addOutput('autoConnectionStatus', `Session restore result: ${restored}`, restored ? 'warning' : 'success');
+                
+                if (restored) {
+                    addOutput('autoConnectionStatus', `After restore:`, 'warning');
+                    addOutput('autoConnectionStatus', `- Connected: ${window.genesisWallet.connected}`, 'warning');
+                    addOutput('autoConnectionStatus', `- Authenticated: ${window.genesisWallet.isAuthenticated}`, 'warning');
+                    addOutput('autoConnectionStatus', `- Account: ${window.genesisWallet.account}`, 'warning');
+                    addOutput('autoConnectionStatus', `- Username: ${window.genesisWallet.getUsername()}`, 'warning');
+                }
+            } catch (error) {
+                addOutput('autoConnectionStatus', `❌ Error in checkExistingSession: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-run checks on page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                checkMetaMask();
+                checkStorage();
+                testAutoConnection();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

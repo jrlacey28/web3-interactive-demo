@@ -133,7 +133,19 @@
                     accounts.forEach(account => {
                         addResult('metamaskResult', `Connected: ${account.slice(0, 6)}...${account.slice(-4)}`, false);
                     });
-                    addResult('metamaskResult', 'Please manually disconnect in MetaMask settings', false);
+                    addResult('metamaskResult', '<strong>Important:</strong> You must manually disconnect in MetaMask:', false);
+                    addResult('metamaskResult', '1. Open MetaMask → Settings → Connected Sites<br>2. Find this website and click "Disconnect"<br>3. Refresh this page to verify', false);
+                }
+
+                // Also try to request disconnect (doesn't always work but worth trying)
+                try {
+                    await window.ethereum.request({
+                        method: 'wallet_revokePermissions',
+                        params: [{ eth_accounts: {} }]
+                    });
+                    addResult('metamaskResult', '✅ Attempted to revoke permissions programmatically', true);
+                } catch (revokeError) {
+                    // This method isn't supported by all wallets, so ignore errors
                 }
 
             } catch (error) {
