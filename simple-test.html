@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Wallet Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        button { padding: 15px 25px; margin: 10px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #45a049; }
+        .result { margin: 20px 0; padding: 15px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    </style>
+</head>
+<body>
+    <h1>🚀 Simple Wallet Test</h1>
+    <p>This test uses NO external CDNs - just pure MetaMask connection</p>
+    
+    <button onclick="testMetaMask()">1. Test MetaMask</button>
+    <button onclick="connectWallet()">2. Connect Wallet</button>
+    <button onclick="checkNetwork()">3. Check Network</button>
+    <button onclick="switchToArbitrum()">4. Switch to Arbitrum</button>
+    <button onclick="signMessage()">5. Sign Message</button>
+    
+    <div id="results"></div>
+
+    <script>
+        let connectedAccount = null;
+
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = message;
+            document.getElementById('results').appendChild(div);
+            console.log(message.replace(/<[^>]*>/g, ''));
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function testMetaMask() {
+            clearResults();
+            addResult('<h3>🔍 Testing MetaMask Detection</h3>');
+            
+            if (typeof window.ethereum !== 'undefined') {
+                addResult('✅ window.ethereum detected!', 'success');
+                
+                if (window.ethereum.isMetaMask) {
+                    addResult('✅ Confirmed: This is MetaMask', 'success');
+                } else {
+                    addResult('⚠️ Ethereum provider detected but not MetaMask', 'info');
+                }
+                
+                return true;
+            } else {
+                addResult('❌ window.ethereum not found', 'error');
+                addResult('Make sure MetaMask extension is installed and enabled', 'error');
+                return false;
+            }
+        }
+
+        async function connectWallet() {
+            addResult('<h3>🔗 Connecting Wallet</h3>');
+            
+            try {
+                if (!window.ethereum) {
+                    throw new Error('MetaMask not detected');
+                }
+
+                const accounts = await window.ethereum.request({
+                    method: 'eth_requestAccounts'
+                });
+
+                if (accounts.length > 0) {
+                    connectedAccount = accounts[0];
+                    addResult(`✅ Wallet connected!`, 'success');
+                    addResult(`📋 Address: <strong>${connectedAccount}</strong>`, 'info');
+                    
+                    // Get network info
+                    const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+                    const networkNames = {
+                        '0x1': 'Ethereum Mainnet',
+                        '0x89': 'Polygon',
+                        '0xa4b1': 'Arbitrum One',
+                        '0x66eee': 'Arbitrum Sepolia Testnet'
+                    };
+                    const networkName = networkNames[chainId] || `Unknown (${chainId})`;
+                    addResult(`🌐 Network: ${networkName}`, 'info');
+                    
+                    return true;
+                } else {
+                    addResult('❌ No accounts found', 'error');
+                    return false;
+                }
+                
+            } catch (error) {
+                addResult(`❌ Connection failed: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function checkNetwork() {
+            addResult('<h3>🌐 Checking Current Network</h3>');
+            
+            try {
+                const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+                const networkNames = {
+                    '0x1': 'Ethereum Mainnet',
+                    '0x89': 'Polygon',
+                    '0xa4b1': 'Arbitrum One', 
+                    '0x66eee': 'Arbitrum Sepolia Testnet'
+                };
+                
+                const networkName = networkNames[chainId] || `Unknown Network (${chainId})`;
+                addResult(`📍 Current Network: <strong>${networkName}</strong>`, 'info');
+                addResult(`🔗 Chain ID: ${chainId}`, 'info');
+                
+                if (chainId === '0x66eee') {
+                    addResult('✅ You\'re on Arbitrum Sepolia Testnet - Perfect for testing!', 'success');
+                } else {
+                    addResult('⚠️ Not on Arbitrum testnet. Click "Switch to Arbitrum" to change networks.', 'info');
+                }
+                
+                return chainId;
+                
+            } catch (error) {
+                addResult(`❌ Failed to check network: ${error.message}`, 'error');
+                return null;
+            }
+        }
+
+        async function switchToArbitrum() {
+            addResult('<h3>🔄 Switching to Arbitrum Sepolia Testnet</h3>');
+            
+            try {
+                // First try to switch to existing network
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: '0x66eee' }],
+                });
+                
+                addResult('✅ Successfully switched to Arbitrum Sepolia!', 'success');
+                addResult('🎯 You can now test with Arbitrum test ETH', 'success');
+                
+            } catch (switchError) {
+                // If network doesn't exist, add it
+                if (switchError.code === 4902) {
+                    addResult('📡 Adding Arbitrum Sepolia network to MetaMask...', 'info');
+                    
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [{
+                                chainId: '0x66eee',
+                                chainName: 'Arbitrum Sepolia',
+                                nativeCurrency: {
+                                    name: 'ETH',
+                                    symbol: 'ETH',
+                                    decimals: 18
+                                },
+                                rpcUrls: ['https://sepolia-rollup.arbitrum.io/rpc'],
+                                blockExplorerUrls: ['https://sepolia.arbiscan.io/']
+                            }]
+                        });
+                        
+                        addResult('✅ Arbitrum Sepolia network added and switched!', 'success');
+                        addResult('💰 Get test ETH: <a href="https://faucet.arbitrum.io/" target="_blank">Arbitrum Faucet</a>', 'info');
+                        
+                    } catch (addError) {
+                        addResult(`❌ Failed to add network: ${addError.message}`, 'error');
+                    }
+                } else {
+                    addResult(`❌ Failed to switch network: ${switchError.message}`, 'error');
+                }
+            }
+        }
+
+        async function signMessage() {
+            addResult('<h3>✍️ Signing Message</h3>');
+            
+            if (!connectedAccount) {
+                addResult('⚠️ Please connect wallet first', 'error');
+                return;
+            }
+            
+            try {
+                const message = `Welcome to GENESIS!
+
+Please sign this message to authenticate.
+
+Wallet: ${connectedAccount}
+Time: ${new Date().toISOString()}`;
+
+                addResult('📝 Requesting signature...', 'info');
+                
+                const signature = await window.ethereum.request({
+                    method: 'personal_sign',
+                    params: [message, connectedAccount]
+                });
+
+                addResult('✅ Message signed successfully!', 'success');
+                addResult(`🔏 Signature: ${signature.slice(0, 20)}...${signature.slice(-10)}`, 'info');
+                
+                return true;
+                
+            } catch (error) {
+                if (error.code === 4001) {
+                    addResult('❌ User rejected the signature request', 'error');
+                } else {
+                    addResult(`❌ Signing failed: ${error.message}`, 'error');
+                }
+                return false;
+            }
+        }
+
+        // Auto-test MetaMask on load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                testMetaMask();
+            }, 500);
+        });
+    </script>
+</body>
+</html>

@@ -20,7 +20,18 @@
       "Bash(del \"C:\\Users\\bball\\Cursor Projects\\Web 3 App\\js\\auth\\siwe.js\")",
       "Bash(rm:*)",
       "Bash(del \"C:\\Users\\bball\\Cursor Projects\\Web 3 App\\api\\substitute-env.js\")",
-      "Bash(start \"C:\\Users\\bball\\Cursor Projects\\Web 3 App\\test-moralis.html\")"
+      "Bash(start \"C:\\Users\\bball\\Cursor Projects\\Web 3 App\\test-moralis.html\")",
+      "Bash(explorer:*)",
+      "Bash(test-moralis.html)",
+      "Bash(taskkill:*)",
+      "Bash(start wallet-test.html)",
+      "Bash(start quick-test.html)",
+      "Bash(start test-moralis.html)",
+      "Bash(del test-moralis.html)",
+      "Bash(del wallet-test.html)",
+      "Bash(del quick-test.html)",
+      "Bash(start metamask-test.html)",
+      "Bash(del metamask-test.html)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"
