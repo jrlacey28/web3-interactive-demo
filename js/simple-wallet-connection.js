@@ -7,6 +7,7 @@ class GenesisWallet {
         this.account = null;
         this.chainId = null;
         this.isAuthenticated = false;
+        this.allowAutoConnection = false; // Flag to prevent unwanted auto-connections
         console.log('🚀 GENESIS Wallet System Ready');
     }
 
@@ -22,7 +23,10 @@ class GenesisWallet {
                 throw new Error('MetaMask not detected. Please install MetaMask to continue.');
             }
 
-            console.log('🔗 Connecting to wallet...');
+            console.log('🔗 Manual wallet connection initiated...');
+            
+            // Always allow manual connections (this overrides the auto-connection flag)
+            this.allowAutoConnection = true;
             
             // Request account access
             const accounts = await window.ethereum.request({
@@ -189,6 +193,7 @@ Timestamp: ${new Date().toISOString()}`;
         this.account = null;
         this.chainId = null;
         this.isAuthenticated = false;
+        this.allowAutoConnection = false; // Prevent auto-reconnection after manual disconnect
         
         // Clear session
         this.clearSession();
@@ -209,6 +214,7 @@ Timestamp: ${new Date().toISOString()}`;
         this.account = null;
         this.chainId = null;
         this.isAuthenticated = false;
+        this.allowAutoConnection = false; // Prevent any future auto-connections
         
         // Clear all localStorage data
         this.clearSession();
@@ -230,11 +236,11 @@ Timestamp: ${new Date().toISOString()}`;
             console.log('⚠️ Could not revoke MetaMask permissions (this is normal for some wallets)');
         }
         
-        // Update UI
+        // Update UI to show disconnected state
         this.updateWalletUI();
         
-        console.log('🎉 Complete wallet reset performed');
-        this.showSuccess('All wallet data cleared! You can now start fresh.');
+        console.log('🎉 Complete wallet reset performed - auto-connection disabled');
+        this.showSuccess('All wallet data cleared! Refresh the page for a completely fresh start.');
     }
 
     // Get network name
@@ -511,29 +517,47 @@ Timestamp: ${new Date().toISOString()}`;
 
     // Check for existing session on page load
     async checkExistingSession() {
-        const session = this.loadSession();
+        console.log('🔍 Checking for existing session...');
         
-        // Only restore if we have a valid session with authentication signature
+        // First, check if we have ANY user data at all
+        const users = JSON.parse(localStorage.getItem('siwe_users') || '{}');
+        const hasAnyUsers = Object.keys(users).length > 0;
+        console.log('👥 Users in localStorage:', Object.keys(users).length);
+        
+        const session = this.loadSession();
+        console.log('💾 Session in localStorage:', !!session);
+        
+        // If no session exists in localStorage, absolutely do not auto-connect
+        if (!session) {
+            console.log('ℹ️ No session found in localStorage - will not auto-connect');
+            this.allowAutoConnection = false;
+            return false;
+        }
+        
+        // Only restore if we have a complete, valid session with authentication signature
         if (session && session.account && session.signature && session.authenticatedAt) {
-            console.log('🔍 Found existing session, verifying...');
+            console.log('🔍 Found existing session, verifying...', session.account);
+            
+            // FIRST: Check if there's a valid username association for this wallet
+            // This prevents orphaned sessions from auto-connecting
+            const hasValidUser = this.hasValidUserAssociation(session.account);
+            console.log('👤 User association check:', hasValidUser);
+            
+            if (!hasValidUser) {
+                console.log('⚠️ No valid user profile found for wallet, clearing session and preventing auto-connect');
+                this.clearSession();
+                this.allowAutoConnection = false;
+                return false;
+            }
             
             try {
                 const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                console.log('🦊 MetaMask connected accounts:', accounts);
                 
-                // IMPORTANT: Only auto-restore if:
-                // 1. The session account is still connected in MetaMask
-                // 2. We have a valid username association (prevents orphaned sessions)
-                // 3. The session has authentication proof
+                // Only auto-restore if the session account is still connected in MetaMask
                 if (accounts.includes(session.account)) {
-                    
-                    // Check if there's a valid username association for this wallet
-                    const hasValidUser = this.hasValidUserAssociation(session.account);
-                    
-                    if (!hasValidUser) {
-                        console.log('⚠️ No valid user association found, clearing session');
-                        this.clearSession();
-                        return false;
-                    }
+                    console.log('✅ All checks passed - allowing auto-connection');
+                    this.allowAutoConnection = true;
                     
                     this.account = session.account;
                     this.chainId = session.chainId;
@@ -544,18 +568,22 @@ Timestamp: ${new Date().toISOString()}`;
                     this.checkUsernameAssociation();
                     
                     this.updateWalletUI();
-                    console.log('🔄 Restored authenticated session:', this.getShortAddress());
+                    console.log('🔄 Restored authenticated session with valid user profile:', this.getShortAddress());
                     return true;
                 } else {
                     console.log('⚠️ Session account not in connected accounts, clearing session');
                     this.clearSession();
+                    this.allowAutoConnection = false;
                 }
             } catch (error) {
                 console.log('❌ Failed to verify session:', error);
                 this.clearSession();
+                this.allowAutoConnection = false;
             }
         } else {
-            console.log('ℹ️ No valid authenticated session found');
+            console.log('ℹ️ Invalid session data found, clearing...');
+            this.clearSession();
+            this.allowAutoConnection = false;
         }
         
         return false;
@@ -708,6 +736,35 @@ Timestamp: ${new Date().toISOString()}`;
                 this.chainId = chainId;
                 this.updateWalletUI();
             });
+        }
+    }
+
+    // Debug method to check current state (call from browser console)
+    async debug() {
+        console.log('🐛 GENESIS Wallet Debug Info:');
+        console.log('Connected:', this.connected);
+        console.log('Authenticated:', this.isAuthenticated);
+        console.log('Account:', this.account);
+        console.log('Allow Auto Connection:', this.allowAutoConnection);
+        
+        const session = this.loadSession();
+        console.log('Session in localStorage:', session);
+        
+        const users = JSON.parse(localStorage.getItem('siwe_users') || '{}');
+        console.log('Users in localStorage:', users);
+        
+        if (window.ethereum) {
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                console.log('MetaMask connected accounts:', accounts);
+            } catch (error) {
+                console.log('Error getting MetaMask accounts:', error);
+            }
+        }
+        
+        if (this.account) {
+            const hasValidUser = this.hasValidUserAssociation(this.account);
+            console.log('Has valid user association:', hasValidUser);
         }
     }
 }

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Auto-Connect Fix</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #333; text-align: center; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background: #f8f9fa; }
+        button { padding: 12px 20px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; }
+        .danger { background: #dc3545; color: white; }
+        .primary { background: #007bff; color: white; }
+        .success { background: #28a745; color: white; }
+        .warning { background: #ffc107; color: #212529; }
+        .status { padding: 8px 15px; border-radius: 5px; margin: 5px 0; font-weight: bold; }
+        .connected { background: #d4edda; color: #155724; }
+        .disconnected { background: #f8d7da; color: #721c24; }
+        .neutral { background: #e2e3e5; color: #383d41; }
+        .log { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 5px; padding: 15px; margin: 10px 0; font-family: monospace; font-size: 14px; max-height: 300px; overflow-y: auto; }
+        .step { background: #e7f3ff; border: 1px solid #b3d9ff; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .result { padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .result.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .result.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .result.info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Auto-Connect Fix Debug Tool</h1>
+        <p>This tool helps debug and verify that the auto-connection fix is working properly.</p>
+
+        <div class="section">
+            <h3>Current Wallet Status</h3>
+            <div id="walletStatus">Checking...</div>
+            <button onclick="checkWalletStatus()" class="primary">🔄 Refresh Status</button>
+        </div>
+
+        <div class="section">
+            <h3>Step 1: Clear All Data & Test</h3>
+            <div class="step">
+                <strong>Instructions:</strong>
+                <ol>
+                    <li>Click "Force Reset All Data" below</li>
+                    <li>Refresh this page</li>
+                    <li>Check if wallet auto-connects (it should NOT)</li>
+                </ol>
+            </div>
+            <button onclick="forceReset()" class="danger">🧹 Force Reset All Data</button>
+            <div id="resetResults"></div>
+        </div>
+
+        <div class="section">
+            <h3>Step 2: Manual Connection Test</h3>
+            <div class="step">
+                After clearing data, test if manual connection still works:
+            </div>
+            <button onclick="testManualConnection()" class="primary">🔗 Test Manual Connection</button>
+            <div id="connectionResults"></div>
+        </div>
+
+        <div class="section">
+            <h3>Step 3: Debug Information</h3>
+            <button onclick="showDebugInfo()" class="warning">🐛 Show Debug Info</button>
+            <button onclick="clearDebugLog()" class="neutral">🗑️ Clear Debug Log</button>
+            <div id="debugLog" class="log"></div>
+        </div>
+
+        <div class="section">
+            <h3>Console Instructions</h3>
+            <div class="step">
+                <p>You can also run these commands in your browser's developer console:</p>
+                <code>
+                    <strong>window.genesisWallet.debug()</strong> - Shows detailed debug info<br>
+                    <strong>window.genesisWallet.forceReset()</strong> - Clears all data<br>
+                    <strong>localStorage.clear()</strong> - Clears all localStorage<br>
+                </code>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Expected Results</h3>
+            <div class="result info">
+                <strong>✅ After clearing data and refreshing:</strong><br>
+                • Wallet Status should show "Disconnected"<br>
+                • Allow Auto Connection should be "false"<br>
+                • No session data should exist<br>
+                • Manual connection should still work
+            </div>
+        </div>
+    </div>
+
+    <script src="js/simple-wallet-connection.js"></script>
+    <script>
+        function addLog(message, type = 'info') {
+            const log = document.getElementById('debugLog');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.style.color = type === 'error' ? '#dc3545' : type === 'success' ? '#28a745' : '#333';
+            logEntry.innerHTML = `[${timestamp}] ${message}`;
+            log.appendChild(logEntry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function addResult(containerId, message, type = 'info') {
+            const container = document.getElementById(containerId);
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = message;
+            container.appendChild(div);
+        }
+
+        function clearResults(containerId) {
+            document.getElementById(containerId).innerHTML = '';
+        }
+
+        function clearDebugLog() {
+            document.getElementById('debugLog').innerHTML = '';
+        }
+
+        async function checkWalletStatus() {
+            const statusDiv = document.getElementById('walletStatus');
+            
+            if (!window.genesisWallet) {
+                statusDiv.innerHTML = '<div class="status error">❌ Wallet system not loaded</div>';
+                return;
+            }
+
+            const connected = window.genesisWallet.connected;
+            const authenticated = window.genesisWallet.isAuthenticated;
+            const account = window.genesisWallet.account;
+            const allowAutoConnection = window.genesisWallet.allowAutoConnection;
+
+            statusDiv.innerHTML = `
+                <div class="status ${connected ? 'connected' : 'disconnected'}">
+                    Connected: ${connected ? 'Yes' : 'No'}
+                </div>
+                <div class="status ${authenticated ? 'connected' : 'disconnected'}">
+                    Authenticated: ${authenticated ? 'Yes' : 'No'}
+                </div>
+                <div class="status neutral">
+                    Account: ${account || 'None'}
+                </div>
+                <div class="status ${allowAutoConnection ? 'connected' : 'disconnected'}">
+                    Allow Auto Connection: ${allowAutoConnection}
+                </div>
+            `;
+
+            // Check if auto-connection is working when it shouldn't
+            if (connected && !allowAutoConnection) {
+                addResult('walletStatus', '⚠️ WARNING: Wallet is connected but auto-connection is disabled. This might indicate a problem.', 'error');
+            } else if (!connected && !authenticated) {
+                addResult('walletStatus', '✅ Good! Wallet is disconnected as expected.', 'success');
+            }
+        }
+
+        async function forceReset() {
+            clearResults('resetResults');
+            addResult('resetResults', '🧹 Performing complete reset...', 'info');
+            
+            try {
+                if (window.genesisWallet && window.genesisWallet.forceReset) {
+                    await window.genesisWallet.forceReset();
+                    addResult('resetResults', '✅ Force reset completed successfully!', 'success');
+                    addResult('resetResults', '🔄 Please refresh this page to test if auto-connection is prevented', 'info');
+                    
+                    // Update status
+                    setTimeout(checkWalletStatus, 1000);
+                } else {
+                    throw new Error('forceReset method not available');
+                }
+            } catch (error) {
+                addResult('resetResults', `❌ Reset failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testManualConnection() {
+            clearResults('connectionResults');
+            addResult('connectionResults', '🔗 Testing manual wallet connection...', 'info');
+            
+            try {
+                if (!window.genesisWallet) {
+                    throw new Error('Wallet system not available');
+                }
+
+                const result = await window.genesisWallet.connect();
+                
+                if (result.success) {
+                    addResult('connectionResults', `✅ Manual connection successful!`, 'success');
+                    addResult('connectionResults', `Account: ${result.account}`, 'success');
+                    addResult('connectionResults', `Network: ${result.network}`, 'success');
+                } else {
+                    addResult('connectionResults', `❌ Connection failed: ${result.error}`, 'error');
+                }
+
+                // Update status
+                setTimeout(checkWalletStatus, 1000);
+                
+            } catch (error) {
+                addResult('connectionResults', `❌ Connection error: ${error.message}`, 'error');
+            }
+        }
+
+        async function showDebugInfo() {
+            addLog('=== GENESIS WALLET DEBUG INFO ===', 'info');
+            
+            if (window.genesisWallet && window.genesisWallet.debug) {
+                // Capture console.log temporarily
+                const originalLog = console.log;
+                console.log = function(...args) {
+                    addLog(args.join(' '), 'info');
+                    originalLog.apply(console, args);
+                };
+                
+                try {
+                    await window.genesisWallet.debug();
+                } finally {
+                    console.log = originalLog;
+                }
+            } else {
+                addLog('❌ Debug method not available', 'error');
+            }
+
+            // Additional checks
+            addLog('--- Additional Storage Check ---', 'info');
+            const session = localStorage.getItem('genesis_wallet_session');
+            const users = localStorage.getItem('siwe_users');
+            
+            addLog(`Session exists: ${!!session}`, session ? 'error' : 'success');
+            addLog(`Users data exists: ${!!users}`, users ? 'error' : 'success');
+            
+            if (session) {
+                addLog(`Session data: ${session}`, 'error');
+            }
+            if (users) {
+                addLog(`Users data: ${users}`, 'error');
+            }
+        }
+
+        // Auto-check status when page loads
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                checkWalletStatus();
+                addLog('Page loaded - checking if wallet auto-connected...', 'info');
+                
+                if (window.genesisWallet) {
+                    if (window.genesisWallet.connected) {
+                        addLog('❌ ISSUE: Wallet auto-connected on page load!', 'error');
+                    } else {
+                        addLog('✅ GOOD: Wallet did not auto-connect on page load', 'success');
+                    }
+                }
+            }, 1500);
+        });
+    </script>
+</body>
+</html>
