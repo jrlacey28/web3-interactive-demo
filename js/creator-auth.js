@@ -2,6 +2,20 @@
 let authenticatedWallet = null;
 let currentUser = null;
 
+// Wait for Genesis wallet to be available
+async function waitForGenesisWallet() {
+    console.log('⏳ Waiting for Genesis wallet...');
+    let attempts = 0;
+    while (!window.genesisWallet && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+    }
+    if (!window.genesisWallet) {
+        throw new Error('Genesis wallet not available after waiting');
+    }
+    console.log('✅ Genesis wallet ready');
+}
+
 // Initialize authentication when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     initializeCreatorAuth();
@@ -14,14 +28,11 @@ async function initializeCreatorAuth() {
     try {
         console.log('🎨 Initializing creator page authentication...');
         
-        // Wait for wallet manager to be available
-        if (typeof walletManager === 'undefined') {
-            setTimeout(initializeCreatorAuth, 100);
-            return;
-        }
+        // Wait for Genesis wallet to be available
+        await waitForGenesisWallet();
 
-        // Use Moralis wallet manager
-        authenticatedWallet = walletManager;
+        // Use Genesis wallet system
+        authenticatedWallet = window.genesisWallet;
         
         // Check for existing session
         await checkUserSession();
