@@ -2,6 +2,20 @@
 let authenticatedWallet = null;
 let currentUser = null;
 
+// Wait for Genesis wallet to be available
+async function waitForGenesisWallet() {
+    console.log('⏳ Waiting for Genesis wallet...');
+    let attempts = 0;
+    while (!window.genesisWallet && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+    }
+    if (!window.genesisWallet) {
+        throw new Error('Genesis wallet not available after waiting');
+    }
+    console.log('✅ Genesis wallet ready');
+}
+
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('📊 Dashboard loading...');
@@ -18,30 +32,26 @@ async function initializeAuth() {
     try {
         console.log('🔐 Initializing dashboard authentication...');
         
-        // Wait for Web3 initialization to complete
-        if (window.web3Init) {
-            console.log('⏳ Waiting for Web3 system to be ready...');
-            await window.web3Init.waitForReady();
-        } else {
-            console.log('⚠️ Web3InitializationManager not found, using legacy initialization');
-            await legacyDashboardAuth();
-            return;
-        }
-
-        // Use the initialized wallet manager
-        authenticatedWallet = window.walletManager;
+        // Wait for Genesis wallet to be ready
+        await waitForGenesisWallet();
+        
+        // Use the Genesis wallet system
+        authenticatedWallet = window.genesisWallet;
         
         if (!authenticatedWallet) {
-            console.log('❌ Wallet manager not available after Web3 initialization');
+            console.log('❌ Genesis wallet not available');
             redirectToHome();
             return;
         }
         
-        // Check for existing authentication
-        await authenticatedWallet.checkExistingSession();
+        console.log('👤 Checking wallet authentication...');
+        console.log('Connected:', authenticatedWallet.connected);
+        console.log('Authenticated:', authenticatedWallet.isAuthenticated);
+        console.log('Account:', authenticatedWallet.account);
         
-        if (!authenticatedWallet.isAuthenticated) {
-            console.log('❌ User not authenticated, redirecting to home');
+        // Check if wallet is connected (either authenticated or just connected with account)
+        if (!authenticatedWallet.account) {
+            console.log('❌ No wallet account found, redirecting to home');
             redirectToHome();
             return;
         }

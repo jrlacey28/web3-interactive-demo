@@ -712,7 +712,7 @@ async function handleFormSubmit(event) {
         completeBtn.disabled = true;
         
         // Validate wallet connection
-        if (!window.authenticatedWallet || !window.authenticatedWallet.isConnected) {
+        if (!window.authenticatedWallet || !window.authenticatedWallet.account) {
             throw new Error('Wallet not connected');
         }
         

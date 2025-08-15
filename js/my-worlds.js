@@ -5,6 +5,20 @@ let userWorlds = {};
 let selectedTemplate = 'gallery';
 let selectedTheme = 'purple';
 
+// Wait for Genesis wallet to be available
+async function waitForGenesisWallet() {
+    console.log('⏳ Waiting for Genesis wallet...');
+    let attempts = 0;
+    while (!window.genesisWallet && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+    }
+    if (!window.genesisWallet) {
+        throw new Error('Genesis wallet not available after waiting');
+    }
+    console.log('✅ Genesis wallet ready');
+}
+
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {
     await initializeAuth();
@@ -30,14 +44,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ========================================
 async function initializeAuth() {
     try {
-        // Check authentication
-        if (typeof walletManager === 'undefined') {
-            // Wait longer for wallet manager to initialize
-            await new Promise(r => setTimeout(r, 1000));
-        }
-
-        // Create authenticated wallet manager
-        authenticatedWallet = new AuthenticatedWalletManager();
+        console.log('🔐 Initializing my-worlds authentication...');
+        
+        // Wait for Genesis wallet to be ready
+        await waitForGenesisWallet();
+        
+        // Use the Genesis wallet system
+        authenticatedWallet = window.genesisWallet;
         
         // Give more time for authentication state to be restored
         let retryCount = 0;
