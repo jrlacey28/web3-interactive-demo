@@ -42,30 +42,38 @@ async function initializeAuth() {
         window.authenticatedWallet = window.genesisWallet;
             
         console.log('🔍 Checking wallet authentication state...');
+        console.log('authenticatedWallet exists:', !!window.authenticatedWallet);
         console.log('Connected:', window.authenticatedWallet?.connected);
         console.log('Authenticated:', window.authenticatedWallet?.isAuthenticated);
         console.log('Account:', window.authenticatedWallet?.account);
         console.log('Username:', window.authenticatedWallet?.getUsername());
         
-        // If not yet authenticated, wait briefly for session restore or allow connection on this page
-        if (!window.authenticatedWallet || (!window.authenticatedWallet.isAuthenticated && !window.authenticatedWallet.connected)) {
-            console.log('⚠️ Wallet not authenticated, attempting to restore or allow connection...');
+        // SIMPLIFIED CHECK: If we have a connected wallet with an account, proceed
+        if (window.authenticatedWallet && window.authenticatedWallet.account) {
+            console.log('✅ Wallet has account, proceeding with profile setup');
+            
+            // Check if user already has a complete profile (unless in edit mode)
+            const urlParams = new URLSearchParams(window.location.search);
+            const editMode = urlParams.get('edit') === 'true';
+            const currentUsername = window.authenticatedWallet.getUsername();
+            
+            if (currentUsername && !editMode) {
+                console.log(`👤 User already has username: ${currentUsername}`);
+                showExistingProfileOptions(currentUsername);
+                return;
+            }
+            
+            console.log('🆕 No username found, showing profile creation form');
+            // Continue with normal profile setup flow below
+            
+        } else {
+            console.log('⚠️ No wallet account found, showing connection option');
             const urlParams = new URLSearchParams(window.location.search);
             const fromAuth = urlParams.get('from') === 'auth' || urlParams.get('auth') === 'true';
             const restored = await waitForAuthentication(fromAuth ? 4000 : 2000);
             if (!restored) {
                 console.log('ℹ️ No existing session found - showing connect option on profile page');
                 showConnectOnProfilePage();
-                return;
-            }
-        } else {
-            console.log('✅ Wallet is connected/authenticated, proceeding with profile setup');
-            
-            // Check if user already has a complete profile
-            const currentUsername = window.authenticatedWallet.getUsername();
-            if (currentUsername) {
-                console.log(`👤 User already has username: ${currentUsername}`);
-                showExistingProfileOptions(currentUsername);
                 return;
             }
         }
@@ -259,9 +267,28 @@ function showExistingProfileOptions(username) {
 }
 
 function editExistingProfile() {
-    // Allow editing of existing profile by loading the normal form
-    console.log('📝 Switching to edit mode for existing profile');
-    window.location.reload(); // This will load the form with existing data
+    // Force show the profile creation form even if user has a username
+    console.log('📝 Forcing profile creation form to show');
+    
+    // Temporarily clear the username check so the form shows
+    window.profileEditMode = true;
+    
+    // Clear the setup card and proceed with normal initialization
+    const setupCard = document.querySelector('.setup-card');
+    if (setupCard) {
+        setupCard.innerHTML = `
+            <div class="setup-header-content">
+                <h1>🎉 Update Your Profile</h1>
+                <p>Update your GENESIS creator profile</p>
+            </div>
+            <!-- Form will be loaded by the normal initialization -->
+        `;
+    }
+    
+    // Reload the page to show the profile form
+    setTimeout(() => {
+        window.location.href = window.location.pathname + '?edit=true';
+    }, 100);
 }
 
 function showConnectOnProfilePage() {
