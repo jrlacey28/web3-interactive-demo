@@ -281,7 +281,11 @@ Timestamp: ${new Date().toISOString()}`;
         if (!walletBtn) return;
 
         if (this.connected && this.isAuthenticated) {
-            walletBtn.textContent = this.getShortAddress();
+            const displayName = this.getDisplayName();
+            const shortAddress = this.getShortAddress();
+            
+            // Show username if available, otherwise show address
+            walletBtn.textContent = displayName ? `${displayName} (${shortAddress})` : shortAddress;
             walletBtn.className = 'wallet-btn connected';
             walletBtn.onclick = () => this.showWalletMenu();
         } else {
@@ -361,7 +365,9 @@ Timestamp: ${new Date().toISOString()}`;
                 }
             </style>
             <div class="wallet-menu-header">
-                <div style="font-weight: 600; font-size: 16px;">Wallet Connected</div>
+                <div style="font-weight: 600; font-size: 16px;">
+                    ${this.getDisplayName() ? this.getDisplayName() : 'Wallet Connected'}
+                </div>
                 <div class="wallet-address">${this.getShortAddress()}</div>
                 <div class="wallet-network">${this.getNetworkName()}</div>
             </div>
@@ -451,6 +457,10 @@ Timestamp: ${new Date().toISOString()}`;
                     this.chainId = session.chainId;
                     this.connected = true;
                     this.isAuthenticated = true;
+                    
+                    // Check for username association
+                    this.checkUsernameAssociation();
+                    
                     this.updateWalletUI();
                     console.log('🔄 Restored wallet session:', this.getShortAddress());
                     return true;
@@ -460,6 +470,49 @@ Timestamp: ${new Date().toISOString()}`;
             }
         }
         return false;
+    }
+
+    // Check if wallet is associated with a username
+    checkUsernameAssociation() {
+        try {
+            const users = JSON.parse(localStorage.getItem('siwe_users') || '{}');
+            const walletAddress = this.account.toLowerCase();
+            
+            // Find user by wallet address
+            for (const [username, userData] of Object.entries(users)) {
+                if (userData.walletAddress && userData.walletAddress.toLowerCase() === walletAddress) {
+                    console.log(`✅ Found username "${username}" for wallet ${this.getShortAddress()}`);
+                    
+                    // Update session with username
+                    const session = this.loadSession();
+                    if (session) {
+                        session.username = username;
+                        session.displayName = userData.displayName || username;
+                        this.saveSession(session);
+                    }
+                    
+                    return username;
+                }
+            }
+            
+            console.log('⚠️ No username associated with wallet', this.getShortAddress());
+            return null;
+        } catch (error) {
+            console.error('Error checking username association:', error);
+            return null;
+        }
+    }
+
+    // Get username from session
+    getUsername() {
+        const session = this.loadSession();
+        return session?.username || null;
+    }
+
+    // Get display name
+    getDisplayName() {
+        const session = this.loadSession();
+        return session?.displayName || session?.username || null;
     }
 
     // Toast notifications

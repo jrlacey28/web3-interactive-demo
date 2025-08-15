@@ -33,7 +33,10 @@
       "Bash(start metamask-test.html)",
       "Bash(del metamask-test.html)",
       "Bash(start index.html)",
-      "Bash(start test-tip.html)"
+      "Bash(start test-tip.html)",
+      "Bash(start debug-users.html)",
+      "Bash(start simple-username-test.html)",
+      "Bash(python:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"
