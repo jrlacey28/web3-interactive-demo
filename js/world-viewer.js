@@ -19,8 +19,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function initializeWallet() {
     try {
         // Initialize wallet manager (for tipping functionality)
-        if (typeof walletManager !== 'undefined') {
-            authenticatedWallet = new AuthenticatedWalletManager();
+        if (typeof window.genesisWallet !== 'undefined') {
+            authenticatedWallet = window.genesisWallet;
+            console.log('✅ Wallet manager connected for tipping');
         }
     } catch (error) {
         console.log('Wallet not available:', error);

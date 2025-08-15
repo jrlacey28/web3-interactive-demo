@@ -31,7 +31,9 @@
       "Bash(del wallet-test.html)",
       "Bash(del quick-test.html)",
       "Bash(start metamask-test.html)",
-      "Bash(del metamask-test.html)"
+      "Bash(del metamask-test.html)",
+      "Bash(start index.html)",
+      "Bash(start test-tip.html)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

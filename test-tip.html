@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Tipping - GENESIS</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        }
+        h1 { text-align: center; margin-bottom: 30px; }
+        .creator-info {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .tip-section {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        button {
+            background: linear-gradient(45deg, #00ff88, #00cc6a);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,255,136,0.3);
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,255,136,0.4);
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .wallet-status {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        input[type="number"], input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            margin: 5px 0;
+            font-size: 16px;
+        }
+        input::placeholder {
+            color: rgba(255,255,255,0.7);
+        }
+        .preset-amounts {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+        .preset-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 8px 15px;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .preset-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        .result {
+            margin: 15px 0;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid;
+        }
+        .success { 
+            background: rgba(0,255,136,0.2); 
+            border-color: #00ff88; 
+            color: #00ff88;
+        }
+        .error { 
+            background: rgba(255,71,87,0.2); 
+            border-color: #ff4757; 
+            color: #ff4757;
+        }
+        .info { 
+            background: rgba(102,126,234,0.2); 
+            border-color: #667eea; 
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💰 Test Tipping System</h1>
+        
+        <!-- Wallet Status -->
+        <div class="wallet-status">
+            <h3>Wallet Status</h3>
+            <div id="walletStatus">Not connected</div>
+            <button onclick="connectWallet()" id="connectBtn">Connect Wallet</button>
+        </div>
+
+        <!-- Creator Info -->
+        <div class="creator-info">
+            <h3>👤 Test Creator</h3>
+            <p><strong>Name:</strong> Test Creator</p>
+            <p><strong>Wallet:</strong> <span id="creatorWallet">0x742d35Cc6644C13C0532a5dc4a2f7D8E8DcbfE44</span></p>
+            <p><em>This is a test wallet address for tipping functionality</em></p>
+        </div>
+
+        <!-- Tipping Section -->
+        <div class="tip-section">
+            <h3>💸 Send Tip</h3>
+            
+            <div>
+                <label for="tipAmount">Amount (ETH)</label>
+                <input type="number" id="tipAmount" placeholder="0.001" step="0.001" min="0.001">
+                
+                <div class="preset-amounts">
+                    <button class="preset-btn" onclick="setAmount(0.001)">0.001 ETH</button>
+                    <button class="preset-btn" onclick="setAmount(0.01)">0.01 ETH</button>
+                    <button class="preset-btn" onclick="setAmount(0.1)">0.1 ETH</button>
+                </div>
+            </div>
+
+            <div>
+                <label for="tipMessage">Message (Optional)</label>
+                <input type="text" id="tipMessage" placeholder="Great content!">
+            </div>
+
+            <button onclick="sendTip()" id="sendTipBtn" disabled>🚀 Send Tip</button>
+        </div>
+
+        <!-- Results -->
+        <div id="results"></div>
+    </div>
+
+    <!-- Include wallet system -->
+    <script src="js/simple-wallet-connection.js"></script>
+
+    <script>
+        let isConnected = false;
+        const testCreatorWallet = '0x742d35Cc6644C13C0532a5dc4a2f7D8E8DcbfE44'; // Test wallet
+
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = message;
+            document.getElementById('results').appendChild(div);
+            console.log(message.replace(/<[^>]*>/g, ''));
+        }
+
+        function updateWalletStatus() {
+            const statusDiv = document.getElementById('walletStatus');
+            const connectBtn = document.getElementById('connectBtn');
+            const sendTipBtn = document.getElementById('sendTipBtn');
+
+            if (window.genesisWallet && window.genesisWallet.isConnected) {
+                isConnected = true;
+                statusDiv.innerHTML = `
+                    <p>✅ Connected</p>
+                    <p><strong>Address:</strong> ${window.genesisWallet.getShortAddress()}</p>
+                    <p><strong>Network:</strong> ${window.genesisWallet.getNetworkName()}</p>
+                `;
+                connectBtn.textContent = 'Disconnect';
+                connectBtn.onclick = () => disconnect();
+                sendTipBtn.disabled = false;
+            } else {
+                isConnected = false;
+                statusDiv.innerHTML = '<p>❌ Not connected</p>';
+                connectBtn.textContent = 'Connect Wallet';
+                connectBtn.onclick = () => connectWallet();
+                sendTipBtn.disabled = true;
+            }
+        }
+
+        async function connectWallet() {
+            try {
+                addResult('🔄 Connecting wallet...', 'info');
+                
+                const connectResult = await window.genesisWallet.connect();
+                if (connectResult.success) {
+                    const authResult = await window.genesisWallet.authenticate();
+                    if (authResult.success) {
+                        addResult('✅ Wallet connected and authenticated!', 'success');
+                        updateWalletStatus();
+                    } else {
+                        addResult('❌ Authentication failed: ' + authResult.error, 'error');
+                    }
+                } else {
+                    addResult('❌ Connection failed: ' + connectResult.error, 'error');
+                }
+            } catch (error) {
+                addResult('❌ Error: ' + error.message, 'error');
+            }
+        }
+
+        function disconnect() {
+            window.genesisWallet.disconnect();
+            updateWalletStatus();
+            addResult('🚪 Wallet disconnected', 'info');
+        }
+
+        function setAmount(amount) {
+            document.getElementById('tipAmount').value = amount;
+        }
+
+        async function sendTip() {
+            if (!isConnected) {
+                addResult('❌ Please connect your wallet first', 'error');
+                return;
+            }
+
+            const amount = parseFloat(document.getElementById('tipAmount').value);
+            const message = document.getElementById('tipMessage').value;
+
+            if (!amount || amount <= 0) {
+                addResult('❌ Please enter a valid amount', 'error');
+                return;
+            }
+
+            try {
+                addResult(`🔄 Sending ${amount} ETH tip...`, 'info');
+                
+                const sendTipBtn = document.getElementById('sendTipBtn');
+                sendTipBtn.disabled = true;
+                sendTipBtn.textContent = 'Sending...';
+
+                const result = await window.genesisWallet.sendTip(testCreatorWallet, amount, message);
+
+                if (result.success) {
+                    addResult(`✅ Tip sent successfully!`, 'success');
+                    addResult(`💰 Amount: ${amount} ETH`, 'info');
+                    addResult(`📋 Transaction: <a href="https://sepolia.arbiscan.io/tx/${result.transactionHash}" target="_blank">${result.transactionHash.slice(0, 20)}...</a>`, 'info');
+                    
+                    // Clear form
+                    document.getElementById('tipAmount').value = '';
+                    document.getElementById('tipMessage').value = '';
+                } else {
+                    addResult(`❌ Tip failed: ${result.error}`, 'error');
+                }
+
+            } catch (error) {
+                addResult(`❌ Error sending tip: ${error.message}`, 'error');
+            }
+
+            // Re-enable button
+            const sendTipBtn = document.getElementById('sendTipBtn');
+            sendTipBtn.disabled = false;
+            sendTipBtn.textContent = '🚀 Send Tip';
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                updateWalletStatus();
+                
+                // Check for existing connection
+                if (window.genesisWallet && window.genesisWallet.isConnected) {
+                    addResult('✅ Found existing wallet connection', 'success');
+                    updateWalletStatus();
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

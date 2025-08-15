@@ -200,6 +200,81 @@ Timestamp: ${new Date().toISOString()}`;
         return `${this.account.slice(0, 6)}...${this.account.slice(-4)}`;
     }
 
+    // Send tip functionality
+    async sendTip(recipientAddress, amountInEth, message = '') {
+        try {
+            if (!this.connected || !this.isAuthenticated) {
+                throw new Error('Please connect and authenticate your wallet first');
+            }
+
+            console.log(`💰 Sending tip: ${amountInEth} ETH to ${recipientAddress}`);
+
+            // Convert ETH to Wei (smallest unit)
+            const amountInWei = window.ethereum.utils?.toWei?.(amountInEth.toString(), 'ether') 
+                              || (BigInt(Math.floor(amountInEth * 1e18))).toString(16);
+
+            // Prepare transaction
+            const transactionParams = {
+                to: recipientAddress,
+                from: this.account,
+                value: '0x' + BigInt(Math.floor(amountInEth * 1e18)).toString(16),
+                gas: '0x5208', // 21000 gas for simple transfer
+                gasPrice: '0x' + (1e9).toString(16), // 1 gwei
+            };
+
+            console.log('📡 Sending transaction:', transactionParams);
+
+            // Send transaction
+            const txHash = await window.ethereum.request({
+                method: 'eth_sendTransaction',
+                params: [transactionParams],
+            });
+
+            console.log('✅ Transaction sent! Hash:', txHash);
+
+            this.showSuccess(`Tip sent! Transaction: ${txHash.slice(0, 10)}...`);
+
+            return {
+                success: true,
+                transactionHash: txHash,
+                amount: amountInEth,
+                recipient: recipientAddress,
+                message: message
+            };
+
+        } catch (error) {
+            console.error('❌ Tip failed:', error);
+            
+            if (error.code === 4001) {
+                this.showError('Transaction cancelled by user');
+            } else {
+                this.showError('Failed to send tip: ' + error.message);
+            }
+            
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    // Get current user (compatibility with old system)
+    getCurrentUser() {
+        if (!this.isAuthenticated) return null;
+        
+        return {
+            walletAddress: this.account,
+            username: null,
+            bio: null,
+            isAuthenticated: this.isAuthenticated
+        };
+    }
+
+    // Check if connected (compatibility)
+    get isConnected() {
+        return this.connected && this.isAuthenticated;
+    }
+
     // Update wallet UI
     updateWalletUI() {
         const walletBtn = document.getElementById('walletBtn');
@@ -218,10 +293,129 @@ Timestamp: ${new Date().toISOString()}`;
 
     // Show wallet menu (dropdown)
     showWalletMenu() {
-        // Simple implementation - you can enhance this
-        const menu = confirm(`Connected: ${this.getShortAddress()}\nNetwork: ${this.getNetworkName()}\n\nDisconnect wallet?`);
-        if (menu) {
-            this.disconnect();
+        // Remove any existing dropdown
+        this.removeWalletDropdown();
+        
+        // Create dropdown menu
+        const dropdown = document.createElement('div');
+        dropdown.id = 'walletDropdown';
+        dropdown.style.cssText = `
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(240,240,255,0.95) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            z-index: 10000;
+            min-width: 280px;
+            overflow: hidden;
+            animation: slideDown 0.3s ease;
+        `;
+        
+        dropdown.innerHTML = `
+            <style>
+                @keyframes slideDown {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .wallet-menu-header {
+                    padding: 20px;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    text-align: center;
+                }
+                .wallet-menu-item {
+                    padding: 15px 20px;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    border-bottom: 1px solid rgba(0,0,0,0.1);
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    color: #333;
+                    font-weight: 500;
+                }
+                .wallet-menu-item:hover {
+                    background: rgba(102,126,234,0.1);
+                    transform: translateX(5px);
+                }
+                .wallet-menu-item:last-child {
+                    border-bottom: none;
+                    color: #ff4757;
+                }
+                .wallet-menu-item:last-child:hover {
+                    background: rgba(255,71,87,0.1);
+                }
+                .wallet-address {
+                    font-family: monospace;
+                    font-size: 14px;
+                    opacity: 0.8;
+                    margin-top: 5px;
+                }
+                .wallet-network {
+                    font-size: 12px;
+                    opacity: 0.7;
+                    margin-top: 3px;
+                }
+            </style>
+            <div class="wallet-menu-header">
+                <div style="font-weight: 600; font-size: 16px;">Wallet Connected</div>
+                <div class="wallet-address">${this.getShortAddress()}</div>
+                <div class="wallet-network">${this.getNetworkName()}</div>
+            </div>
+            <div class="wallet-menu-item" onclick="window.location.href='dashboard.html'">
+                <span>📊</span>
+                <span>Dashboard</span>
+            </div>
+            <div class="wallet-menu-item" onclick="window.location.href='my-worlds.html'">
+                <span>🌍</span>
+                <span>My Worlds</span>
+            </div>
+            <div class="wallet-menu-item" onclick="window.location.href='profile-setup.html'">
+                <span>✏️</span>
+                <span>Edit Profile</span>
+            </div>
+            <div class="wallet-menu-item" onclick="window.genesisWallet.switchToArbitrum()">
+                <span>🔄</span>
+                <span>Switch to Arbitrum</span>
+            </div>
+            <div class="wallet-menu-item" onclick="window.genesisWallet.handleDisconnect()">
+                <span>🚪</span>
+                <span>Disconnect Wallet</span>
+            </div>
+        `;
+        
+        document.body.appendChild(dropdown);
+        
+        // Close dropdown when clicking outside
+        setTimeout(() => {
+            document.addEventListener('click', this.handleClickOutside.bind(this), { once: true });
+        }, 100);
+    }
+    
+    // Handle disconnect from dropdown
+    handleDisconnect() {
+        this.removeWalletDropdown();
+        this.disconnect();
+    }
+    
+    // Remove dropdown
+    removeWalletDropdown() {
+        const existing = document.getElementById('walletDropdown');
+        if (existing) {
+            existing.remove();
+        }
+    }
+    
+    // Handle clicking outside dropdown
+    handleClickOutside(event) {
+        const dropdown = document.getElementById('walletDropdown');
+        const walletBtn = document.getElementById('walletBtn');
+        
+        if (dropdown && !dropdown.contains(event.target) && !walletBtn.contains(event.target)) {
+            this.removeWalletDropdown();
         }
     }
 
