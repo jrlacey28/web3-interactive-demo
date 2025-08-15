@@ -136,11 +136,18 @@ class MoralisWalletManager {
                 }
             }
 
-            // Authenticate with Moralis using wallet
-            const user = await Moralis.authenticate({
-                signingMessage: "Welcome to GENESIS! Please sign to authenticate your account.",
-                provider: "metamask"
+            // Create/login user with Moralis using wallet address
+            const message = "Welcome to GENESIS! Please sign to authenticate your account.";
+            const signature = await window.ethereum.request({
+                method: 'personal_sign',
+                params: [message, this.account]
             });
+            
+            // Create or get user
+            const user = new Moralis.User();
+            user.set("username", this.account);
+            user.set("ethAddress", this.account);
+            await user.signUp();
 
             console.log('✅ Moralis authentication successful:', user);
 

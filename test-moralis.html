@@ -32,20 +32,21 @@
                     results.innerHTML += '<p>✅ MetaMask detected</p>';
                     console.log('✅ MetaMask detected');
                     
-                    // Test 3: Try to authenticate
+                    // Test 3: Try to get wallet accounts
                     try {
-                        const user = await Moralis.authenticate({
-                            signingMessage: "Test authentication for GENESIS",
-                            provider: "metamask"
+                        const accounts = await window.ethereum.request({ 
+                            method: 'eth_requestAccounts' 
                         });
                         
-                        results.innerHTML += '<p>✅ Authentication successful!</p>';
-                        results.innerHTML += '<p>Address: ' + user.get('ethAddress') + '</p>';
-                        console.log('✅ Authentication successful:', user);
+                        if (accounts.length > 0) {
+                            results.innerHTML += '<p>✅ Wallet connection successful!</p>';
+                            results.innerHTML += '<p>Address: ' + accounts[0] + '</p>';
+                            console.log('✅ Wallet connected:', accounts[0]);
+                        }
                         
                     } catch (authError) {
-                        results.innerHTML += '<p>❌ Authentication failed: ' + authError.message + '</p>';
-                        console.error('❌ Authentication failed:', authError);
+                        results.innerHTML += '<p>❌ Wallet connection failed: ' + authError.message + '</p>';
+                        console.error('❌ Wallet connection failed:', authError);
                     }
                     
                 } else {

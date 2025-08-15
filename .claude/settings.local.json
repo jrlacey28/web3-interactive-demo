@@ -19,8 +19,10 @@
       "Bash(del \"C:\\Users\\bball\\Cursor Projects\\Web 3 App\\api\\wallet.js\")",
       "Bash(del \"C:\\Users\\bball\\Cursor Projects\\Web 3 App\\js\\auth\\siwe.js\")",
       "Bash(rm:*)",
-      "Bash(del \"C:\\Users\\bball\\Cursor Projects\\Web 3 App\\api\\substitute-env.js\")"
+      "Bash(del \"C:\\Users\\bball\\Cursor Projects\\Web 3 App\\api\\substitute-env.js\")",
+      "Bash(start \"C:\\Users\\bball\\Cursor Projects\\Web 3 App\\test-moralis.html\")"
     ],
-    "deny": []
+    "deny": [],
+    "defaultMode": "acceptEdits"
   }
 }
