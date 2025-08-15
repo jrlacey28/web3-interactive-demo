@@ -482,6 +482,7 @@ Timestamp: ${new Date().toISOString()}`;
     saveSession(sessionData) {
         try {
             localStorage.setItem('genesis_wallet_session', JSON.stringify(sessionData));
+            console.log('💾 Session saved successfully:', sessionData.account);
         } catch (error) {
             console.error('Failed to save session:', error);
         }
@@ -491,7 +492,9 @@ Timestamp: ${new Date().toISOString()}`;
     loadSession() {
         try {
             const sessionData = localStorage.getItem('genesis_wallet_session');
-            return sessionData ? JSON.parse(sessionData) : null;
+            const result = sessionData ? JSON.parse(sessionData) : null;
+            console.log('📖 Session loaded:', result ? result.account : 'none');
+            return result;
         } catch (error) {
             console.error('Failed to load session:', error);
             return null;
@@ -531,17 +534,9 @@ Timestamp: ${new Date().toISOString()}`;
         if (session && session.account && session.signature && session.authenticatedAt) {
             console.log('🔍 Found existing session, verifying...', session.account);
             
-            // FIRST: Check if there's a valid username association for this wallet
-            // This prevents orphaned sessions from auto-connecting
-            const hasValidUser = this.hasValidUserAssociation(session.account);
-            console.log('👤 User association check:', hasValidUser);
-            
-            if (!hasValidUser) {
-                console.log('⚠️ No valid user profile found for wallet, clearing session and preventing auto-connect');
-                this.clearSession();
-                this.allowAutoConnection = false;
-                return false;
-            }
+            // Allow auto-connection even without a custom profile
+            // Users can use wallet address as default username
+            console.log('🔄 Restoring wallet session (profile not required)');
             
             try {
                 const accounts = await window.ethereum.request({ method: 'eth_accounts' });
