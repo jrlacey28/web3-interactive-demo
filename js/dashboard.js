@@ -2,18 +2,18 @@
 let authenticatedWallet = null;
 let currentUser = null;
 
-// Wait for Genesis wallet to be available
-async function waitForGenesisWallet() {
-    console.log('⏳ Waiting for Genesis wallet...');
+// Wait for Moralis wallet manager to be available
+async function waitForWalletManager() {
+    console.log('⏳ Waiting for Moralis wallet manager...');
     let attempts = 0;
-    while (!window.genesisWallet && attempts < 50) {
+    while (!window.walletManager && attempts < 50) {
         await new Promise(resolve => setTimeout(resolve, 100));
         attempts++;
     }
-    if (!window.genesisWallet) {
-        throw new Error('Genesis wallet not available after waiting');
+    if (!window.walletManager) {
+        throw new Error('Moralis wallet manager not available after waiting');
     }
-    console.log('✅ Genesis wallet ready');
+    console.log('✅ Moralis wallet manager ready');
 }
 
 // Initialize when DOM is ready
@@ -32,87 +32,27 @@ async function initializeAuth() {
     try {
         console.log('🔐 Initializing dashboard authentication...');
         
-        // Wait for Genesis wallet to be ready
-        await waitForGenesisWallet();
+        // Wait for Moralis wallet manager to be ready
+        await waitForWalletManager();
         
-        // Use the Genesis wallet system
-        authenticatedWallet = window.genesisWallet;
+        // Use the Moralis wallet system
+        authenticatedWallet = window.walletManager;
         
         if (!authenticatedWallet) {
-            console.log('❌ Genesis wallet not available');
+            console.log('❌ Moralis wallet manager not available');
             redirectToHome();
             return;
         }
         
         console.log('👤 Checking wallet authentication...');
-        console.log('Connected:', authenticatedWallet.connected);
+        console.log('Connected:', authenticatedWallet.isConnected);
         console.log('Authenticated:', authenticatedWallet.isAuthenticated);
         console.log('Account:', authenticatedWallet.account);
         
-        // Check if wallet is connected (either authenticated or just connected with account)
-        if (!authenticatedWallet.account) {
-            console.log('❌ No wallet account found, redirecting to home');
-            redirectToHome();
-            return;
-        }
-
-        currentUser = authenticatedWallet.getCurrentUser();
-        console.log('✅ User authenticated:', currentUser);
-
-        // If no username, redirect to profile setup
-        if (!currentUser?.username) {
-            console.log('ℹ️ No username set. Redirecting to profile setup.');
-            window.location.href = 'profile-setup.html?from=auth';
-            return;
-        }
-        
-        updateUserUI();
-        
-    } catch (error) {
-        console.error('❌ Dashboard authentication failed:', error);
-        // Try legacy initialization as fallback
-        await legacyDashboardAuth();
-    }
-}
-
-// Legacy dashboard authentication for backward compatibility
-async function legacyDashboardAuth() {
-    try {
-        console.log('🔄 Using legacy dashboard authentication...');
-        
-        // Wait for Moralis wallet manager to be available
-        if (typeof walletManager === 'undefined') {
-            console.log('⏳ Waiting for Moralis wallet manager...');
-            await new Promise(r => setTimeout(r, 1000));
-            if (typeof walletManager === 'undefined') {
-                console.log('❌ Wallet manager not found, redirecting to home');
-                redirectToHome();
-                return;
-            }
-        }
-
-        // Use Moralis wallet manager
-        authenticatedWallet = walletManager;
-        
-        // Wait for Moralis initialization
-        let retryCount = 0;
-        const maxRetries = 8;
-        
-        while (!authenticatedWallet.initialized && retryCount < maxRetries) {
-            console.log(`⏳ Attempt ${retryCount + 1}/${maxRetries} - waiting for Moralis initialization...`);
-            await new Promise(r => setTimeout(r, 400));
-            retryCount++;
-        }
-        
-        if (!authenticatedWallet.initialized) {
-            console.log('❌ Moralis not initialized, redirecting to home');
-            redirectToHome();
-            return;
-        }
-        
-        // Check for existing authentication
+        // Check for existing session
         await authenticatedWallet.checkExistingSession();
         
+        // Check if wallet is authenticated
         if (!authenticatedWallet.isAuthenticated) {
             console.log('❌ User not authenticated, redirecting to home');
             redirectToHome();
@@ -132,10 +72,11 @@ async function legacyDashboardAuth() {
         updateUserUI();
         
     } catch (error) {
-        console.error('❌ Legacy dashboard authentication failed:', error);
+        console.error('❌ Dashboard authentication failed:', error);
         redirectToHome();
     }
 }
+
 
 function redirectToHome() {
     console.log('🏠 Redirecting to home page...');

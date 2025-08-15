@@ -40,7 +40,9 @@
       "Bash(start clear-all.html)",
       "Bash(start debug-wallet-state.html)",
       "Bash(start test-fresh-state.html)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

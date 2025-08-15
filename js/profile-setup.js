@@ -32,30 +32,33 @@ async function initializeAuth() {
     try {
         console.log('🔐 Initializing profile setup authentication...');
         
-        // Wait for genesis wallet to be ready
-        if (typeof window.genesisWallet === 'undefined') {
+        // Wait for Moralis wallet manager to be ready
+        if (typeof window.walletManager === 'undefined') {
             setTimeout(initializeAuth, 100);
             return;
         }
 
-        // Use the new Genesis wallet system
-        window.authenticatedWallet = window.genesisWallet;
+        // Use the Moralis wallet system
+        window.authenticatedWallet = window.walletManager;
             
         console.log('🔍 Checking wallet authentication state...');
         console.log('authenticatedWallet exists:', !!window.authenticatedWallet);
-        console.log('Connected:', window.authenticatedWallet?.connected);
+        console.log('Connected:', window.authenticatedWallet?.isConnected);
         console.log('Authenticated:', window.authenticatedWallet?.isAuthenticated);
         console.log('Account:', window.authenticatedWallet?.account);
-        console.log('Username:', window.authenticatedWallet?.getUsername());
+        console.log('Username:', window.authenticatedWallet?.getCurrentUser()?.username);
         
-        // SIMPLIFIED CHECK: If we have a connected wallet with an account, proceed
-        if (window.authenticatedWallet && window.authenticatedWallet.account) {
+        // Check for existing session
+        await window.authenticatedWallet.checkExistingSession();
+        
+        // SIMPLIFIED CHECK: If we have an authenticated wallet, proceed
+        if (window.authenticatedWallet && window.authenticatedWallet.isAuthenticated) {
             console.log('✅ Wallet has account, proceeding with profile setup');
             
             // Check if this is edit mode or first-time setup
             const urlParams = new URLSearchParams(window.location.search);
             const editMode = urlParams.get('edit') === 'true';
-            const currentUsername = window.authenticatedWallet.getUsername();
+            const currentUsername = window.authenticatedWallet.getCurrentUser()?.username;
             
             if (currentUsername && !editMode) {
                 console.log(`👤 User already has custom username: ${currentUsername}`);
@@ -325,19 +328,12 @@ function showConnectOnProfilePage() {
 async function connectWalletOnProfile() {
     try {
         console.log('🔗 Connecting wallet from profile page...');
-        const result = await window.genesisWallet.connect();
+        const result = await window.walletManager.authenticate();
         
         if (result.success) {
-            // Authenticate immediately after connection
-            const authResult = await window.genesisWallet.authenticate();
-            
-            if (authResult.success) {
-                console.log('✅ Wallet connected and authenticated, refreshing page...');
-                // Refresh the page to reinitialize with authenticated state
-                window.location.reload();
-            } else {
-                throw new Error(authResult.error);
-            }
+            console.log('✅ Wallet connected and authenticated, refreshing page...');
+            // Refresh the page to reinitialize with authenticated state
+            window.location.reload();
         } else {
             throw new Error(result.error);
         }
@@ -801,13 +797,8 @@ async function createUserProfile() {
         
         localStorage.setItem('siwe_users', JSON.stringify(users));
         
-        // Update wallet session with username
-        const session = window.authenticatedWallet.loadSession();
-        if (session) {
-            session.username = profileData.username;
-            session.displayName = profileData.username;
-            window.authenticatedWallet.saveSession(session);
-        }
+        // Note: With Moralis, user data is automatically synced to the backend
+        // No need to manually update session like with the old system
         
         console.log('✅ Profile created successfully:', userRecord);
         

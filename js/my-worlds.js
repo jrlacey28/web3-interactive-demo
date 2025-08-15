@@ -5,18 +5,18 @@ let userWorlds = {};
 let selectedTemplate = 'gallery';
 let selectedTheme = 'purple';
 
-// Wait for Genesis wallet to be available
-async function waitForGenesisWallet() {
-    console.log('⏳ Waiting for Genesis wallet...');
+// Wait for Moralis wallet manager to be available
+async function waitForWalletManager() {
+    console.log('⏳ Waiting for Moralis wallet manager...');
     let attempts = 0;
-    while (!window.genesisWallet && attempts < 50) {
+    while (!window.walletManager && attempts < 50) {
         await new Promise(resolve => setTimeout(resolve, 100));
         attempts++;
     }
-    if (!window.genesisWallet) {
-        throw new Error('Genesis wallet not available after waiting');
+    if (!window.walletManager) {
+        throw new Error('Moralis wallet manager not available after waiting');
     }
-    console.log('✅ Genesis wallet ready');
+    console.log('✅ Moralis wallet manager ready');
 }
 
 // Initialize when DOM is ready
@@ -46,38 +46,23 @@ async function initializeAuth() {
     try {
         console.log('🔐 Initializing my-worlds authentication...');
         
-        // Wait for Genesis wallet to be ready
-        await waitForGenesisWallet();
+        // Wait for Moralis wallet manager to be ready
+        await waitForWalletManager();
         
-        // Use the Genesis wallet system
-        authenticatedWallet = window.genesisWallet;
+        // Use the Moralis wallet system
+        authenticatedWallet = window.walletManager;
         
-        // Give more time for authentication state to be restored
-        let retryCount = 0;
-        const maxRetries = 5;
+        // Check for existing session
+        await authenticatedWallet.checkExistingSession();
         
-        while (!authenticatedWallet.siwe.isAuthenticated && retryCount < maxRetries) {
-            // Try restoring session
-            try {
-                authenticatedWallet.siwe.checkExistingSession();
-            } catch (e) {
-                // ignore errors during session restoration
-            }
-            
-            if (!authenticatedWallet.siwe.isAuthenticated) {
-                await new Promise(r => setTimeout(r, 500));
-                retryCount++;
-            }
+        if (!authenticatedWallet.isAuthenticated) {
+            console.log('❌ User not authenticated, redirecting to home');
+            redirectToHome();
+            return;
         }
-        
-        if (!authenticatedWallet.siwe.isAuthenticated) {
-            console.log('❌ Not authenticated after retries');
-            // Don't redirect immediately, let the user try to interact first
-            currentUser = null;
-        } else {
-            currentUser = authenticatedWallet.getCurrentUser();
-            console.log('✅ User authenticated:', currentUser);
-        }
+
+        currentUser = authenticatedWallet.getCurrentUser();
+        console.log('✅ User authenticated:', currentUser);
 
         updateUserUI();
         
@@ -722,7 +707,7 @@ function showHelp() {
 
 function signOut() {
     if (confirm('Are you sure you want to sign out?')) {
-        authenticatedWallet.siwe.signOut().then(() => {
+        authenticatedWallet.signOut().then(() => {
             window.location.href = 'index.html';
         });
     }

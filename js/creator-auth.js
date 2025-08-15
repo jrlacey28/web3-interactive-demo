@@ -2,18 +2,18 @@
 let authenticatedWallet = null;
 let currentUser = null;
 
-// Wait for Genesis wallet to be available
-async function waitForGenesisWallet() {
-    console.log('⏳ Waiting for Genesis wallet...');
+// Wait for Moralis wallet manager to be available
+async function waitForWalletManager() {
+    console.log('⏳ Waiting for Moralis wallet manager...');
     let attempts = 0;
-    while (!window.genesisWallet && attempts < 50) {
+    while (!window.walletManager && attempts < 50) {
         await new Promise(resolve => setTimeout(resolve, 100));
         attempts++;
     }
-    if (!window.genesisWallet) {
-        throw new Error('Genesis wallet not available after waiting');
+    if (!window.walletManager) {
+        throw new Error('Moralis wallet manager not available after waiting');
     }
-    console.log('✅ Genesis wallet ready');
+    console.log('✅ Moralis wallet manager ready');
 }
 
 // Initialize authentication when DOM is ready
@@ -28,11 +28,11 @@ async function initializeCreatorAuth() {
     try {
         console.log('🎨 Initializing creator page authentication...');
         
-        // Wait for Genesis wallet to be available
-        await waitForGenesisWallet();
+        // Wait for Moralis wallet manager to be available
+        await waitForWalletManager();
 
-        // Use Genesis wallet system
-        authenticatedWallet = window.genesisWallet;
+        // Use Moralis wallet system
+        authenticatedWallet = window.walletManager;
         
         // Check for existing session
         await checkUserSession();
@@ -60,13 +60,6 @@ async function checkUserSession() {
     try {
         console.log('🔍 Checking existing user session...');
         
-        // Wait for wallet to be ready
-        let attempts = 0;
-        while (!authenticatedWallet.isConnected && attempts < 10) {
-            await new Promise(resolve => setTimeout(resolve, 200));
-            attempts++;
-        }
-        
         // Check for existing Moralis authentication
         await authenticatedWallet.checkExistingSession();
         
@@ -78,11 +71,9 @@ async function checkUserSession() {
             showSessionRestoreToast();
             
             return true;
-        } else if (authenticatedWallet.isConnected && !authenticatedWallet.isAuthenticated) {
-            console.log('🔗 Wallet connected but not authenticated');
-            // Do not auto-prompt; wait for explicit click
         } else {
             console.log('📝 No existing session found');
+            // Do not auto-prompt; wait for explicit click
         }
         
         return false;
@@ -100,15 +91,9 @@ async function handleCreatorWalletConnect() {
     try {
         const walletBtn = document.getElementById('walletBtn');
         
-        if (authenticatedWallet.isConnected && authenticatedWallet.isAuthenticated) {
+        if (authenticatedWallet.isAuthenticated) {
             // Already fully authenticated, show user menu without additional prompts
             showCreatorUserMenu();
-            return;
-        }
-        
-        if (authenticatedWallet.isConnected) {
-            // Wallet connected but not authenticated, sign in
-            await handleCreatorAuth();
             return;
         }
         
@@ -147,9 +132,7 @@ async function handleCreatorAuth() {
     try {
         console.log('🔐 Starting creator authentication...');
         
-        if (!authenticatedWallet.isConnected) {
-            throw new Error('Wallet must be connected first');
-        }
+        // Note: With Moralis, connection and authentication happen together
         
         const result = await authenticatedWallet.authenticate();
         
@@ -181,18 +164,10 @@ function updateCreatorUI() {
     
     if (authenticatedWallet.isAuthenticated) {
         // Fully authenticated
-        const displayName = currentUser.username || authenticatedWallet.getShortAddress();
+        const displayName = currentUser.username || currentUser.walletAddress?.slice(0,6) + '...' + currentUser.walletAddress?.slice(-4);
         walletBtn.textContent = `👤 ${displayName}`;
         walletBtn.classList.add('authenticated');
         walletBtn.title = `Signed in as ${displayName} - Click for options`;
-        
-    } else if (authenticatedWallet.isConnected) {
-        // Connected but not authenticated
-        const shortAddress = authenticatedWallet.getShortAddress();
-        walletBtn.textContent = `🔐 ${shortAddress}`;
-        walletBtn.classList.add('connected');
-        walletBtn.classList.remove('authenticated');
-        walletBtn.title = 'Wallet connected - Click to sign in';
         
     } else {
         // Not connected
@@ -216,10 +191,7 @@ function showCreatorUserMenu() {
                 </div>
                 <strong style="color: white;">${displayName}</strong>
                 <div style="color: rgba(255,255,255,0.8); font-size: 0.9rem; margin-top: 5px;">
-                    ${authenticatedWallet.getShortAddress()}
-                </div>
-                <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem; margin-top: 5px;">
-                    ${authenticatedWallet.getNetworkName()}
+                    ${currentUser.walletAddress?.slice(0,6) + '...' + currentUser.walletAddress?.slice(-4)}
                 </div>
             </div>
             
