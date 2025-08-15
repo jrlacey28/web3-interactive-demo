@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background: #f8f9fa; }
+        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; background: #007bff; color: white; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Simple Debug Tool</h1>
+    
+    <div class="section">
+        <h3>Current LocalStorage Data</h3>
+        <button onclick="showStorageData()">Show All Storage Data</button>
+        <div id="storageData"></div>
+    </div>
+
+    <div class="section">
+        <h3>Clear Data</h3>
+        <button onclick="clearAllData()">Clear All LocalStorage</button>
+        <div id="clearResults"></div>
+    </div>
+
+    <div class="section">
+        <h3>Manual Wallet Connection</h3>
+        <button onclick="connectWallet()">Connect Wallet (No Auto-Redirect)</button>
+        <div id="connectionStatus"></div>
+    </div>
+
+    <script src="js/simple-wallet-connection.js"></script>
+    <script>
+        function showStorageData() {
+            const container = document.getElementById('storageData');
+            
+            const users = localStorage.getItem('siwe_users');
+            const session = localStorage.getItem('genesis_wallet_session');
+            
+            let html = '<h4>LocalStorage Contents:</h4>';
+            
+            html += '<h5>siwe_users:</h5>';
+            if (users) {
+                try {
+                    html += '<pre>' + JSON.stringify(JSON.parse(users), null, 2) + '</pre>';
+                } catch (e) {
+                    html += '<pre>' + users + '</pre>';
+                }
+            } else {
+                html += '<p>No users data found</p>';
+            }
+            
+            html += '<h5>genesis_wallet_session:</h5>';
+            if (session) {
+                try {
+                    html += '<pre>' + JSON.stringify(JSON.parse(session), null, 2) + '</pre>';
+                } catch (e) {
+                    html += '<pre>' + session + '</pre>';
+                }
+            } else {
+                html += '<p>No session data found</p>';
+            }
+            
+            // Show all localStorage keys
+            html += '<h5>All localStorage keys:</h5>';
+            html += '<ul>';
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                html += `<li>${key}</li>`;
+            }
+            html += '</ul>';
+            
+            container.innerHTML = html;
+        }
+
+        function clearAllData() {
+            localStorage.clear();
+            document.getElementById('clearResults').innerHTML = '<p style="color: green;">✅ All localStorage data cleared!</p>';
+            
+            // Also reset wallet state if available
+            if (window.genesisWallet) {
+                window.genesisWallet.connected = false;
+                window.genesisWallet.account = null;
+                window.genesisWallet.isAuthenticated = false;
+                window.genesisWallet.allowAutoConnection = false;
+                window.genesisWallet.updateWalletUI();
+            }
+        }
+
+        async function connectWallet() {
+            const statusDiv = document.getElementById('connectionStatus');
+            statusDiv.innerHTML = '<p>🔄 Connecting wallet...</p>';
+            
+            try {
+                if (!window.genesisWallet) {
+                    throw new Error('Wallet system not available');
+                }
+
+                const result = await window.genesisWallet.connect();
+                
+                if (result.success) {
+                    statusDiv.innerHTML = `
+                        <p style="color: green;">✅ Wallet connected successfully!</p>
+                        <p>Account: ${result.account}</p>
+                        <p>Network: ${result.network}</p>
+                        <p>Now try manual authentication...</p>
+                        <button onclick="authenticateWallet()">Authenticate Wallet</button>
+                    `;
+                } else {
+                    statusDiv.innerHTML = `<p style="color: red;">❌ Connection failed: ${result.error}</p>`;
+                }
+                
+            } catch (error) {
+                statusDiv.innerHTML = `<p style="color: red;">❌ Error: ${error.message}</p>`;
+            }
+        }
+
+        async function authenticateWallet() {
+            const statusDiv = document.getElementById('connectionStatus');
+            statusDiv.innerHTML += '<p>🔄 Authenticating...</p>';
+            
+            try {
+                const result = await window.genesisWallet.authenticate();
+                
+                if (result.success) {
+                    statusDiv.innerHTML += `
+                        <p style="color: green;">✅ Authentication successful!</p>
+                        <p>Account: ${result.account}</p>
+                        <p>Redirecting: ${result.redirecting}</p>
+                    `;
+                    
+                    // Show current state
+                    statusDiv.innerHTML += `
+                        <h4>Current Wallet State:</h4>
+                        <p>Connected: ${window.genesisWallet.connected}</p>
+                        <p>Authenticated: ${window.genesisWallet.isAuthenticated}</p>
+                        <p>Account: ${window.genesisWallet.account}</p>
+                        <p>Username: ${window.genesisWallet.getUsername()}</p>
+                    `;
+                } else {
+                    statusDiv.innerHTML += `<p style="color: red;">❌ Authentication failed: ${result.error}</p>`;
+                }
+                
+            } catch (error) {
+                statusDiv.innerHTML += `<p style="color: red;">❌ Auth error: ${error.message}</p>`;
+            }
+        }
+
+        // Auto-show storage data on load
+        window.addEventListener('load', () => {
+            setTimeout(showStorageData, 500);
+        });
+    </script>
+</body>
+</html>

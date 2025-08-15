@@ -114,7 +114,8 @@ function updateWalletStatus() {
     if (window.authenticatedWallet && window.authenticatedWallet.isConnected) {
         const shortAddress = window.authenticatedWallet.getShortAddress();
         const networkName = window.authenticatedWallet.getNetworkName();
-        const isTestnet = window.authenticatedWallet.isTestnet();
+        // Check if it's a testnet by looking at the network name
+        const isTestnet = networkName && networkName.toLowerCase().includes('testnet');
         const testnetIndicator = isTestnet ? ' 🧪' : '';
         
         walletStatus.innerHTML = `
@@ -130,7 +131,8 @@ function updateWalletStatus() {
 
 function loadExistingUserData() {
     try {
-        if (!window.authenticatedWallet || !window.authenticatedWallet.siwe.isAuthenticated) {
+        // Check if we have an authenticated wallet (new Genesis wallet system)
+        if (!window.authenticatedWallet || !window.authenticatedWallet.isAuthenticated) {
             return;
         }
 

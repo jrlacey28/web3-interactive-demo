@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Profile Setup</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background: #f8f9fa; }
+        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; }
+        .primary { background: #007bff; color: white; }
+        .form-group { margin: 15px 0; }
+        input { padding: 10px; border: 1px solid #ddd; border-radius: 5px; width: 250px; }
+        .username-status { margin: 5px 0; padding: 8px; border-radius: 5px; }
+        .username-status.available { background: #d4edda; color: #155724; }
+        .username-status.taken { background: #f8d7da; color: #721c24; }
+        .username-status.checking { background: #d1ecf1; color: #0c5460; }
+        .username-status.error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Profile Setup Test</h1>
+    
+    <div class="test-section">
+        <h3>Wallet Status</h3>
+        <div id="walletStatus">Checking...</div>
+        <button onclick="checkWalletStatus()" class="primary">Refresh Status</button>
+    </div>
+
+    <div class="test-section">
+        <h3>Username Validation Test</h3>
+        <div class="form-group">
+            <label for="testUsername">Username:</label>
+            <input type="text" id="testUsername" placeholder="Enter username to test">
+            <div class="username-status" id="usernameStatus" style="display: none;"></div>
+        </div>
+        <button onclick="testUsernameValidation()" class="primary">Test Validation</button>
+    </div>
+
+    <div class="test-section">
+        <h3>Debug Info</h3>
+        <button onclick="showDebugInfo()" class="primary">Show Debug Info</button>
+        <div id="debugInfo"></div>
+    </div>
+
+    <script src="js/simple-wallet-connection.js"></script>
+    <script>
+        // Copy relevant functions from profile-setup.js for testing
+        async function validateUsername() {
+            const usernameInput = document.getElementById('testUsername');
+            const statusDiv = document.getElementById('usernameStatus');
+            
+            if (!usernameInput || !statusDiv) return;
+
+            const username = usernameInput.value.trim();
+            
+            // Clear status if empty
+            if (!username) {
+                statusDiv.style.display = 'none';
+                return;
+            }
+
+            // Basic validation
+            const usernameRegex = /^[a-zA-Z0-9_]{3,50}$/;
+            if (!usernameRegex.test(username)) {
+                showUsernameStatus('Invalid format. Use 3-50 characters, letters, numbers, and underscores only.', 'error');
+                return;
+            }
+
+            // Check availability
+            showUsernameStatus('Checking availability...', 'checking');
+            
+            try {
+                const isAvailable = await checkUsernameAvailability(username);
+                
+                if (isAvailable) {
+                    showUsernameStatus('✅ Username is available!', 'available');
+                } else {
+                    showUsernameStatus('❌ Username is already taken', 'taken');
+                }
+                
+            } catch (error) {
+                showUsernameStatus('Error checking availability', 'error');
+                console.error('Username validation error:', error);
+            }
+        }
+
+        async function checkUsernameAvailability(username) {
+            // Simulate API call
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Check against localStorage for existing usernames
+            const users = JSON.parse(localStorage.getItem('siwe_users') || '{}');
+            console.log('Checking against users:', users);
+            
+            const existingUsernames = Object.values(users)
+                .map(user => user.username)
+                .filter(Boolean)
+                .map(name => name.toLowerCase());
+            
+            console.log('Existing usernames:', existingUsernames);
+            console.log('Checking username:', username.toLowerCase());
+            
+            return !existingUsernames.includes(username.toLowerCase());
+        }
+
+        function showUsernameStatus(message, type) {
+            const statusDiv = document.getElementById('usernameStatus');
+            if (!statusDiv) return;
+
+            statusDiv.textContent = message;
+            statusDiv.className = `username-status ${type}`;
+            statusDiv.style.display = 'block';
+        }
+
+        function checkWalletStatus() {
+            const statusDiv = document.getElementById('walletStatus');
+            
+            if (!window.genesisWallet) {
+                statusDiv.innerHTML = '❌ Wallet system not loaded';
+                return;
+            }
+
+            const connected = window.genesisWallet.connected;
+            const authenticated = window.genesisWallet.isAuthenticated;
+            const account = window.genesisWallet.account;
+
+            statusDiv.innerHTML = `
+                <div>Connected: ${connected ? '✅' : '❌'}</div>
+                <div>Authenticated: ${authenticated ? '✅' : '❌'}</div>
+                <div>Account: ${account || 'None'}</div>
+                <div>Is Connected: ${window.genesisWallet.isConnected ? '✅' : '❌'}</div>
+            `;
+        }
+
+        function testUsernameValidation() {
+            validateUsername();
+        }
+
+        function showDebugInfo() {
+            const debugDiv = document.getElementById('debugInfo');
+            
+            const users = JSON.parse(localStorage.getItem('siwe_users') || '{}');
+            const session = localStorage.getItem('genesis_wallet_session');
+            
+            debugDiv.innerHTML = `
+                <h4>LocalStorage Data:</h4>
+                <p><strong>siwe_users:</strong> ${Object.keys(users).length} entries</p>
+                <pre>${JSON.stringify(users, null, 2)}</pre>
+                <p><strong>genesis_wallet_session:</strong> ${session ? 'exists' : 'none'}</p>
+                ${session ? `<pre>${JSON.stringify(JSON.parse(session), null, 2)}</pre>` : ''}
+            `;
+        }
+
+        // Set up input listener
+        document.addEventListener('DOMContentLoaded', () => {
+            const usernameInput = document.getElementById('testUsername');
+            if (usernameInput) {
+                usernameInput.addEventListener('input', () => {
+                    clearTimeout(usernameInput.timeout);
+                    usernameInput.timeout = setTimeout(validateUsername, 500);
+                });
+                usernameInput.addEventListener('blur', validateUsername);
+            }
+            
+            setTimeout(checkWalletStatus, 1000);
+        });
+    </script>
+</body>
+</html>
