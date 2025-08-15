@@ -1,64 +1,165 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Moralis Connection Test</title>
+    <title>Web3 Wallet Connection Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        button { padding: 12px 24px; margin: 10px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #45a049; }
+        .result { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background: #f9f9f9; }
+        .success { color: #00aa00; }
+        .error { color: #aa0000; }
+        .info { color: #0066cc; }
+    </style>
 </head>
 <body>
-    <h1>Moralis Connection Test</h1>
-    <button onclick="testConnection()">Test Moralis Connection</button>
+    <h1>🔗 Web3 Wallet Connection Test</h1>
+    <p>This test will check MetaMask connection and wallet functionality.</p>
+    
+    <button onclick="testMetaMaskDetection()">1. Test MetaMask Detection</button>
+    <button onclick="testWalletConnection()">2. Test Wallet Connection</button>
+    <button onclick="testMessageSigning()">3. Test Message Signing</button>
+    <button onclick="runAllTests()">🚀 Run All Tests</button>
+    
     <div id="results"></div>
 
-    <script src="https://unpkg.com/moralis/dist/moralis.js"></script>
     <script>
-        const API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjkzNmEwYmYzLWE3NTEtNDI5Ni1hNmFkLTRhNTlhZDc1NjE4MCIsIm9yZ0lkIjoiNDY0Mzk2IiwidXNlcklkIjoiNDc3NzYxIiwidHlwZUlkIjoiYzVlMTk4ZTgtNTAzNy00YjcxLWFkNGItYTAyOTU4MDcyYmFiIiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3NTQ4NTA2NjQsImV4cCI6NDkxMDYxMDY2NH0.MPO2RBT_JWZR6laF8VkAXMxUx7f6-U9_ueCJuNdbe8I';
-        
-        async function testConnection() {
-            const results = document.getElementById('results');
-            results.innerHTML = '<p>Testing...</p>';
+        const results = document.getElementById('results');
+        let connectedAccount = null;
+
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = message;
+            results.appendChild(div);
+            console.log(message.replace(/<[^>]*>/g, ''));
+        }
+
+        function clearResults() {
+            results.innerHTML = '';
+        }
+
+        async function testMetaMaskDetection() {
+            addResult('<h3>🔍 Testing MetaMask Detection</h3>');
+            
+            if (typeof window.ethereum !== 'undefined') {
+                addResult('✅ MetaMask is installed and detected', 'success');
+                
+                // Check if it's actually MetaMask
+                if (window.ethereum.isMetaMask) {
+                    addResult('✅ Confirmed: This is MetaMask', 'success');
+                } else {
+                    addResult('⚠️ Warning: Another wallet detected (not MetaMask)', 'info');
+                }
+                
+                return true;
+            } else {
+                addResult('❌ MetaMask not detected. Please install MetaMask extension.', 'error');
+                return false;
+            }
+        }
+
+        async function testWalletConnection() {
+            addResult('<h3>🔗 Testing Wallet Connection</h3>');
             
             try {
-                console.log('🔧 Testing Moralis initialization...');
-                
-                // Test 1: Initialize Moralis
-                await Moralis.start({
-                    apiKey: API_KEY
+                // Request account access
+                const accounts = await window.ethereum.request({
+                    method: 'eth_requestAccounts'
                 });
-                
-                results.innerHTML += '<p>✅ Moralis initialized successfully</p>';
-                console.log('✅ Moralis initialized');
-                
-                // Test 2: Check if MetaMask is available
-                if (typeof window.ethereum !== 'undefined') {
-                    results.innerHTML += '<p>✅ MetaMask detected</p>';
-                    console.log('✅ MetaMask detected');
+
+                if (accounts.length > 0) {
+                    connectedAccount = accounts[0];
+                    addResult(`✅ Wallet connected successfully!`, 'success');
+                    addResult(`📋 Address: <strong>${connectedAccount}</strong>`, 'info');
+                    addResult(`📋 Short Address: ${connectedAccount.slice(0, 6)}...${connectedAccount.slice(-4)}`, 'info');
                     
-                    // Test 3: Try to get wallet accounts
-                    try {
-                        const accounts = await window.ethereum.request({ 
-                            method: 'eth_requestAccounts' 
-                        });
-                        
-                        if (accounts.length > 0) {
-                            results.innerHTML += '<p>✅ Wallet connection successful!</p>';
-                            results.innerHTML += '<p>Address: ' + accounts[0] + '</p>';
-                            console.log('✅ Wallet connected:', accounts[0]);
-                        }
-                        
-                    } catch (authError) {
-                        results.innerHTML += '<p>❌ Wallet connection failed: ' + authError.message + '</p>';
-                        console.error('❌ Wallet connection failed:', authError);
-                    }
+                    // Get network info
+                    const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+                    const networkNames = {
+                        '0x1': 'Ethereum Mainnet',
+                        '0x89': 'Polygon',
+                        '0xa4b1': 'Arbitrum One',
+                        '0x66eed': 'Arbitrum Sepolia Testnet'
+                    };
+                    const networkName = networkNames[chainId] || `Unknown Network (${chainId})`;
+                    addResult(`🌐 Network: ${networkName}`, 'info');
                     
+                    return true;
                 } else {
-                    results.innerHTML += '<p>❌ MetaMask not detected</p>';
-                    console.error('❌ MetaMask not detected');
+                    addResult('❌ No accounts found. Please unlock MetaMask.', 'error');
+                    return false;
                 }
                 
             } catch (error) {
-                results.innerHTML += '<p>❌ Moralis initialization failed: ' + error.message + '</p>';
-                console.error('❌ Moralis initialization failed:', error);
+                addResult(`❌ Connection failed: ${error.message}`, 'error');
+                return false;
             }
         }
+
+        async function testMessageSigning() {
+            addResult('<h3>✍️ Testing Message Signing</h3>');
+            
+            if (!connectedAccount) {
+                addResult('⚠️ Please connect wallet first', 'error');
+                return false;
+            }
+            
+            try {
+                const message = `Welcome to GENESIS!
+
+Please sign this message to authenticate your account.
+
+Wallet: ${connectedAccount}
+Timestamp: ${new Date().toISOString()}`;
+
+                addResult('📝 Requesting signature...', 'info');
+                
+                const signature = await window.ethereum.request({
+                    method: 'personal_sign',
+                    params: [message, connectedAccount]
+                });
+
+                addResult('✅ Message signed successfully!', 'success');
+                addResult(`🔏 Signature: ${signature.slice(0, 20)}...${signature.slice(-10)}`, 'info');
+                
+                return true;
+                
+            } catch (error) {
+                if (error.code === 4001) {
+                    addResult('❌ User rejected the signature request', 'error');
+                } else {
+                    addResult(`❌ Signing failed: ${error.message}`, 'error');
+                }
+                return false;
+            }
+        }
+
+        async function runAllTests() {
+            clearResults();
+            addResult('<h2>🧪 Running Complete Test Suite</h2>');
+            
+            const test1 = await testMetaMaskDetection();
+            if (!test1) return;
+            
+            const test2 = await testWalletConnection();
+            if (!test2) return;
+            
+            const test3 = await testMessageSigning();
+            
+            if (test1 && test2 && test3) {
+                addResult('<h3>🎉 ALL TESTS PASSED!</h3>', 'success');
+                addResult('Your Web3 wallet setup is working perfectly!', 'success');
+            } else {
+                addResult('<h3>⚠️ Some tests failed</h3>', 'error');
+                addResult('Check the results above to see what needs to be fixed.', 'error');
+            }
+        }
+
+        // Auto-run detection test on page load
+        window.addEventListener('load', () => {
+            testMetaMaskDetection();
+        });
     </script>
 </body>
 </html>

@@ -5,13 +5,13 @@ class Web3InitializationManager {
     constructor() {
         this.dependencies = {
             apiConfig: false,
-            moralisSDK: false,
+            ethereum: false,
             walletManager: false
         };
         
         this.retryAttempts = {
             apiConfig: 0,
-            moralisSDK: 0,
+            ethereum: 0,
             walletManager: 0
         };
         
@@ -39,11 +39,11 @@ class Web3InitializationManager {
             // Step 1: Wait for API Config
             await this._waitForDependency('apiConfig', () => typeof API_CONFIG !== 'undefined');
             
-            // Step 2: Wait for Moralis SDK
-            await this._waitForDependency('moralisSDK', () => typeof Moralis !== 'undefined');
+            // Step 2: Check for MetaMask
+            await this._waitForDependency('ethereum', () => typeof window.ethereum !== 'undefined');
             
-            // Step 3: Initialize Moralis Wallet Manager
-            await this._initializeMoralisWallet();
+            // Step 3: Initialize Web3 Wallet Manager
+            await this._initializeWeb3Wallet();
             
             // Step 4: Setup global references
             this._setupGlobalReferences();
@@ -81,24 +81,20 @@ class Web3InitializationManager {
         console.log(`✅ ${name} loaded successfully`);
     }
 
-    async _initializeMoralisWallet() {
-        console.log('🔐 Initializing Moralis Wallet Manager...');
-        
-        if (!API_CONFIG?.MORALIS?.API_KEY) {
-            throw new Error('Moralis API key not found in configuration');
-        }
+    async _initializeWeb3Wallet() {
+        console.log('🔐 Initializing Web3 Wallet Manager...');
 
-        // Use the createMoralisWalletManager function if available, otherwise create directly
+        // Use the createWeb3WalletManager function if available, otherwise create directly
         let walletManager;
-        if (typeof createMoralisWalletManager === 'function') {
-            walletManager = createMoralisWalletManager();
+        if (typeof createWeb3WalletManager === 'function') {
+            walletManager = createWeb3WalletManager();
         } else {
-            console.log('⚠️ createMoralisWalletManager not found, creating directly');
-            walletManager = new MoralisWalletManager();
+            console.log('⚠️ createWeb3WalletManager not found, creating directly');
+            walletManager = new Web3WalletManager();
             window.walletManager = walletManager;
         }
         
-        // Wait for Moralis to initialize
+        // Wait for wallet manager to initialize
         let attempts = 0;
         while (!walletManager.initialized && attempts < this.maxRetries) {
             await new Promise(resolve => setTimeout(resolve, 100));
@@ -106,11 +102,11 @@ class Web3InitializationManager {
         }
         
         if (!walletManager.initialized) {
-            throw new Error('Moralis Wallet Manager failed to initialize');
+            throw new Error('Web3 Wallet Manager failed to initialize');
         }
         
         this.dependencies.walletManager = true;
-        console.log('✅ Moralis Wallet Manager initialized');
+        console.log('✅ Web3 Wallet Manager initialized');
         
         return walletManager;
     }
@@ -120,8 +116,8 @@ class Web3InitializationManager {
         if (!window.walletManager) {
             console.log('🔧 Setting up global wallet manager reference...');
             // Find the wallet manager instance
-            if (typeof moralisWallet !== 'undefined' && moralisWallet) {
-                window.walletManager = moralisWallet;
+            if (typeof web3Wallet !== 'undefined' && web3Wallet) {
+                window.walletManager = web3Wallet;
             } else {
                 throw new Error('Wallet manager instance not found');
             }
@@ -148,7 +144,7 @@ class Web3InitializationManager {
     _showUserError(error) {
         const errorMessages = {
             'apiConfig': 'Configuration files failed to load. Please refresh the page.',
-            'moralisSDK': 'Blockchain SDK failed to load. Check your internet connection.',
+            'ethereum': 'MetaMask not detected. Please install MetaMask extension.',
             'walletManager': 'Wallet system failed to initialize. Please refresh the page.'
         };
         
@@ -174,7 +170,7 @@ class Web3InitializationManager {
     isReady() {
         return this.initialized && 
                this.dependencies.apiConfig && 
-               this.dependencies.moralisSDK && 
+               this.dependencies.ethereum && 
                this.dependencies.walletManager &&
                window.walletManager;
     }

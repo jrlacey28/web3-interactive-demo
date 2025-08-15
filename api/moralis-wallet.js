@@ -1,7 +1,7 @@
-// Moralis Web3 Authentication Manager
-// Replaces the previous SIWE system with Moralis SDK
+// Modern Web3 Authentication Manager
+// Direct wallet connection with message signing authentication
 
-class MoralisWalletManager {
+class Web3WalletManager {
     constructor() {
         this.isConnected = false;
         this.currentUser = null;
@@ -10,45 +10,30 @@ class MoralisWalletManager {
         this.isAuthenticated = false;
         this.initialized = false;
         
-        // Initialize Moralis immediately - this is now called by Web3InitializationManager
-        this.initializeMoralis().catch(error => {
-            console.error('❌ Moralis initialization failed:', error);
+        // Initialize wallet manager
+        this.initializeWallet().catch(error => {
+            console.error('❌ Wallet initialization failed:', error);
             this.initialized = false;
         });
     }
 
-    async initializeMoralis() {
+    async initializeWallet() {
         try {
-            console.log('🔐 Moralis Wallet Manager initializing...');
+            console.log('🔐 Web3 Wallet Manager initializing...');
             
-            // Dependencies should already be checked by Web3InitializationManager
-            if (typeof API_CONFIG === 'undefined') {
-                throw new Error('API_CONFIG not available - initialization system failed');
+            // Check if MetaMask is available
+            if (!window.ethereum) {
+                console.warn('⚠️ MetaMask not detected');
             }
-            
-            if (typeof Moralis === 'undefined') {
-                throw new Error('Moralis SDK not available - initialization system failed');
-            }
-            
-            if (!API_CONFIG.MORALIS?.API_KEY) {
-                throw new Error('Moralis API key not found in configuration');
-            }
-            
-            console.log('🚀 Starting Moralis with API key...');
-            
-            // Initialize Moralis with API key
-            await Moralis.start({
-                apiKey: API_CONFIG.MORALIS.API_KEY,
-            });
             
             this.initialized = true;
-            console.log('✅ Moralis initialized successfully');
+            console.log('✅ Wallet manager initialized successfully');
             
             // Check for existing authentication
             await this.checkExistingSession();
             
         } catch (error) {
-            console.error('❌ Failed to initialize Moralis:', error);
+            console.error('❌ Failed to initialize wallet manager:', error);
             this.initialized = false;
             throw error;
         }
@@ -56,18 +41,12 @@ class MoralisWalletManager {
 
     async checkExistingSession() {
         try {
-            const user = Moralis.User.current();
-            if (user) {
-                console.log('✅ Found existing Moralis session:', user);
-                this.isAuthenticated = true;
-                this.currentUser = {
-                    walletAddress: user.get('ethAddress'),
-                    username: user.get('username') || null,
-                    bio: user.get('bio') || null,
-                    createdAt: user.get('createdAt'),
-                    sessionToken: user.getSessionToken()
-                };
-                this.account = user.get('ethAddress');
+            const sessionData = this.loadSession();
+            if (sessionData && sessionData.isAuthenticated) {
+                console.log('✅ Found existing session:', sessionData.currentUser.walletAddress);
+                this.isAuthenticated = sessionData.isAuthenticated;
+                this.currentUser = sessionData.currentUser;
+                this.account = sessionData.account;
                 this.isConnected = true;
                 return true;
             }
@@ -80,10 +59,10 @@ class MoralisWalletManager {
 
     async connectWallet() {
         try {
-            console.log('🔗 Connecting wallet with Moralis...');
+            console.log('🔗 Connecting wallet...');
             
             if (!this.initialized) {
-                await this.initializeMoralis();
+                await this.initializeWallet();
             }
 
             // Connect with MetaMask
@@ -127,7 +106,7 @@ class MoralisWalletManager {
 
     async authenticate() {
         try {
-            console.log('🔐 Authenticating with Moralis...');
+            console.log('🔐 Authenticating with wallet signature...');
             
             if (!this.isConnected) {
                 const connectResult = await this.connectWallet();
@@ -136,28 +115,25 @@ class MoralisWalletManager {
                 }
             }
 
-            // Create/login user with Moralis using wallet address
-            const message = "Welcome to GENESIS! Please sign to authenticate your account.";
+            // Create authentication message
+            const message = `Welcome to GENESIS!\n\nPlease sign this message to authenticate your account.\n\nWallet: ${this.account}\nTimestamp: ${new Date().toISOString()}`;
+            
+            // Request signature
             const signature = await window.ethereum.request({
                 method: 'personal_sign',
                 params: [message, this.account]
             });
             
-            // Create or get user
-            const user = new Moralis.User();
-            user.set("username", this.account);
-            user.set("ethAddress", this.account);
-            await user.signUp();
-
-            console.log('✅ Moralis authentication successful:', user);
+            console.log('✅ Message signed successfully');
 
             this.isAuthenticated = true;
             this.currentUser = {
-                walletAddress: user.get('ethAddress'),
-                username: user.get('username') || null,
-                bio: user.get('bio') || null,
-                createdAt: user.get('createdAt'),
-                sessionToken: user.getSessionToken()
+                walletAddress: this.account,
+                username: null,
+                bio: null,
+                createdAt: new Date().toISOString(),
+                signature: signature,
+                authenticatedAt: new Date().toISOString()
             };
 
             // Save to localStorage for session persistence
@@ -183,26 +159,12 @@ class MoralisWalletManager {
                 throw new Error('User must be authenticated to update profile');
             }
 
-            const user = Moralis.User.current();
-            if (!user) {
-                throw new Error('No current user found');
-            }
-
-            // Update user attributes
-            if (profileData.username) {
-                user.set('username', profileData.username);
-            }
-            if (profileData.bio) {
-                user.set('bio', profileData.bio);
-            }
-
-            await user.save();
-
-            // Update local user data
+            // Update local user data (no backend needed for now)
             this.currentUser = {
                 ...this.currentUser,
                 username: profileData.username || this.currentUser.username,
-                bio: profileData.bio || this.currentUser.bio
+                bio: profileData.bio || this.currentUser.bio,
+                updatedAt: new Date().toISOString()
             };
 
             this.saveSession();
@@ -219,8 +181,6 @@ class MoralisWalletManager {
     async signOut() {
         try {
             console.log('🚪 Signing out...');
-            
-            await Moralis.User.logOut();
             
             // Clear local state
             this.isAuthenticated = false;
@@ -248,7 +208,7 @@ class MoralisWalletManager {
                 account: this.account,
                 timestamp: new Date().toISOString()
             };
-            localStorage.setItem('moralis_session', JSON.stringify(sessionData));
+            localStorage.setItem('web3_session', JSON.stringify(sessionData));
         } catch (error) {
             console.error('❌ Failed to save session:', error);
         }
@@ -256,24 +216,20 @@ class MoralisWalletManager {
 
     loadSession() {
         try {
-            const sessionData = JSON.parse(localStorage.getItem('moralis_session'));
+            const sessionData = JSON.parse(localStorage.getItem('web3_session'));
             if (sessionData) {
-                this.isAuthenticated = sessionData.isAuthenticated;
-                this.currentUser = sessionData.currentUser;
-                this.account = sessionData.account;
-                this.isConnected = !!sessionData.account;
-                return true;
+                return sessionData;
             }
-            return false;
+            return null;
         } catch (error) {
             console.error('❌ Failed to load session:', error);
-            return false;
+            return null;
         }
     }
 
     clearSession() {
         try {
-            localStorage.removeItem('moralis_session');
+            localStorage.removeItem('web3_session');
         } catch (error) {
             console.error('❌ Failed to clear session:', error);
         }
@@ -355,37 +311,37 @@ class MoralisWalletManager {
 }
 
 // Create global instance
-let moralisWallet = null;
+let web3Wallet = null;
 
 // Initialize when called by Web3InitializationManager
-function createMoralisWalletManager() {
-    if (!moralisWallet) {
-        console.log('🔄 Creating Moralis wallet manager instance...');
-        moralisWallet = new MoralisWalletManager();
+function createWeb3WalletManager() {
+    if (!web3Wallet) {
+        console.log('🔄 Creating Web3 wallet manager instance...');
+        web3Wallet = new Web3WalletManager();
         
         // Set up event listeners
-        moralisWallet.setupEventListeners();
+        web3Wallet.setupEventListeners();
         
         // Make available globally
-        window.walletManager = moralisWallet;
-        window.AuthenticatedWalletManager = MoralisWalletManager;
+        window.walletManager = web3Wallet;
+        window.AuthenticatedWalletManager = Web3WalletManager;
         
-        console.log('✅ Moralis wallet manager instance created');
+        console.log('✅ Web3 wallet manager instance created');
     }
-    return moralisWallet;
+    return web3Wallet;
 }
 
 // Legacy DOM initialization (will be replaced by Web3InitializationManager)
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('⚠️ Legacy Moralis initialization - this should be replaced by Web3InitializationManager');
+    console.log('⚠️ Legacy Web3 initialization - this should be replaced by Web3InitializationManager');
     
     // Only initialize if Web3InitializationManager hasn't already done it
     if (!window.web3Init || !window.web3Init.isReady()) {
-        createMoralisWalletManager();
+        createWeb3WalletManager();
     }
 });
 
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = MoralisWalletManager;
+    module.exports = Web3WalletManager;
 }
