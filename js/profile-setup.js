@@ -41,14 +41,15 @@ async function initializeAuth() {
         // Use the new Genesis wallet system
         window.authenticatedWallet = window.genesisWallet;
             
-        // If not yet authenticated, wait briefly for session restore
+        // If not yet authenticated, wait briefly for session restore or allow connection on this page
         if (!window.authenticatedWallet.isAuthenticated) {
+            console.log('⚠️ Wallet not authenticated, attempting to restore or allow connection...');
             const urlParams = new URLSearchParams(window.location.search);
             const fromAuth = urlParams.get('from') === 'auth' || urlParams.get('auth') === 'true';
             const restored = await waitForAuthentication(fromAuth ? 4000 : 2000);
             if (!restored) {
-                console.log('❌ User not authenticated');
-                showAuthRequiredMessage();
+                console.log('ℹ️ No existing session found - showing connect option on profile page');
+                showConnectOnProfilePage();
                 return;
             }
         }
@@ -203,23 +204,65 @@ function loadExistingUserData() {
     }
 }
 
-function showAuthRequiredMessage() {
-    const modal = createModal('Authentication Required', `
-        <div style="text-align: center;">
-            <div style="font-size: 3rem; margin-bottom: 20px;">🔐</div>
-            <h3 style="color: #2D374B; margin-bottom: 15px;">Sign In Required</h3>
-            <p style="margin: 15px 0; color: #666;">
-                You need to sign in with your wallet to set up your profile.
-            </p>
-            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
-                <button onclick="window.location.href='index.html'" 
-                        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
-                    Go Home & Sign In
-                </button>
+function showConnectOnProfilePage() {
+    // Instead of showing an error, show a connect wallet option right on the profile page
+    const setupCard = document.querySelector('.setup-card');
+    if (setupCard) {
+        setupCard.innerHTML = `
+            <div class="setup-header-content" style="text-align: center;">
+                <h1>🔗 Connect Your Wallet</h1>
+                <p>Connect your wallet to create your GENESIS profile</p>
             </div>
-        </div>
-    `);
-    document.body.appendChild(modal);
+            <div style="text-align: center; padding: 40px;">
+                <div style="font-size: 3rem; margin-bottom: 20px;">👛</div>
+                <h3 style="color: #2D374B; margin-bottom: 15px;">Wallet Connection Required</h3>
+                <p style="margin: 15px 0; color: #666; max-width: 400px; margin-left: auto; margin-right: auto;">
+                    To create your profile, we need to connect to your Web3 wallet first. This will authenticate your account securely.
+                </p>
+                <div style="margin-top: 30px;">
+                    <button onclick="connectWalletOnProfile()" 
+                            style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 15px 30px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 16px; margin: 10px;">
+                        Connect Wallet
+                    </button>
+                    <button onclick="window.location.href='index.html'" 
+                            style="background: #6c757d; color: white; border: none; padding: 15px 30px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 16px; margin: 10px;">
+                        Go Back Home
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Add wallet connection function for profile page
+async function connectWalletOnProfile() {
+    try {
+        console.log('🔗 Connecting wallet from profile page...');
+        const result = await window.genesisWallet.connect();
+        
+        if (result.success) {
+            // Authenticate immediately after connection
+            const authResult = await window.genesisWallet.authenticate();
+            
+            if (authResult.success) {
+                console.log('✅ Wallet connected and authenticated, refreshing page...');
+                // Refresh the page to reinitialize with authenticated state
+                window.location.reload();
+            } else {
+                throw new Error(authResult.error);
+            }
+        } else {
+            throw new Error(result.error);
+        }
+    } catch (error) {
+        console.error('❌ Wallet connection failed:', error);
+        alert('Failed to connect wallet: ' + error.message);
+    }
+}
+
+function showAuthRequiredMessage() {
+    // This function is kept for backwards compatibility but shouldn't be used anymore
+    showConnectOnProfilePage();
 }
 
 function showWelcomeMessage() {
