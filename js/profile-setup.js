@@ -41,8 +41,14 @@ async function initializeAuth() {
         // Use the new Genesis wallet system
         window.authenticatedWallet = window.genesisWallet;
             
+        console.log('🔍 Checking wallet authentication state...');
+        console.log('Connected:', window.authenticatedWallet?.connected);
+        console.log('Authenticated:', window.authenticatedWallet?.isAuthenticated);
+        console.log('Account:', window.authenticatedWallet?.account);
+        console.log('Username:', window.authenticatedWallet?.getUsername());
+        
         // If not yet authenticated, wait briefly for session restore or allow connection on this page
-        if (!window.authenticatedWallet.isAuthenticated) {
+        if (!window.authenticatedWallet || (!window.authenticatedWallet.isAuthenticated && !window.authenticatedWallet.connected)) {
             console.log('⚠️ Wallet not authenticated, attempting to restore or allow connection...');
             const urlParams = new URLSearchParams(window.location.search);
             const fromAuth = urlParams.get('from') === 'auth' || urlParams.get('auth') === 'true';
@@ -50,6 +56,16 @@ async function initializeAuth() {
             if (!restored) {
                 console.log('ℹ️ No existing session found - showing connect option on profile page');
                 showConnectOnProfilePage();
+                return;
+            }
+        } else {
+            console.log('✅ Wallet is connected/authenticated, proceeding with profile setup');
+            
+            // Check if user already has a complete profile
+            const currentUsername = window.authenticatedWallet.getUsername();
+            if (currentUsername) {
+                console.log(`👤 User already has username: ${currentUsername}`);
+                showExistingProfileOptions(currentUsername);
                 return;
             }
         }
@@ -202,6 +218,50 @@ function loadExistingUserData() {
     } catch (error) {
         console.error('❌ Error loading existing user data:', error);
     }
+}
+
+function showExistingProfileOptions(username) {
+    // Show options for users who already have a profile
+    const setupCard = document.querySelector('.setup-card');
+    if (setupCard) {
+        setupCard.innerHTML = `
+            <div class="setup-header-content" style="text-align: center;">
+                <h1>👋 Welcome Back, ${username}!</h1>
+                <p>You already have a profile set up</p>
+            </div>
+            <div style="text-align: center; padding: 40px;">
+                <div style="font-size: 3rem; margin-bottom: 20px;">✅</div>
+                <h3 style="color: #2D374B; margin-bottom: 15px;">Profile Already Exists</h3>
+                <p style="margin: 15px 0; color: #666; max-width: 400px; margin-left: auto; margin-right: auto;">
+                    Your profile "${username}" is already set up and connected to your wallet. You can access your dashboard or edit your profile.
+                </p>
+                <div style="margin-top: 30px;">
+                    <button onclick="window.location.href='dashboard.html'" 
+                            style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 15px 30px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 16px; margin: 10px;">
+                        Go to Dashboard
+                    </button>
+                    <button onclick="window.location.href='my-worlds.html'" 
+                            style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); color: white; border: none; padding: 15px 30px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 16px; margin: 10px;">
+                        My Worlds
+                    </button>
+                    <button onclick="editExistingProfile()" 
+                            style="background: #ffc107; color: #212529; border: none; padding: 15px 30px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 16px; margin: 10px;">
+                        Edit Profile
+                    </button>
+                    <button onclick="window.location.href='index.html'" 
+                            style="background: #6c757d; color: white; border: none; padding: 15px 30px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 16px; margin: 10px;">
+                        Go Home
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+}
+
+function editExistingProfile() {
+    // Allow editing of existing profile by loading the normal form
+    console.log('📝 Switching to edit mode for existing profile');
+    window.location.reload(); // This will load the form with existing data
 }
 
 function showConnectOnProfilePage() {
