@@ -32,18 +32,17 @@ async function initializeAuth() {
     try {
         console.log('🔐 Initializing profile setup authentication...');
         
-        // Wait for wallet manager to be ready
-        if (typeof walletManager === 'undefined') {
+        // Wait for genesis wallet to be ready
+        if (typeof window.genesisWallet === 'undefined') {
             setTimeout(initializeAuth, 100);
             return;
         }
 
-        // Create authenticated wallet manager for session management
-        if (typeof AuthenticatedWalletManager !== 'undefined') {
-            window.authenticatedWallet = new AuthenticatedWalletManager();
+        // Use the new Genesis wallet system
+        window.authenticatedWallet = window.genesisWallet;
             
             // If not yet authenticated, wait briefly for session restore
-            if (!window.authenticatedWallet.siwe.isAuthenticated) {
+            if (!window.authenticatedWallet.isAuthenticated) {
                 const urlParams = new URLSearchParams(window.location.search);
                 const fromAuth = urlParams.get('from') === 'auth' || urlParams.get('auth') === 'true';
                 const restored = await waitForAuthentication(fromAuth ? 4000 : 2000);
@@ -89,22 +88,23 @@ async function initializeAuth() {
     }
 }
 
-// Wait up to maxWaitMs for SIWE session to restore after redirect
+// Wait up to maxWaitMs for wallet session to restore after redirect
 async function waitForAuthentication(maxWaitMs = 3000) {
     const start = Date.now();
     while (Date.now() - start < maxWaitMs) {
         try {
-            // Let SIWE attempt to restore existing session
-            const hasSession = window.authenticatedWallet?.siwe?.checkExistingSession?.();
-            if (window.authenticatedWallet?.siwe?.isAuthenticated) {
+            // Check if wallet is authenticated
+            if (window.authenticatedWallet?.isAuthenticated) {
                 return true;
             }
+            // Try to restore existing session
+            await window.authenticatedWallet?.checkExistingSession?.();
         } catch (e) {
             // ignore transient errors
         }
         await new Promise(r => setTimeout(r, 300));
     }
-    return window.authenticatedWallet?.siwe?.isAuthenticated === true;
+    return window.authenticatedWallet?.isAuthenticated === true;
 }
 
 function updateWalletStatus() {
@@ -613,9 +613,6 @@ async function handleFormSubmit(event) {
 
 async function createUserProfile() {
     try {
-        // Get SIWE auth instance from authenticated wallet
-        const siweAuth = window.authenticatedWallet.siwe;
-        
         // Update user profile with collected data
         const profileUpdates = {
             username: profileData.username,
@@ -632,37 +629,61 @@ async function createUserProfile() {
         
         // Save to localStorage (in production, this would be sent to backend)
         const users = JSON.parse(localStorage.getItem('siwe_users') || '{}');
-        const walletAddress = window.authenticatedWallet.currentAccount || siweAuth.currentUser?.walletAddress;
+        const walletAddress = window.authenticatedWallet.account;
         
-        // Ensure user record exists
-        if (!users[walletAddress]) {
-            users[walletAddress] = siweAuth.currentUser || {
-                id: 'user_' + Date.now(),
-                walletAddress: walletAddress,
-                username: null,
-                bio: null,
-                profileImage: null,
-                isVerified: false,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                worlds: [],
-                preferences: { theme: 'dark', notifications: true, analytics: true }
-            };
+        if (!walletAddress) {
+            throw new Error('Wallet address not found');
         }
-        users[walletAddress] = {
-            ...users[walletAddress],
+        
+        // Create user record (using OLD format for compatibility - wallet address as key)
+        const userRecord = {
+            id: 'user_' + Date.now(),
+            walletAddress: walletAddress,
+            username: profileData.username,
+            displayName: profileData.username,
+            bio: profileData.bio,
+            profileImage: profileData.profileImage,
+            isVerified: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            worlds: [],
+            preferences: { 
+                theme: profileData.theme, 
+                notifications: profileData.notifications, 
+                analytics: profileData.analytics 
+            },
             ...profileUpdates
+        };
+        
+        // Save using old format (wallet address as key) for compatibility
+        users[walletAddress] = userRecord;
+        
+        // ALSO save using new format (username as key) for new system
+        users[profileData.username] = {
+            username: profileData.username,
+            walletAddress: walletAddress,
+            displayName: profileData.username,
+            bio: profileData.bio,
+            createdAt: new Date().toISOString(),
+            verified: true
         };
         
         localStorage.setItem('siwe_users', JSON.stringify(users));
         
-        // Update current user in SIWE auth and persist session
-        siweAuth.currentUser = users[walletAddress];
-        siweAuth.saveSession();
+        // Update wallet session with username
+        const session = window.authenticatedWallet.loadSession();
+        if (session) {
+            session.username = profileData.username;
+            session.displayName = profileData.username;
+            window.authenticatedWallet.saveSession(session);
+        }
         
-        return { success: true, user: users[walletAddress] };
+        console.log('✅ Profile created successfully:', userRecord);
+        
+        return { success: true, user: userRecord };
         
     } catch (error) {
+        console.error('❌ Profile creation failed:', error);
         return { success: false, error: error.message };
     }
 }

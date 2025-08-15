@@ -495,10 +495,13 @@ Timestamp: ${new Date().toISOString()}`;
             const users = JSON.parse(localStorage.getItem('siwe_users') || '{}');
             const walletAddress = this.account.toLowerCase();
             
-            // Find user by wallet address
+            console.log('🔍 Checking username association for:', this.getShortAddress());
+            console.log('📊 Current users data:', users);
+            
+            // Method 1: New format - username as key
             for (const [username, userData] of Object.entries(users)) {
                 if (userData.walletAddress && userData.walletAddress.toLowerCase() === walletAddress) {
-                    console.log(`✅ Found username "${username}" for wallet ${this.getShortAddress()}`);
+                    console.log(`✅ Found username "${username}" for wallet (new format)`);
                     
                     // Update session with username
                     const session = this.loadSession();
@@ -510,6 +513,23 @@ Timestamp: ${new Date().toISOString()}`;
                     
                     return username;
                 }
+            }
+            
+            // Method 2: Old format - wallet address as key
+            const userByAddress = users[this.account] || users[walletAddress];
+            if (userByAddress && userByAddress.username) {
+                const username = userByAddress.username;
+                console.log(`✅ Found username "${username}" for wallet (old format)`);
+                
+                // Update session with username
+                const session = this.loadSession();
+                if (session) {
+                    session.username = username;
+                    session.displayName = userByAddress.displayName || username;
+                    this.saveSession(session);
+                }
+                
+                return username;
             }
             
             console.log('⚠️ No username associated with wallet', this.getShortAddress());
