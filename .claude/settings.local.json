@@ -36,7 +36,8 @@
       "Bash(start test-tip.html)",
       "Bash(start debug-users.html)",
       "Bash(start simple-username-test.html)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(start clear-all.html)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

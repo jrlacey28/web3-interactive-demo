@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear All Data - Fresh Start</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f0f2f5; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #333; text-align: center; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 20px; border-radius: 5px; margin: 20px 0; color: #856404; }
+        .step { margin: 30px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; background: #f8f9fa; }
+        button { padding: 15px 25px; margin: 10px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: 600; }
+        .danger { background: #dc3545; color: white; }
+        .success { background: #28a745; color: white; }
+        .primary { background: #007bff; color: white; }
+        .result { margin: 15px 0; padding: 15px; border-radius: 5px; }
+        .success-msg { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error-msg { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 5px; font-size: 12px; overflow-x: auto; }
+        .instructions { background: #e7f3ff; border: 1px solid #b3d9ff; padding: 20px; border-radius: 5px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Clear All Data - Fresh Start</h1>
+        
+        <div class="warning">
+            <h3>⚠️ Complete Reset</h3>
+            <p>This will permanently delete:</p>
+            <ul>
+                <li>All usernames and profiles</li>
+                <li>All wallet connections</li>
+                <li>All session data</li>
+                <li>All settings</li>
+            </ul>
+            <p><strong>This action cannot be undone!</strong></p>
+        </div>
+
+        <div class="step">
+            <h3>Step 1: Clear Browser Data</h3>
+            <button onclick="clearBrowserData()" class="danger">🗑️ Clear All Browser Data</button>
+            <div id="clearResult"></div>
+        </div>
+
+        <div class="step">
+            <h3>Step 2: Disconnect MetaMask</h3>
+            <div class="instructions">
+                <h4>Manual MetaMask Reset:</h4>
+                <ol>
+                    <li>Open MetaMask extension</li>
+                    <li>Click the three dots ⋯ menu</li>
+                    <li>Go to "Connected sites"</li>
+                    <li>Find this website and click "Disconnect"</li>
+                    <li>Also clear any permissions for this site</li>
+                </ol>
+            </div>
+            <button onclick="checkMetaMaskConnection()" class="primary">🔍 Check MetaMask Status</button>
+            <div id="metamaskResult"></div>
+        </div>
+
+        <div class="step">
+            <h3>Step 3: Fresh Connection Test</h3>
+            <button onclick="testFreshConnection()" class="success">🚀 Test Fresh Wallet Connection</button>
+            <div id="connectionResult"></div>
+        </div>
+
+        <div class="step">
+            <h3>Step 4: Go to Main App</h3>
+            <button onclick="goToMainApp()" class="primary">📱 Open Main App (Fresh Start)</button>
+            <p><em>This should now ask you to create a new profile</em></p>
+        </div>
+
+        <div id="allResults"></div>
+    </div>
+
+    <script>
+        function addResult(containerId, message, isSuccess = false) {
+            const container = document.getElementById(containerId);
+            const div = document.createElement('div');
+            div.className = isSuccess ? 'result success-msg' : 'result error-msg';
+            div.innerHTML = message;
+            container.appendChild(div);
+        }
+
+        function clearBrowserData() {
+            try {
+                // Clear all localStorage
+                localStorage.clear();
+                addResult('clearResult', '✅ localStorage cleared', true);
+
+                // Clear all sessionStorage
+                sessionStorage.clear();
+                addResult('clearResult', '✅ sessionStorage cleared', true);
+
+                // Clear all cookies for this domain
+                document.cookie.split(";").forEach(function(c) { 
+                    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+                });
+                addResult('clearResult', '✅ Cookies cleared', true);
+
+                // Clear any IndexedDB data
+                if ('indexedDB' in window) {
+                    indexedDB.databases().then(databases => {
+                        databases.forEach(db => {
+                            indexedDB.deleteDatabase(db.name);
+                        });
+                    }).catch(() => {});
+                    addResult('clearResult', '✅ IndexedDB cleared', true);
+                }
+
+                addResult('clearResult', '🎉 All browser data cleared successfully!', true);
+                addResult('clearResult', 'Now manually disconnect MetaMask in Step 2', false);
+
+            } catch (error) {
+                addResult('clearResult', '❌ Error clearing data: ' + error.message, false);
+            }
+        }
+
+        async function checkMetaMaskConnection() {
+            try {
+                if (typeof window.ethereum === 'undefined') {
+                    addResult('metamaskResult', '❌ MetaMask not detected', false);
+                    return;
+                }
+
+                // Check if any accounts are connected
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                
+                if (accounts.length === 0) {
+                    addResult('metamaskResult', '✅ No accounts connected - MetaMask is disconnected', true);
+                    addResult('metamaskResult', 'Perfect! MetaMask is properly disconnected.', true);
+                } else {
+                    addResult('metamaskResult', `⚠️ ${accounts.length} account(s) still connected:`, false);
+                    accounts.forEach(account => {
+                        addResult('metamaskResult', `Connected: ${account.slice(0, 6)}...${account.slice(-4)}`, false);
+                    });
+                    addResult('metamaskResult', 'Please manually disconnect in MetaMask settings', false);
+                }
+
+            } catch (error) {
+                addResult('metamaskResult', '❌ Error checking MetaMask: ' + error.message, false);
+            }
+        }
+
+        async function testFreshConnection() {
+            try {
+                if (typeof window.ethereum === 'undefined') {
+                    addResult('connectionResult', '❌ MetaMask not detected', false);
+                    return;
+                }
+
+                addResult('connectionResult', '🔄 Testing fresh wallet connection...', true);
+
+                // Request fresh connection
+                const accounts = await window.ethereum.request({
+                    method: 'eth_requestAccounts'
+                });
+
+                if (accounts.length > 0) {
+                    const account = accounts[0];
+                    addResult('connectionResult', `✅ Fresh connection successful!`, true);
+                    addResult('connectionResult', `Account: ${account}`, true);
+                    
+                    // Check if there's any existing data (there shouldn't be)
+                    const existingUsers = localStorage.getItem('siwe_users');
+                    const existingSession = localStorage.getItem('genesis_wallet_session');
+                    
+                    if (!existingUsers && !existingSession) {
+                        addResult('connectionResult', '✅ No existing data found - completely fresh!', true);
+                        addResult('connectionResult', 'Ready to create new profile!', true);
+                    } else {
+                        addResult('connectionResult', '⚠️ Some data still exists - may need to clear again', false);
+                    }
+
+                } else {
+                    addResult('connectionResult', '❌ No accounts returned', false);
+                }
+
+            } catch (error) {
+                if (error.code === 4001) {
+                    addResult('connectionResult', '❌ User rejected connection request', false);
+                } else {
+                    addResult('connectionResult', '❌ Connection error: ' + error.message, false);
+                }
+            }
+        }
+
+        function goToMainApp() {
+            addResult('allResults', '🚀 Opening main app in new tab...', true);
+            addResult('allResults', 'You should now be prompted to create a new profile!', true);
+            window.open('/index.html', '_blank');
+        }
+
+        // Auto-check what data exists on page load
+        window.addEventListener('load', () => {
+            const users = localStorage.getItem('siwe_users');
+            const session = localStorage.getItem('genesis_wallet_session');
+            
+            if (users || session) {
+                addResult('allResults', '⚠️ Existing data found. Click "Clear All Browser Data" to start fresh.', false);
+            } else {
+                addResult('allResults', '✅ No existing data found - ready for fresh start!', true);
+            }
+        });
+    </script>
+</body>
+</html>
