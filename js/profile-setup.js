@@ -77,12 +77,22 @@ async function initializeAuth() {
             // Continue with normal profile setup flow below
             
         } else {
-            console.log('⚠️ No wallet account found, showing connection option');
+            console.log('⚠️ No wallet authentication found');
             const urlParams = new URLSearchParams(window.location.search);
             const fromAuth = urlParams.get('from') === 'auth' || urlParams.get('auth') === 'true';
-            const restored = await waitForAuthentication(fromAuth ? 4000 : 2000);
-            if (!restored) {
-                console.log('ℹ️ No existing session found - showing connect option on profile page');
+            const fresh = urlParams.get('fresh') === 'true';
+            
+            // If this is from auth flow, wait a bit longer for session to restore
+            if (fromAuth || fresh) {
+                console.log('🔄 Coming from auth flow, waiting for session restoration...');
+                const restored = await waitForAuthentication(5000);
+                if (!restored) {
+                    console.log('ℹ️ Session not restored, showing connect option');
+                    showConnectOnProfilePage();
+                    return;
+                }
+            } else {
+                console.log('ℹ️ Direct access without auth - showing connect option');
                 showConnectOnProfilePage();
                 return;
             }
