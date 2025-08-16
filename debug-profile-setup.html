@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Profile Setup</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background: #f5f5f5; 
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .container { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 10px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+            margin-bottom: 20px;
+        }
+        button { 
+            background: #667eea; 
+            color: white; 
+            border: none; 
+            padding: 15px 30px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            margin: 10px 5px;
+            font-size: 16px;
+        }
+        .debug-output {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: 600;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Profile Setup Debug Tool</h1>
+        <p>Debug tool to diagnose profile setup form issues</p>
+        
+        <button onclick="debugAuthState()">🔐 Check Auth State</button>
+        <button onclick="debugFormElements()">📝 Check Form Elements</button>
+        <button onclick="debugValidation()">✅ Test Validation</button>
+        <button onclick="debugStepProgression()">🎯 Test Step Navigation</button>
+        
+        <div id="debugOutput" class="debug-output">
+            Click buttons above to debug different aspects...
+        </div>
+    </div>
+    
+    <div class="container">
+        <h2>🧪 Manual Form Test</h2>
+        <input type="text" id="testUsername" placeholder="Enter test username" value="jordan">
+        <button onclick="testNextStep()">Test Next Step Function</button>
+        <button onclick="testValidation()">Test Validation Function</button>
+        
+        <div id="testResults"></div>
+    </div>
+
+    <!-- Load the same scripts as profile setup -->
+    <script src="config/api-keys.js"></script>
+    <script src="js/persistent-wallet.js"></script>
+    <script src="js/moralis-auth.js"></script>
+    <script src="js/profile-setup.js"></script>
+    
+    <script>
+        function log(message, type = 'info') {
+            const output = document.getElementById('debugOutput');
+            const timestamp = new Date().toLocaleTimeString();
+            const colorClass = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : '';
+            output.innerHTML += `[${timestamp}] ${message}\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        function debugAuthState() {
+            log('=== AUTHENTICATION STATE DEBUG ===');
+            
+            try {
+                log('Window objects:');
+                log('- window.persistentWallet: ' + (!!window.persistentWallet));
+                log('- window.walletManager: ' + (!!window.walletManager));
+                log('- window.authenticatedWallet: ' + (!!window.authenticatedWallet));
+                
+                if (window.authenticatedWallet) {
+                    log('Authenticated Wallet State:');
+                    log('- isConnected: ' + window.authenticatedWallet.isConnected);
+                    log('- isAuthenticated: ' + window.authenticatedWallet.isAuthenticated);
+                    log('- account: ' + window.authenticatedWallet.account);
+                    log('- username: ' + window.authenticatedWallet.username);
+                }
+                
+                log('URL Parameters:');
+                const urlParams = new URLSearchParams(window.location.search);
+                log('- edit: ' + urlParams.get('edit'));
+                log('- from: ' + urlParams.get('from'));
+                
+                log('Session Storage:');
+                log('- profile_redirect_attempted: ' + sessionStorage.getItem('profile_redirect_attempted'));
+                
+            } catch (error) {
+                log('Error checking auth state: ' + error.message, 'error');
+            }
+        }
+        
+        function debugFormElements() {
+            log('=== FORM ELEMENTS DEBUG ===');
+            
+            const elements = [
+                'username',
+                'bio', 
+                'profileSetupForm',
+                'step1',
+                'step2',
+                'step3',
+                'step4'
+            ];
+            
+            elements.forEach(id => {
+                const element = document.getElementById(id);
+                log(`${id}: ${element ? '✅ Found' : '❌ Missing'}`);
+            });
+            
+            // Check if profile setup form has loaded properly
+            const form = document.getElementById('profileSetupForm');
+            if (form) {
+                log('Form children: ' + form.children.length);
+            }
+        }
+        
+        function debugValidation() {
+            log('=== VALIDATION DEBUG ===');
+            
+            try {
+                if (typeof validateCurrentStep === 'function') {
+                    log('✅ validateCurrentStep function exists');
+                    
+                    // Try to call it
+                    const result = validateCurrentStep();
+                    log('validateCurrentStep() result: ' + result);
+                } else {
+                    log('❌ validateCurrentStep function not found', 'error');
+                }
+                
+                if (typeof currentStep !== 'undefined') {
+                    log('Current step: ' + currentStep);
+                } else {
+                    log('❌ currentStep variable not defined', 'error');
+                }
+                
+            } catch (error) {
+                log('Error in validation: ' + error.message, 'error');
+            }
+        }
+        
+        function debugStepProgression() {
+            log('=== STEP PROGRESSION DEBUG ===');
+            
+            try {
+                if (typeof nextStep === 'function') {
+                    log('✅ nextStep function exists');
+                } else {
+                    log('❌ nextStep function not found', 'error');
+                }
+                
+                if (typeof prevStep === 'function') {
+                    log('✅ prevStep function exists');
+                } else {
+                    log('❌ prevStep function not found', 'error');
+                }
+                
+                // Check step elements
+                for (let i = 1; i <= 4; i++) {
+                    const step = document.getElementById(`step${i}`);
+                    if (step) {
+                        log(`Step ${i}: ${step.classList.contains('active') ? 'Active' : 'Inactive'}`);
+                    } else {
+                        log(`Step ${i}: Missing`, 'error');
+                    }
+                }
+                
+            } catch (error) {
+                log('Error checking step progression: ' + error.message, 'error');
+            }
+        }
+        
+        function testNextStep() {
+            const results = document.getElementById('testResults');
+            results.innerHTML = '';
+            
+            try {
+                if (typeof nextStep === 'function') {
+                    // Set up a test username
+                    const usernameField = document.getElementById('username');
+                    if (usernameField) {
+                        usernameField.value = document.getElementById('testUsername').value;
+                    }
+                    
+                    log('Calling nextStep()...');
+                    nextStep();
+                    log('nextStep() completed');
+                } else {
+                    log('nextStep function not available', 'error');
+                }
+            } catch (error) {
+                log('Error calling nextStep: ' + error.message, 'error');
+            }
+        }
+        
+        function testValidation() {
+            try {
+                if (typeof validateCurrentStep === 'function') {
+                    const result = validateCurrentStep();
+                    log('Validation result: ' + result);
+                    
+                    if (!result) {
+                        log('Validation failed - this might be why you can\'t proceed', 'warning');
+                    }
+                } else {
+                    log('validateCurrentStep function not available', 'error');
+                }
+            } catch (error) {
+                log('Error in validation test: ' + error.message, 'error');
+            }
+        }
+        
+        // Auto-run basic checks
+        setTimeout(() => {
+            debugAuthState();
+            debugFormElements();
+        }, 2000);
+    </script>
+</body>
+</html>

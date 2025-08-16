@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Profile Edit</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background: #f5f5f5; 
+        }
+        .container { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 10px; 
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        button { 
+            background: #667eea; 
+            color: white; 
+            border: none; 
+            padding: 15px 30px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            margin: 10px 5px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .debug {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Profile Edit Test</h1>
+        
+        <div class="debug" id="authStatus">
+            Loading auth status...
+        </div>
+        
+        <h2>Manual Profile Form Test</h2>
+        <form id="testForm">
+            <div>
+                <label>Username:</label>
+                <input type="text" id="username" value="" placeholder="Enter username">
+            </div>
+            
+            <div>
+                <label>Bio:</label>
+                <textarea id="bio" placeholder="Enter bio"></textarea>
+            </div>
+            
+            <button type="button" onclick="testValidation()">Test Validation</button>
+            <button type="button" onclick="testNextStep()">Test Next Step</button>
+        </form>
+        
+        <div class="debug" id="testResults">
+            Results will appear here...
+        </div>
+        
+        <h2>Quick Links</h2>
+        <button onclick="window.location.href='profile-setup.html?edit=true'">
+            Go to Profile Setup (Edit Mode)
+        </button>
+        <button onclick="window.location.href='profile-setup.html?from=auth'">
+            Go to Profile Setup (From Auth)
+        </button>
+    </div>
+
+    <!-- Load same scripts -->
+    <script src="config/api-keys.js"></script>
+    <script src="js/persistent-wallet.js"></script>
+    <script src="js/moralis-auth.js"></script>
+    
+    <script>
+        function updateAuthStatus() {
+            const status = document.getElementById('authStatus');
+            
+            const authInfo = {
+                persistentWallet: !!window.persistentWallet,
+                walletManager: !!window.walletManager,
+                isAuthenticated: window.persistentWallet?.isAuthenticated || window.walletManager?.isAuthenticated,
+                account: window.persistentWallet?.account || window.walletManager?.account,
+                username: window.persistentWallet?.username || window.walletManager?.username
+            };
+            
+            status.textContent = JSON.stringify(authInfo, null, 2);
+        }
+        
+        function testValidation() {
+            const username = document.getElementById('username').value;
+            const results = document.getElementById('testResults');
+            
+            let validation = 'Validation Test:\\n';
+            
+            if (!username) {
+                validation += '❌ Username empty\\n';
+            } else if (!/^[a-zA-Z0-9_]{3,50}$/.test(username)) {
+                validation += '❌ Username invalid format\\n';
+            } else {
+                validation += '✅ Username valid\\n';
+            }
+            
+            results.textContent = validation;
+        }
+        
+        function testNextStep() {
+            const results = document.getElementById('testResults');
+            results.textContent = 'Testing next step functionality...\\n';
+            
+            // Simulate the next step logic
+            const username = document.getElementById('username').value.trim();
+            
+            if (!username) {
+                results.textContent += '❌ Would fail: Username required\\n';
+                return;
+            }
+            
+            if (!/^[a-zA-Z0-9_]{3,50}$/.test(username)) {
+                results.textContent += '❌ Would fail: Username format invalid\\n';
+                return;
+            }
+            
+            results.textContent += '✅ Would pass validation\\n';
+            results.textContent += 'Next step would be triggered\\n';
+        }
+        
+        // Initialize
+        setTimeout(updateAuthStatus, 1000);
+        setInterval(updateAuthStatus, 3000);
+    </script>
+</body>
+</html>

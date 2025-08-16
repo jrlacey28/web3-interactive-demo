@@ -66,14 +66,20 @@ async function initializeAuth() {
             // Get username from wallet manager
             const username = window.authenticatedWallet.username || window.authenticatedWallet.getCurrentUser?.()?.username;
             
-            // If user has username and not in edit mode, redirect to dashboard (but only once)
-            if (username && !editMode && !sessionStorage.getItem('profile_redirect_attempted')) {
+            // If user has username and not in edit mode and not coming from auth, redirect to dashboard (but only once)
+            if (username && !editMode && !fromAuth && !sessionStorage.getItem('profile_redirect_attempted')) {
                 console.log(`👤 Found existing profile: ${username}, redirecting to dashboard`);
                 sessionStorage.setItem('profile_redirect_attempted', 'true');
                 setTimeout(() => {
                     window.location.href = 'dashboard.html';
                 }, 100);
                 return;
+            }
+            
+            // If in edit mode or coming from auth, clear redirect flag and show form
+            if (editMode || fromAuth) {
+                sessionStorage.removeItem('profile_redirect_attempted');
+                console.log('📝 Edit mode or from auth - showing profile form');
             }
             
             console.log('🎨 Showing profile creation/edit form');
@@ -903,3 +909,16 @@ function debounce(func, wait) {
         timeout = setTimeout(later, wait);
     };
 }
+
+// ========================================
+// EXPOSE FUNCTIONS GLOBALLY
+// ========================================
+// Make functions available to HTML onclick handlers
+window.nextStep = nextStep;
+window.prevStep = prevStep;
+window.generateAvatar = generateAvatar;
+window.showTerms = showTerms;
+window.showPrivacy = showPrivacy;
+window.validateUsername = validateUsername;
+window.handleFormSubmit = handleFormSubmit;
+window.validateCurrentStep = validateCurrentStep;
