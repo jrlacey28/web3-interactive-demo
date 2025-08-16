@@ -160,7 +160,6 @@
             // Update UI if already authenticated
             if (window.genesis.isAuthenticated) {
                 updateWalletButton();
-                updateDropdownInfo();
             }
             
             console.log('✅ Home page ready');
@@ -178,11 +177,6 @@
             const walletBtn = document.getElementById('walletBtn');
             
             try {
-                // Check if already connected
-                if (window.genesis.isAuthenticated) {
-                    toggleUserDropdown();
-                    return;
-                }
                 
                 walletBtn.disabled = true;
                 walletBtn.textContent = 'Connecting...';
@@ -190,29 +184,19 @@
                 const result = await window.genesis.connect();
                 
                 if (result.success) {
-                    console.log('✅ Wallet connected:', result.address);
-                    
-                    if (result.hasProfile) {
-                        // User has profile, update button and show dropdown
-                        updateWalletButton();
-                        showToast('🎉 Welcome back!', 'success');
-                    } else {
-                        // New user, redirect to profile setup
-                        showToast('🎉 Wallet connected! Setting up your profile...', 'success');
-                        setTimeout(() => {
-                            window.location.href = 'profile-setup.html?from=auth';
-                        }, 1500);
-                    }
+                    console.log('Wallet connected successfully');
+                    updateWalletButton();
+                    showToast('🎉 Welcome back!', 'success');
                 } else {
-                    throw new Error(result.error);
+                    throw new Error(result.error || 'Connection failed');
                 }
                 
             } catch (error) {
-                console.error('❌ Connection failed:', error);
-                showToast('❌ Connection failed: ' + error.message, 'error');
-                
-                walletBtn.disabled = false;
+                console.error('Wallet connection error:', error);
                 walletBtn.textContent = 'Connect Wallet';
+                showToast('❌ Failed to connect wallet', 'error');
+            } finally {
+                walletBtn.disabled = false;
             }
         }
         
@@ -224,59 +208,13 @@
             }
         }
         
-        function updateDropdownInfo() {
-            const dropdownWalletAddress = document.getElementById('dropdownWalletAddress');
-            const dropdownUsername = document.getElementById('dropdownUsername');
-            const usernameDisplay = document.getElementById('usernameDisplay');
-            
-            if (dropdownWalletAddress) {
-                dropdownWalletAddress.textContent = window.genesis.getShortAddress();
-            }
-            
-            if (window.genesis.username && usernameDisplay && dropdownUsername) {
-                dropdownUsername.textContent = window.genesis.username;
-                usernameDisplay.style.display = 'block';
-            } else if (usernameDisplay) {
-                usernameDisplay.style.display = 'none';
-            }
-        }
-        
-        function toggleUserDropdown() {
-            const dropdown = document.getElementById('userDropdown');
-            if (!dropdown) return;
-            
-            const isVisible = dropdown.style.display === 'block';
-            dropdown.style.display = isVisible ? 'none' : 'block';
-            
-            if (!isVisible) {
-                updateDropdownInfo();
-                setTimeout(() => {
-                    document.addEventListener('click', closeDropdownOnOutsideClick);
-                }, 100);
-            }
-        }
-        
-        function closeDropdownOnOutsideClick(e) {
-            const dropdown = document.getElementById('userDropdown');
-            const walletBtn = document.getElementById('walletBtn');
-            
-            if (dropdown && walletBtn && 
-                !dropdown.contains(e.target) && 
-                !walletBtn.contains(e.target)) {
-                dropdown.style.display = 'none';
-                document.removeEventListener('click', closeDropdownOnOutsideClick);
-            }
-        }
         
         function signOut() {
             window.genesis.clearSession();
-            const dropdown = document.getElementById('userDropdown');
-            if (dropdown) dropdown.style.display = 'none';
             
             const walletBtn = document.getElementById('walletBtn');
             if (walletBtn) {
                 walletBtn.textContent = 'Connect Wallet';
-                walletBtn.onclick = handleWalletConnect;
             }
             
             showToast('👋 Wallet disconnected', 'info');

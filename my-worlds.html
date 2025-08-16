@@ -328,13 +328,13 @@
                 walletBtn.disabled = true;
                 walletBtn.textContent = 'Connecting...';
                 
-                const success = await window.genesis.authenticate();
+                const result = await window.genesis.connect();
                 
-                if (success) {
+                if (result.success) {
                     console.log('Wallet connected successfully');
                     updateWalletButton();
                 } else {
-                    throw new Error('Authentication failed');
+                    throw new Error(result.error || 'Connection failed');
                 }
                 
             } catch (error) {

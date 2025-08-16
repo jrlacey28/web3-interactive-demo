@@ -25,8 +25,6 @@
                 <span class="creator-name" id="creatorName">Interactive Stream Layout</span>
             </div>
             <div class="viewer-actions">
-                <button class="btn-secondary" onclick="shareCurrentWorld()">Share</button>
-                <button class="btn-primary" onclick="window.location.href='creator.html'">Create New World</button>
                 <button id="walletBtn" class="wallet-btn" onclick="handleWalletConnect()">Connect Wallet</button>
             </div>
         </div>
@@ -57,6 +55,15 @@
         </div>
     </div>
 
+    <!-- Floating Action Buttons -->
+    <div class="floating-actions">
+        <button class="floating-btn secondary" onclick="shareCurrentWorld()" title="Share this world">
+            Share
+        </button>
+        <button class="floating-btn primary" onclick="window.location.href='creator.html'" title="Create your own world">
+            Create New World
+        </button>
+    </div>
 
     <!-- API Configuration -->
     <script src="config/api-keys.js"></script>
@@ -85,13 +92,13 @@
                 walletBtn.disabled = true;
                 walletBtn.textContent = 'Connecting...';
                 
-                const success = await window.genesis.authenticate();
+                const result = await window.genesis.connect();
                 
-                if (success) {
+                if (result.success) {
                     console.log('Wallet connected successfully');
                     updateWalletButton();
                 } else {
-                    throw new Error('Authentication failed');
+                    throw new Error(result.error || 'Connection failed');
                 }
                 
             } catch (error) {
