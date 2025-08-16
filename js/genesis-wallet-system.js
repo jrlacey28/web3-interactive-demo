@@ -291,6 +291,15 @@ class GenesisWalletSystem {
             this.currentUser = session.currentUser;
             this.sessionData = session;
             
+            // If currentUser is missing but we have account, try to load user data
+            if (!this.currentUser && this.account) {
+                this.currentUser = this.getUserProfile(this.account);
+                if (this.currentUser) {
+                    this.username = this.currentUser.username;
+                    console.log('📋 Loaded user profile from storage:', this.currentUser);
+                }
+            }
+            
             console.log('✅ Session restored:', this.account);
             return true;
             

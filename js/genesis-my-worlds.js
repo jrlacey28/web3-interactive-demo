@@ -41,8 +41,45 @@ async function waitForGenesis() {
 }
 
 async function initializeMyWorlds() {
-    const user = window.genesis.currentUser;
+    console.log('🎨 Starting My Worlds initialization...');
+    console.log('Genesis system:', window.genesis);
+    console.log('Current user:', window.genesis?.currentUser);
+    console.log('Username:', window.genesis?.username);
+    
+    let user = window.genesis.currentUser;
+    
+    // If no currentUser but we have username, try to load from storage
+    if (!user && window.genesis.username && window.genesis.account) {
+        console.log('🔄 Attempting to load user profile from storage...');
+        user = window.genesis.getUserProfile(window.genesis.account);
+        if (user) {
+            window.genesis.currentUser = user;
+            console.log('✅ Loaded user from storage:', user);
+        }
+    }
+    
+    // If still no user, create a minimal user object
+    if (!user && window.genesis.username) {
+        console.log('🔄 Creating minimal user object...');
+        user = {
+            username: window.genesis.username,
+            walletAddress: window.genesis.account,
+            bio: 'Welcome to my creator space!',
+            avatar: null,
+            worlds: []
+        };
+        window.genesis.currentUser = user;
+        console.log('✅ Created minimal user object:', user);
+    }
+    
     if (!user) {
+        console.error('❌ No current user found and cannot create one');
+        console.log('Available data:', {
+            isConnected: window.genesis?.isConnected,
+            isAuthenticated: window.genesis?.isAuthenticated,
+            account: window.genesis?.account,
+            username: window.genesis?.username
+        });
         throw new Error('No current user found');
     }
     
@@ -70,7 +107,8 @@ function updateUserInterface(user) {
     
     // Update public URL
     const publicUrl = document.getElementById('publicUrl');
-    if (publicUrl) {\n        publicUrl.textContent = `genesis.app/world/${user.username}`;
+    if (publicUrl) {
+        publicUrl.textContent = `genesis.app/world/${user.username}`;
     }
     
     // Update main world info
