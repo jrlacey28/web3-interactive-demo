@@ -13,7 +13,7 @@
     <div class="bg" id="bg"></div>
     <a href="index.html" class="home-btn" title="Back to Home">GENESIS</a>
     <button class="toggle" onclick="toggleSidebar()">☰ Widgets</button>
-    <button class="wallet-btn" id="walletBtn" onclick="connectWallet()">Connect Wallet</button>
+    <button class="wallet-btn" id="walletBtn" onclick="handleWalletConnect()">Connect Wallet</button>
     <button class="save-btn" onclick="saveLayout()">💾 Save Layout</button>
     <button class="publish-btn" onclick="publishLayout()">🚀 Publish</button>
     
@@ -173,10 +173,56 @@
 
     <div class="canvas" id="canvas"></div>
 
+    <!-- User Dropdown Menu -->
+    <div class="user-dropdown" id="userDropdown" style="display: none;">
+        <div class="dropdown-content">
+            <!-- Wallet Connected Header -->
+            <div class="wallet-connected-header">
+                <div class="connection-status">
+                    <span class="status-text">Wallet Connected</span>
+                </div>
+                <div class="wallet-address" id="dropdownWalletAddress">0x0000...0000</div>
+                <div class="network-info" id="dropdownNetwork">Arbitrum Sepolia Testnet</div>
+            </div>
+            
+            <!-- Username Display -->
+            <div class="username-display" id="usernameDisplay" style="display: none;">
+                <span class="username-text" id="dropdownUsername">User</span>
+            </div>
+            
+            <div class="dropdown-divider"></div>
+            
+            <div class="dropdown-menu">
+                <a href="dashboard.html" class="dropdown-item">
+                    <span class="item-icon">📊</span>
+                    <span class="item-text">Dashboard</span>
+                </a>
+                <a href="my-worlds.html" class="dropdown-item">
+                    <span class="item-icon">🌍</span>
+                    <span class="item-text">My Worlds</span>
+                </a>
+                <a href="profile-setup.html?edit=true" class="dropdown-item">
+                    <span class="item-icon">✏️</span>
+                    <span class="item-text">Edit Profile</span>
+                </a>
+                <a href="#" class="dropdown-item" onclick="switchToArbitrum()">
+                    <span class="item-icon">🔄</span>
+                    <span class="item-text">Switch to Arbitrum</span>
+                </a>
+                
+                <div class="dropdown-divider"></div>
+                
+                <div class="dropdown-item danger" onclick="signOut()">
+                    <span class="item-icon">📴</span>
+                    <span class="item-text">Disconnect Wallet</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Core JavaScript Modules -->
     <script src="config/api-keys.js"></script>
-    <script src="js/persistent-wallet.js"></script>
-    <script src="js/moralis-auth.js"></script>
+    <script src="js/genesis-wallet-system.js"></script>
     <script src="js/api/twitter.js"></script>
     <script src="js/api/instagram.js"></script>
     <script src="js/api/storage.js"></script>
@@ -189,7 +235,197 @@
     <!-- Main Application -->
     <script src="js/app.js"></script>
     
-    <!-- Creator Authentication -->
-    <script src="js/creator-auth.js"></script>
+    <!-- Creator Authentication with GENESIS -->
+    <script>
+        // Creator page wallet integration
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('🎨 Initializing creator page...');
+            
+            // Wait for GENESIS system
+            await waitForGenesis();
+            
+            // Update UI if already authenticated
+            if (window.genesis.isAuthenticated) {
+                updateWalletButton();
+                updateDropdownInfo();
+            }
+            
+            console.log('✅ Creator page ready');
+        });
+        
+        async function waitForGenesis() {
+            let attempts = 0;
+            while (!window.genesis && attempts < 50) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+        }
+        
+        async function handleWalletConnect() {
+            const walletBtn = document.getElementById('walletBtn');
+            
+            try {
+                // Check if already connected
+                if (window.genesis.isAuthenticated) {
+                    toggleUserDropdown();
+                    return;
+                }
+                
+                walletBtn.disabled = true;
+                walletBtn.textContent = 'Connecting...';
+                
+                const result = await window.genesis.connect();
+                
+                if (result.success) {
+                    console.log('✅ Wallet connected:', result.address);
+                    
+                    if (result.hasProfile) {
+                        updateWalletButton();
+                        showToast('🎉 Welcome back!', 'success');
+                    } else {
+                        showToast('🎉 Wallet connected! Setting up your profile...', 'success');
+                        setTimeout(() => {
+                            window.location.href = 'profile-setup.html?from=creator';
+                        }, 1500);
+                    }
+                } else {
+                    throw new Error(result.error);
+                }
+                
+            } catch (error) {
+                console.error('❌ Connection failed:', error);
+                showToast('❌ Connection failed: ' + error.message, 'error');
+                
+                walletBtn.disabled = false;
+                walletBtn.textContent = 'Connect Wallet';
+            }
+        }
+        
+        function updateWalletButton() {
+            const walletBtn = document.getElementById('walletBtn');
+            if (walletBtn && window.genesis.isAuthenticated) {
+                const displayName = window.genesis.username || window.genesis.getShortAddress();
+                walletBtn.textContent = `👤 ${displayName}`;
+                walletBtn.onclick = toggleUserDropdown;
+            }
+        }
+        
+        function updateDropdownInfo() {
+            const dropdownWalletAddress = document.getElementById('dropdownWalletAddress');
+            const dropdownUsername = document.getElementById('dropdownUsername');
+            const usernameDisplay = document.getElementById('usernameDisplay');
+            
+            if (dropdownWalletAddress) {
+                dropdownWalletAddress.textContent = window.genesis.getShortAddress();
+            }
+            
+            if (window.genesis.username && usernameDisplay && dropdownUsername) {
+                dropdownUsername.textContent = window.genesis.username;
+                usernameDisplay.style.display = 'block';
+            } else if (usernameDisplay) {
+                usernameDisplay.style.display = 'none';
+            }
+        }
+        
+        function toggleUserDropdown() {
+            const dropdown = document.getElementById('userDropdown');
+            if (!dropdown) return;
+            
+            const isVisible = dropdown.style.display === 'block';
+            dropdown.style.display = isVisible ? 'none' : 'block';
+            
+            if (!isVisible) {
+                updateDropdownInfo();
+                setTimeout(() => {
+                    document.addEventListener('click', closeDropdownOnOutsideClick);
+                }, 100);
+            }
+        }
+        
+        function closeDropdownOnOutsideClick(e) {
+            const dropdown = document.getElementById('userDropdown');
+            const walletBtn = document.getElementById('walletBtn');
+            
+            if (dropdown && walletBtn && 
+                !dropdown.contains(e.target) && 
+                !walletBtn.contains(e.target)) {
+                dropdown.style.display = 'none';
+                document.removeEventListener('click', closeDropdownOnOutsideClick);
+            }
+        }
+        
+        function signOut() {
+            window.genesis.clearSession();
+            const dropdown = document.getElementById('userDropdown');
+            if (dropdown) dropdown.style.display = 'none';
+            
+            const walletBtn = document.getElementById('walletBtn');
+            if (walletBtn) {
+                walletBtn.textContent = 'Connect Wallet';
+                walletBtn.onclick = handleWalletConnect;
+            }
+            
+            showToast('👋 Wallet disconnected', 'info');
+        }
+        
+        function switchToArbitrum() {
+            if (window.ethereum) {
+                window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: '0x66eee' }]
+                }).catch(() => {
+                    showToast('🔄 Please switch to Arbitrum Sepolia manually', 'info');
+                });
+            }
+        }
+        
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            const bgColor = type === 'success' ? '#00ff88' : 
+                           type === 'error' ? '#ff4757' : '#667eea';
+            
+            toast.style.cssText = `
+                position: fixed; top: 20px; right: 20px; background: ${bgColor}; 
+                color: white; padding: 15px 20px; border-radius: 10px; z-index: 10001;
+                font-weight: 600; box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+                transform: translateX(100%); transition: transform 0.3s ease;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.style.transform = 'translateX(0)', 100);
+            setTimeout(() => {
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+        
+        // Compatibility layer for old wallet functions
+        window.walletManager = {
+            async authenticate() {
+                if (window.genesis && window.genesis.isAuthenticated) {
+                    return {
+                        authenticated: true,
+                        user: window.genesis.currentUser,
+                        walletAddress: window.genesis.account
+                    };
+                } else {
+                    return { authenticated: false };
+                }
+            },
+            getWalletAddress() {
+                return window.genesis?.account || null;
+            },
+            isConnected() {
+                return window.genesis?.isConnected || false;
+            }
+        };
+        
+        // Make functions global
+        window.handleWalletConnect = handleWalletConnect;
+        window.toggleUserDropdown = toggleUserDropdown;
+        window.signOut = signOut;
+        window.switchToArbitrum = switchToArbitrum;
+    </script>
 </body>
 </html>
