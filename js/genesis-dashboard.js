@@ -87,20 +87,19 @@ function updateUserInterface(user) {
 }
 
 function updateDropdownInfo(user) {
-    const dropdownName = document.getElementById('dropdownName');
-    const dropdownWallet = document.getElementById('dropdownWallet');
-    const dropdownAvatar = document.getElementById('dropdownAvatar');
+    const dropdownWalletAddress = document.getElementById('dropdownWalletAddress');
+    const dropdownUsername = document.getElementById('dropdownUsername');
+    const usernameDisplay = document.getElementById('usernameDisplay');
     
-    if (dropdownName) {
-        dropdownName.textContent = user.username;
+    if (dropdownWalletAddress) {
+        dropdownWalletAddress.textContent = window.genesis.getShortAddress();
     }
     
-    if (dropdownWallet) {
-        dropdownWallet.textContent = window.genesis.getShortAddress();
-    }
-    
-    if (dropdownAvatar) {
-        dropdownAvatar.textContent = user.username.charAt(0).toUpperCase();
+    if (window.genesis.username && usernameDisplay && dropdownUsername) {
+        dropdownUsername.textContent = window.genesis.username;
+        usernameDisplay.style.display = 'block';
+    } else if (usernameDisplay) {
+        usernameDisplay.style.display = 'none';
     }
 }
 

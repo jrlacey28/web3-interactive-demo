@@ -262,17 +262,50 @@ Timestamp: ${new Date().toISOString()}`;
 
             console.log(`💰 Sending tip: ${amountInEth} ETH to ${recipientAddress}`);
 
-            // Convert ETH to Wei (smallest unit)
-            const amountInWei = window.ethereum.utils?.toWei?.(amountInEth.toString(), 'ether') 
-                              || (BigInt(Math.floor(amountInEth * 1e18))).toString(16);
+            // Validate recipient address
+            if (!recipientAddress || !recipientAddress.startsWith('0x') || recipientAddress.length !== 42) {
+                throw new Error('Invalid recipient address');
+            }
 
-            // Prepare transaction
+            // Convert ETH to Wei (smallest unit) - more robust conversion
+            const amountInWei = BigInt(Math.floor(amountInEth * 1e18));
+            
+            // Get current gas price from network
+            let gasPrice;
+            try {
+                gasPrice = await window.ethereum.request({
+                    method: 'eth_gasPrice',
+                });
+                console.log('⛽ Current gas price:', gasPrice);
+            } catch (error) {
+                console.warn('Failed to get gas price, using default:', error);
+                gasPrice = '0x' + (2e9).toString(16); // 2 gwei fallback
+            }
+
+            // Estimate gas for the transaction
+            let gasLimit;
+            try {
+                gasLimit = await window.ethereum.request({
+                    method: 'eth_estimateGas',
+                    params: [{
+                        to: recipientAddress,
+                        from: this.account,
+                        value: '0x' + amountInWei.toString(16),
+                    }]
+                });
+                console.log('⛽ Estimated gas:', gasLimit);
+            } catch (error) {
+                console.warn('Failed to estimate gas, using default:', error);
+                gasLimit = '0x5208'; // 21000 gas fallback
+            }
+
+            // Prepare transaction with proper formatting
             const transactionParams = {
                 to: recipientAddress,
                 from: this.account,
-                value: '0x' + BigInt(Math.floor(amountInEth * 1e18)).toString(16),
-                gas: '0x5208', // 21000 gas for simple transfer
-                gasPrice: '0x' + (1e9).toString(16), // 1 gwei
+                value: '0x' + amountInWei.toString(16),
+                gas: gasLimit,
+                gasPrice: gasPrice,
             };
 
             console.log('📡 Sending transaction:', transactionParams);

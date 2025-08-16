@@ -272,39 +272,41 @@
     <!-- User Menu Dropdown -->
     <div class="user-dropdown" id="userDropdown" style="display: none;">
         <div class="dropdown-content">
-            <div class="dropdown-header">
-                <div class="dropdown-avatar" id="dropdownAvatar">👤</div>
-                <div class="dropdown-info">
-                    <div class="dropdown-name" id="dropdownName">User</div>
-                    <div class="dropdown-wallet" id="dropdownWallet">0x0000...0000</div>
+            <!-- Wallet Connected Header -->
+            <div class="wallet-connected-header">
+                <div class="connection-status">
+                    <span class="status-text">Wallet Connected</span>
                 </div>
+                <div class="wallet-address" id="dropdownWalletAddress">0x0000...0000</div>
+                <div class="network-info" id="dropdownNetwork">Arbitrum Sepolia Testnet</div>
+            </div>
+            
+            <!-- Username Display -->
+            <div class="username-display" id="usernameDisplay" style="display: none;">
+                <span class="username-text" id="dropdownUsername">User</span>
             </div>
             
             <div class="dropdown-divider"></div>
             
             <div class="dropdown-menu">
-                <a href="profile-setup.html?edit=true" class="dropdown-item">
-                    <span class="item-icon">⚙️</span>
-                    <span class="item-text">Edit Profile</span>
-                </a>
                 <a href="dashboard.html" class="dropdown-item">
-                    <span class="item-icon">🏠</span>
+                    <span class="item-icon">📊</span>
                     <span class="item-text">Dashboard</span>
                 </a>
-                <div class="dropdown-item" onclick="showAnalytics()">
-                    <span class="item-icon">📊</span>
-                    <span class="item-text">Analytics</span>
-                </div>
-                <div class="dropdown-item" onclick="showHelp()">
-                    <span class="item-icon">❓</span>
-                    <span class="item-text">Help & Support</span>
-                </div>
+                <a href="profile-setup.html?edit=true" class="dropdown-item">
+                    <span class="item-icon">✏️</span>
+                    <span class="item-text">Edit Profile</span>
+                </a>
+                <a href="#" class="dropdown-item" onclick="switchToArbitrum()">
+                    <span class="item-icon">🔄</span>
+                    <span class="item-text">Switch to Arbitrum</span>
+                </a>
                 
                 <div class="dropdown-divider"></div>
                 
                 <div class="dropdown-item danger" onclick="signOut()">
-                    <span class="item-icon">🚪</span>
-                    <span class="item-text">Sign Out</span>
+                    <span class="item-icon">📴</span>
+                    <span class="item-text">Disconnect Wallet</span>
                 </div>
             </div>
         </div>
@@ -325,14 +327,15 @@
     
     <script>
         // Global functions for dropdown menu
-        function showAnalytics() {
-            console.log('📊 Analytics feature coming soon');
-            showToast('📊 Analytics feature coming soon!', 'info');
-        }
-        
-        function showHelp() {
-            console.log('❓ Help feature coming soon');
-            showToast('❓ Help feature coming soon!', 'info');
+        function switchToArbitrum() {
+            if (window.ethereum) {
+                window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: '0x66eee' }]
+                }).catch(() => {
+                    showToast('🔄 Please switch to Arbitrum Sepolia manually', 'info');
+                });
+            }
         }
         
         function signOut() {
@@ -364,8 +367,7 @@
         }
         
         // Make functions global
-        window.showAnalytics = showAnalytics;
-        window.showHelp = showHelp;
+        window.switchToArbitrum = switchToArbitrum;
         window.signOut = signOut;
     </script>
 </body>
