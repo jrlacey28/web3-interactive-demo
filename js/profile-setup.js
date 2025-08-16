@@ -69,7 +69,9 @@ async function initializeAuth() {
                     bio: existingProfile.bio,
                     displayName: existingProfile.displayName
                 };
-                showExistingProfileOptions(existingProfile.username);
+                // Instead of showing popup, redirect to dashboard
+                console.log('ℹ️ Profile exists, redirecting to dashboard');
+                window.location.href = 'dashboard.html';
                 return;
             }
             
@@ -279,68 +281,9 @@ function loadExistingUserData() {
     }
 }
 
-function showExistingProfileOptions(username) {
-    // Show options for users who already have a profile
-    const setupCard = document.querySelector('.setup-card');
-    if (setupCard) {
-        setupCard.innerHTML = `
-            <div class="setup-header-content" style="text-align: center;">
-                <h1>👋 Welcome Back, ${username}!</h1>
-                <p>You already have a profile set up</p>
-            </div>
-            <div style="text-align: center; padding: 40px;">
-                <div style="font-size: 3rem; margin-bottom: 20px;">✅</div>
-                <h3 style="color: #2D374B; margin-bottom: 15px;">Profile Already Exists</h3>
-                <p style="margin: 15px 0; color: #666; max-width: 400px; margin-left: auto; margin-right: auto;">
-                    Your profile "${username}" is already set up and connected to your wallet. You can access your dashboard or edit your profile.
-                </p>
-                <div style="margin-top: 30px;">
-                    <button onclick="window.location.href='dashboard.html'" 
-                            style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 15px 30px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 16px; margin: 10px;">
-                        Go to Dashboard
-                    </button>
-                    <button onclick="window.location.href='my-worlds.html'" 
-                            style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); color: white; border: none; padding: 15px 30px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 16px; margin: 10px;">
-                        My Worlds
-                    </button>
-                    <button onclick="editExistingProfile()" 
-                            style="background: #ffc107; color: #212529; border: none; padding: 15px 30px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 16px; margin: 10px;">
-                        Edit Profile
-                    </button>
-                    <button onclick="window.location.href='index.html'" 
-                            style="background: #6c757d; color: white; border: none; padding: 15px 30px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 16px; margin: 10px;">
-                        Go Home
-                    </button>
-                </div>
-            </div>
-        `;
-    }
-}
+// Removed showExistingProfileOptions - no longer showing popup
 
-function editExistingProfile() {
-    // Force show the profile creation form even if user has a username
-    console.log('📝 Forcing profile creation form to show');
-    
-    // Temporarily clear the username check so the form shows
-    window.profileEditMode = true;
-    
-    // Clear the setup card and proceed with normal initialization
-    const setupCard = document.querySelector('.setup-card');
-    if (setupCard) {
-        setupCard.innerHTML = `
-            <div class="setup-header-content">
-                <h1>🎉 Update Your Profile</h1>
-                <p>Update your GENESIS creator profile</p>
-            </div>
-            <!-- Form will be loaded by the normal initialization -->
-        `;
-    }
-    
-    // Reload the page to show the profile form
-    setTimeout(() => {
-        window.location.href = window.location.pathname + '?edit=true';
-    }, 100);
-}
+// Removed editExistingProfile - no longer needed
 
 function showConnectOnProfilePage() {
     // Instead of showing an error, show a connect wallet option right on the profile page

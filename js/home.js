@@ -36,6 +36,23 @@ async function handleWalletConnect() {
             return;
         }
         
+        // Also check for existing authentication sessions
+        const existingSession = localStorage.getItem('genesis_wallet_session') || 
+                               localStorage.getItem('vercel_auth') || 
+                               localStorage.getItem('moralis_session');
+        if (existingSession) {
+            try {
+                const sessionData = JSON.parse(existingSession);
+                if (sessionData.authenticated && sessionData.address) {
+                    console.log('✅ Found existing session, showing dropdown');
+                    toggleUserDropdown();
+                    return;
+                }
+            } catch (e) {
+                // Invalid session data, continue with connection
+            }
+        }
+        
         // Update button state
         walletBtn.disabled = true;
         walletBtn.textContent = 'Connecting...';

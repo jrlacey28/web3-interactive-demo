@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear Test Profile</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background: #f5f5f5; 
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .container { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 10px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+        }
+        button { 
+            background: #dc3545; 
+            color: white; 
+            border: none; 
+            padding: 15px 30px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            margin: 10px 5px;
+            font-size: 16px;
+        }
+        .safe-btn {
+            background: #28a745;
+        }
+        .data-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Clear Test Profile</h1>
+        <p>This tool removes the "test" profile that's causing popup issues.</p>
+        
+        <button onclick="showCurrentData()">📋 Show Current Data</button>
+        <button onclick="removeTestProfile()" class="safe-btn">🗑️ Remove Test Profile Only</button>
+        <button onclick="clearAllProfiles()">⚠️ Clear All Profiles</button>
+        
+        <div id="dataDisplay" class="data-display" style="margin-top: 20px;">
+            Click "Show Current Data" to see what's stored...
+        </div>
+    </div>
+
+    <script>
+        function showCurrentData() {
+            const users = JSON.parse(localStorage.getItem('siwe_users') || '{}');
+            const sessions = {
+                genesis_wallet_session: localStorage.getItem('genesis_wallet_session'),
+                vercel_auth: localStorage.getItem('vercel_auth'),
+                moralis_session: localStorage.getItem('moralis_session')
+            };
+            
+            const data = {
+                users: users,
+                sessions: sessions,
+                userCount: Object.keys(users).length
+            };
+            
+            document.getElementById('dataDisplay').textContent = JSON.stringify(data, null, 2);
+        }
+        
+        function removeTestProfile() {
+            const users = JSON.parse(localStorage.getItem('siwe_users') || '{}');
+            let removed = false;
+            
+            // Find and remove any user with username "test"
+            for (const [address, user] of Object.entries(users)) {
+                if (user.username === 'test') {
+                    delete users[address];
+                    removed = true;
+                    console.log('Removed test profile for address:', address);
+                }
+            }
+            
+            if (removed) {
+                localStorage.setItem('siwe_users', JSON.stringify(users));
+                alert('✅ Test profile removed successfully!');
+                showCurrentData();
+            } else {
+                alert('ℹ️ No test profile found.');
+            }
+        }
+        
+        function clearAllProfiles() {
+            if (confirm('⚠️ This will remove ALL user profiles. Are you sure?')) {
+                localStorage.removeItem('siwe_users');
+                localStorage.removeItem('genesis_wallet_session');
+                localStorage.removeItem('vercel_auth');
+                localStorage.removeItem('moralis_session');
+                sessionStorage.clear();
+                
+                alert('🧹 All profiles cleared!');
+                showCurrentData();
+            }
+        }
+        
+        // Auto-show data on load
+        showCurrentData();
+    </script>
+</body>
+</html>
