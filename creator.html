@@ -174,51 +174,6 @@
     <div class="canvas" id="canvas"></div>
 
     <!-- User Dropdown Menu -->
-    <div class="user-dropdown" id="userDropdown" style="display: none;">
-        <div class="dropdown-content">
-            <!-- Wallet Connected Header -->
-            <div class="wallet-connected-header">
-                <div class="connection-status">
-                    <span class="status-text">Wallet Connected</span>
-                </div>
-                <div class="wallet-address" id="dropdownWalletAddress">0x0000...0000</div>
-                <div class="network-info" id="dropdownNetwork">Arbitrum Sepolia Testnet</div>
-            </div>
-            
-            <!-- Username Display -->
-            <div class="username-display" id="usernameDisplay" style="display: none;">
-                <span class="username-text" id="dropdownUsername">User</span>
-            </div>
-            
-            <div class="dropdown-divider"></div>
-            
-            <div class="dropdown-menu">
-                <a href="dashboard.html" class="dropdown-item">
-                    <span class="item-icon">📊</span>
-                    <span class="item-text">Dashboard</span>
-                </a>
-                <a href="my-worlds.html" class="dropdown-item">
-                    <span class="item-icon">🌍</span>
-                    <span class="item-text">My Worlds</span>
-                </a>
-                <a href="profile-setup.html?edit=true" class="dropdown-item">
-                    <span class="item-icon">✏️</span>
-                    <span class="item-text">Edit Profile</span>
-                </a>
-                <a href="#" class="dropdown-item" onclick="switchToArbitrum()">
-                    <span class="item-icon">🔄</span>
-                    <span class="item-text">Switch to Arbitrum</span>
-                </a>
-                
-                <div class="dropdown-divider"></div>
-                
-                <div class="dropdown-item danger" onclick="signOut()">
-                    <span class="item-icon">📴</span>
-                    <span class="item-text">Disconnect Wallet</span>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Core JavaScript Modules -->
     <script src="config/api-keys.js"></script>
@@ -265,11 +220,7 @@
             const walletBtn = document.getElementById('walletBtn');
             
             try {
-                // Check if already connected
-                if (window.genesis.isAuthenticated) {
-                    toggleUserDropdown();
-                    return;
-                }
+                // Check if already connected - allow reconnection or show connection status
                 
                 walletBtn.disabled = true;
                 walletBtn.textContent = 'Connecting...';
@@ -305,59 +256,13 @@
             const walletBtn = document.getElementById('walletBtn');
             if (walletBtn && window.genesis.isAuthenticated) {
                 const displayName = window.genesis.username || window.genesis.getShortAddress();
-                walletBtn.textContent = `👤 ${displayName}`;
-                walletBtn.onclick = toggleUserDropdown;
+                walletBtn.textContent = `${displayName}`;
             }
         }
         
-        function updateDropdownInfo() {
-            const dropdownWalletAddress = document.getElementById('dropdownWalletAddress');
-            const dropdownUsername = document.getElementById('dropdownUsername');
-            const usernameDisplay = document.getElementById('usernameDisplay');
-            
-            if (dropdownWalletAddress) {
-                dropdownWalletAddress.textContent = window.genesis.getShortAddress();
-            }
-            
-            if (window.genesis.username && usernameDisplay && dropdownUsername) {
-                dropdownUsername.textContent = window.genesis.username;
-                usernameDisplay.style.display = 'block';
-            } else if (usernameDisplay) {
-                usernameDisplay.style.display = 'none';
-            }
-        }
-        
-        function toggleUserDropdown() {
-            const dropdown = document.getElementById('userDropdown');
-            if (!dropdown) return;
-            
-            const isVisible = dropdown.style.display === 'block';
-            dropdown.style.display = isVisible ? 'none' : 'block';
-            
-            if (!isVisible) {
-                updateDropdownInfo();
-                setTimeout(() => {
-                    document.addEventListener('click', closeDropdownOnOutsideClick);
-                }, 100);
-            }
-        }
-        
-        function closeDropdownOnOutsideClick(e) {
-            const dropdown = document.getElementById('userDropdown');
-            const walletBtn = document.getElementById('walletBtn');
-            
-            if (dropdown && walletBtn && 
-                !dropdown.contains(e.target) && 
-                !walletBtn.contains(e.target)) {
-                dropdown.style.display = 'none';
-                document.removeEventListener('click', closeDropdownOnOutsideClick);
-            }
-        }
         
         function signOut() {
             window.genesis.clearSession();
-            const dropdown = document.getElementById('userDropdown');
-            if (dropdown) dropdown.style.display = 'none';
             
             const walletBtn = document.getElementById('walletBtn');
             if (walletBtn) {
@@ -423,7 +328,6 @@
         
         // Make functions global
         window.handleWalletConnect = handleWalletConnect;
-        window.toggleUserDropdown = toggleUserDropdown;
         window.signOut = signOut;
         window.switchToArbitrum = switchToArbitrum;
     </script>

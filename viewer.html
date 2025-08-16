@@ -61,17 +61,77 @@
     <!-- API Configuration -->
     <script src="config/api-keys.js"></script>
 
-    <!-- Core JavaScript Modules (correct paths) -->
-    <script src="api/wallet.js"></script>
+    <!-- Core JavaScript Modules -->
+    <script src="js/genesis-wallet-system.js"></script>
     <script src="api/twitter.js"></script>
     <script src="api/instagram.js"></script>
     <script src="api/storage.js"></script>
 
     <!-- Auth Integration -->
-    <script src="js/auth/siwe.js"></script>
     <script src="js/home-auth.js"></script>
 
     <!-- Viewer JavaScript -->
     <script src="js/viewer.js"></script>
+    
+    <!-- Wallet Integration Script -->
+    <script>
+        // Wallet button functionality for viewer page
+        async function handleWalletConnect() {
+            const walletBtn = document.getElementById('walletBtn');
+            
+            try {
+                // Check if already connected - allow reconnection or show connection status
+                
+                walletBtn.disabled = true;
+                walletBtn.textContent = 'Connecting...';
+                
+                const success = await window.genesis.authenticate();
+                
+                if (success) {
+                    console.log('Wallet connected successfully');
+                    updateWalletButton();
+                } else {
+                    throw new Error('Authentication failed');
+                }
+                
+            } catch (error) {
+                console.error('Wallet connection error:', error);
+                walletBtn.textContent = 'Connect Wallet';
+                showToast('❌ Failed to connect wallet', 'error');
+            } finally {
+                walletBtn.disabled = false;
+            }
+        }
+        
+        function updateWalletButton() {
+            const walletBtn = document.getElementById('walletBtn');
+            if (walletBtn && window.genesis.isAuthenticated) {
+                const displayName = window.genesis.username || window.genesis.getShortAddress();
+                walletBtn.textContent = `${displayName}`;
+            }
+        }
+        
+        function signOut() {
+            window.genesis.clearSession();
+            
+            const walletBtn = document.getElementById('walletBtn');
+            if (walletBtn) {
+                walletBtn.textContent = 'Connect Wallet';
+                walletBtn.onclick = handleWalletConnect;
+            }
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check for existing connection
+            if (window.genesis && window.genesis.isAuthenticated) {
+                updateWalletButton();
+            }
+        });
+        
+        // Make functions global
+        window.handleWalletConnect = handleWalletConnect;
+        window.signOut = signOut;
+    </script>
 </body>
 </html>
