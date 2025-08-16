@@ -145,14 +145,181 @@
     </footer>
 
     <!-- GENESIS Wallet System -->
-    <script src="js/env-detector.js"></script>
     <script src="config/api-keys.js"></script>
-    <script src="js/persistent-wallet.js"></script>
-    <script src="js/moralis-auth.js"></script>
-    <script src="js/vercel-fix.js"></script>
-    <script src="js/vercel-bulletproof.js"></script>
+    <script src="js/genesis-wallet-system.js"></script>
     
     <!-- Home Page JavaScript -->
-    <script src="js/home.js"></script>
+    <script>
+        // Clean home page implementation
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('🏠 Initializing home page...');
+            
+            // Wait for GENESIS system
+            await waitForGenesis();
+            
+            // Update UI if already authenticated
+            if (window.genesis.isAuthenticated) {
+                updateWalletButton();
+                updateDropdownInfo();
+            }
+            
+            console.log('✅ Home page ready');
+        });
+        
+        async function waitForGenesis() {
+            let attempts = 0;
+            while (!window.genesis && attempts < 50) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+        }
+        
+        async function handleWalletConnect() {
+            const walletBtn = document.getElementById('walletBtn');
+            
+            try {
+                // Check if already connected
+                if (window.genesis.isAuthenticated) {
+                    toggleUserDropdown();
+                    return;
+                }
+                
+                walletBtn.disabled = true;
+                walletBtn.textContent = 'Connecting...';
+                
+                const result = await window.genesis.connect();
+                
+                if (result.success) {
+                    console.log('✅ Wallet connected:', result.address);
+                    
+                    if (result.hasProfile) {
+                        // User has profile, update button and show dropdown
+                        updateWalletButton();
+                        showToast('🎉 Welcome back!', 'success');
+                    } else {
+                        // New user, redirect to profile setup
+                        showToast('🎉 Wallet connected! Setting up your profile...', 'success');
+                        setTimeout(() => {
+                            window.location.href = 'profile-setup.html?from=auth';
+                        }, 1500);
+                    }
+                } else {
+                    throw new Error(result.error);
+                }
+                
+            } catch (error) {
+                console.error('❌ Connection failed:', error);
+                showToast('❌ Connection failed: ' + error.message, 'error');
+                
+                walletBtn.disabled = false;
+                walletBtn.textContent = 'Connect Wallet';
+            }
+        }
+        
+        function updateWalletButton() {
+            const walletBtn = document.getElementById('walletBtn');
+            if (walletBtn && window.genesis.isAuthenticated) {
+                const displayName = window.genesis.username || window.genesis.getShortAddress();
+                walletBtn.textContent = `👤 ${displayName}`;
+                walletBtn.onclick = toggleUserDropdown;
+            }
+        }
+        
+        function updateDropdownInfo() {
+            const dropdownWalletAddress = document.getElementById('dropdownWalletAddress');
+            const dropdownUsername = document.getElementById('dropdownUsername');
+            const usernameDisplay = document.getElementById('usernameDisplay');
+            
+            if (dropdownWalletAddress) {
+                dropdownWalletAddress.textContent = window.genesis.getShortAddress();
+            }
+            
+            if (window.genesis.username && usernameDisplay && dropdownUsername) {
+                dropdownUsername.textContent = window.genesis.username;
+                usernameDisplay.style.display = 'block';
+            } else if (usernameDisplay) {
+                usernameDisplay.style.display = 'none';
+            }
+        }
+        
+        function toggleUserDropdown() {
+            const dropdown = document.getElementById('userDropdown');
+            if (!dropdown) return;
+            
+            const isVisible = dropdown.style.display === 'block';
+            dropdown.style.display = isVisible ? 'none' : 'block';
+            
+            if (!isVisible) {
+                updateDropdownInfo();
+                setTimeout(() => {
+                    document.addEventListener('click', closeDropdownOnOutsideClick);
+                }, 100);
+            }
+        }
+        
+        function closeDropdownOnOutsideClick(e) {
+            const dropdown = document.getElementById('userDropdown');
+            const walletBtn = document.getElementById('walletBtn');
+            
+            if (dropdown && walletBtn && 
+                !dropdown.contains(e.target) && 
+                !walletBtn.contains(e.target)) {
+                dropdown.style.display = 'none';
+                document.removeEventListener('click', closeDropdownOnOutsideClick);
+            }
+        }
+        
+        function signOut() {
+            window.genesis.clearSession();
+            const dropdown = document.getElementById('userDropdown');
+            if (dropdown) dropdown.style.display = 'none';
+            
+            const walletBtn = document.getElementById('walletBtn');
+            if (walletBtn) {
+                walletBtn.textContent = 'Connect Wallet';
+                walletBtn.onclick = handleWalletConnect;
+            }
+            
+            showToast('👋 Wallet disconnected', 'info');
+        }
+        
+        function switchToArbitrum() {
+            if (window.ethereum) {
+                window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: '0x66eee' }]
+                }).catch(() => {
+                    showToast('🔄 Please switch to Arbitrum Sepolia manually', 'info');
+                });
+            }
+        }
+        
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            const bgColor = type === 'success' ? '#00ff88' : 
+                           type === 'error' ? '#ff4757' : '#667eea';
+            
+            toast.style.cssText = `
+                position: fixed; top: 20px; right: 20px; background: ${bgColor}; 
+                color: white; padding: 15px 20px; border-radius: 10px; z-index: 10001;
+                font-weight: 600; box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+                transform: translateX(100%); transition: transform 0.3s ease;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.style.transform = 'translateX(0)', 100);
+            setTimeout(() => {
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+        
+        // Make functions global
+        window.handleWalletConnect = handleWalletConnect;
+        window.toggleUserDropdown = toggleUserDropdown;
+        window.signOut = signOut;
+        window.switchToArbitrum = switchToArbitrum;
+    </script>
 </body>
 </html>
