@@ -220,8 +220,7 @@
             const walletBtn = document.getElementById('walletBtn');
             if (walletBtn && window.genesis.isAuthenticated) {
                 const displayName = window.genesis.username || window.genesis.getShortAddress();
-                walletBtn.textContent = `👤 ${displayName}`;
-                walletBtn.onclick = toggleUserDropdown;
+                walletBtn.textContent = `${displayName}`;
             }
         }
         
@@ -315,9 +314,18 @@
             }, 4000);
         }
         
+        // Initialize wallet button on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wait for genesis system to initialize
+            setTimeout(() => {
+                if (window.genesis && window.genesis.isAuthenticated) {
+                    updateWalletButton();
+                }
+            }, 100);
+        });
+        
         // Make functions global
         window.handleWalletConnect = handleWalletConnect;
-        window.toggleUserDropdown = toggleUserDropdown;
         window.signOut = signOut;
         window.switchToArbitrum = switchToArbitrum;
     </script>

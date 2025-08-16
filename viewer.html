@@ -123,10 +123,12 @@
         
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
-            // Check for existing connection
-            if (window.genesis && window.genesis.isAuthenticated) {
-                updateWalletButton();
-            }
+            // Wait for genesis system to initialize
+            setTimeout(() => {
+                if (window.genesis && window.genesis.isAuthenticated) {
+                    updateWalletButton();
+                }
+            }, 100);
         });
         
         // Make functions global

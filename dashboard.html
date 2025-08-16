@@ -247,7 +247,52 @@
             }, 4000);
         }
         
+        // Wallet button functionality
+        async function handleWalletConnect() {
+            const walletBtn = document.getElementById('walletBtn');
+            
+            try {
+                walletBtn.disabled = true;
+                walletBtn.textContent = 'Connecting...';
+                
+                const success = await window.genesis.authenticate();
+                
+                if (success) {
+                    console.log('Wallet connected successfully');
+                    updateWalletButton();
+                } else {
+                    throw new Error('Authentication failed');
+                }
+                
+            } catch (error) {
+                console.error('Wallet connection error:', error);
+                walletBtn.textContent = 'Connect Wallet';
+                showToast('❌ Failed to connect wallet', 'error');
+            } finally {
+                walletBtn.disabled = false;
+            }
+        }
+        
+        function updateWalletButton() {
+            const walletBtn = document.getElementById('walletBtn');
+            if (walletBtn && window.genesis.isAuthenticated) {
+                const displayName = window.genesis.username || window.genesis.getShortAddress();
+                walletBtn.textContent = `${displayName}`;
+            }
+        }
+        
+        // Initialize wallet button on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wait for genesis system to initialize
+            setTimeout(() => {
+                if (window.genesis && window.genesis.isAuthenticated) {
+                    updateWalletButton();
+                }
+            }, 100);
+        });
+        
         // Make functions global
+        window.handleWalletConnect = handleWalletConnect;
         window.switchToArbitrum = switchToArbitrum;
         window.signOut = signOut;
     </script>
