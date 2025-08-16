@@ -1,19 +1,21 @@
 // Home Page JavaScript
 let walletManager = null;
 
-// Wait for Moralis wallet manager to be available
+// Wait for persistent wallet manager to be available
 async function waitForWalletManager() {
-    console.log('⏳ Waiting for Moralis wallet manager...');
+    console.log('⏳ Waiting for persistent wallet manager...');
     let attempts = 0;
-    while (!window.walletManager && attempts < 50) {
+    while (!window.persistentWallet && !window.walletManager && attempts < 50) {
         await new Promise(resolve => setTimeout(resolve, 100));
         attempts++;
     }
-    if (!window.walletManager) {
-        throw new Error('Moralis wallet manager not available after waiting');
+    
+    const manager = window.persistentWallet || window.walletManager;
+    if (!manager) {
+        throw new Error('Persistent wallet manager not available after waiting');
     }
-    console.log('✅ Moralis wallet manager ready');
-    return window.walletManager;
+    console.log('✅ Persistent wallet manager ready');
+    return manager;
 }
 
 // Handle wallet connection from homepage
@@ -38,8 +40,8 @@ async function handleWalletConnect() {
         walletBtn.disabled = true;
         walletBtn.textContent = 'Connecting...';
         
-        // Authenticate with Moralis
-        const result = await walletManager.authenticate();
+        // Authenticate with persistent wallet manager
+        const result = await walletManager.connect();
         
         if (result.success) {
             console.log('✅ Wallet connected successfully');
@@ -108,12 +110,17 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Check if user is already authenticated and update UI
         if (walletManager.isAuthenticated) {
             const walletBtn = document.getElementById('walletBtn');
-            const currentUser = walletManager.getCurrentUser();
-            const displayName = currentUser?.username || 
-                              (currentUser?.walletAddress?.slice(0,6) + '...' + currentUser?.walletAddress?.slice(-4));
+            const displayName = walletManager.username || walletManager.getShortAddress();
             
             walletBtn.textContent = `👤 ${displayName}`;
-            walletBtn.onclick = () => window.location.href = 'dashboard.html';
+            walletBtn.onclick = () => {
+                // If has username, go to dashboard; otherwise go to profile setup
+                if (walletManager.username) {
+                    window.location.href = 'dashboard.html';
+                } else {
+                    window.location.href = 'profile-setup.html?from=auth';
+                }
+            };
         }
     } catch (error) {
         console.log('Wallet manager not ready yet, will be available when user clicks connect');

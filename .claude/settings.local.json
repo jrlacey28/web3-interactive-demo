@@ -46,7 +46,8 @@
       "WebSearch",
       "WebFetch(domain:docs.moralis.com)",
       "WebFetch(domain:developers.moralis.com)",
-      "Bash(start associate-jordan-profile.html)"
+      "Bash(start associate-jordan-profile.html)",
+      "Bash(start test-session-persistence.html)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"
