@@ -5,18 +5,20 @@ let userWorlds = {};
 let selectedTemplate = 'gallery';
 let selectedTheme = 'purple';
 
-// Wait for Moralis wallet manager to be available
+// Wait for persistent wallet manager to be available
 async function waitForWalletManager() {
-    console.log('⏳ Waiting for Moralis wallet manager...');
+    console.log('⏳ Waiting for persistent wallet manager...');
     let attempts = 0;
-    while (!window.walletManager && attempts < 50) {
+    while (!window.persistentWallet && !window.walletManager && attempts < 50) {
         await new Promise(resolve => setTimeout(resolve, 100));
         attempts++;
     }
-    if (!window.walletManager) {
-        throw new Error('Moralis wallet manager not available after waiting');
+    const manager = window.persistentWallet || window.walletManager;
+    if (!manager) {
+        throw new Error('Persistent wallet manager not available after waiting');
     }
-    console.log('✅ Moralis wallet manager ready');
+    console.log('✅ Persistent wallet manager ready');
+    return manager;
 }
 
 // Initialize when DOM is ready
@@ -46,14 +48,8 @@ async function initializeAuth() {
     try {
         console.log('🔐 Initializing my-worlds authentication...');
         
-        // Wait for Moralis wallet manager to be ready
-        await waitForWalletManager();
-        
-        // Use the Moralis wallet system
-        authenticatedWallet = window.walletManager;
-        
-        // Check for existing session
-        await authenticatedWallet.checkExistingSession();
+        // Wait for persistent wallet manager to be ready
+        authenticatedWallet = await waitForWalletManager();
         
         if (!authenticatedWallet.isAuthenticated) {
             console.log('❌ User not authenticated, redirecting to home');

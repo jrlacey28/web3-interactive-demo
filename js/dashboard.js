@@ -2,18 +2,20 @@
 let authenticatedWallet = null;
 let currentUser = null;
 
-// Wait for Moralis wallet manager to be available
+// Wait for persistent wallet manager to be available
 async function waitForWalletManager() {
-    console.log('⏳ Waiting for Moralis wallet manager...');
+    console.log('⏳ Waiting for persistent wallet manager...');
     let attempts = 0;
-    while (!window.walletManager && attempts < 50) {
+    while (!window.persistentWallet && !window.walletManager && attempts < 50) {
         await new Promise(resolve => setTimeout(resolve, 100));
         attempts++;
     }
-    if (!window.walletManager) {
-        throw new Error('Moralis wallet manager not available after waiting');
+    const manager = window.persistentWallet || window.walletManager;
+    if (!manager) {
+        throw new Error('Persistent wallet manager not available after waiting');
     }
-    console.log('✅ Moralis wallet manager ready');
+    console.log('✅ Persistent wallet manager ready');
+    return manager;
 }
 
 // Initialize when DOM is ready
@@ -32,14 +34,11 @@ async function initializeAuth() {
     try {
         console.log('🔐 Initializing dashboard authentication...');
         
-        // Wait for Moralis wallet manager to be ready
-        await waitForWalletManager();
-        
-        // Use the Moralis wallet system
-        authenticatedWallet = window.walletManager;
+        // Wait for persistent wallet manager to be ready
+        authenticatedWallet = await waitForWalletManager();
         
         if (!authenticatedWallet) {
-            console.log('❌ Moralis wallet manager not available');
+            console.log('❌ Persistent wallet manager not available');
             redirectToHome();
             return;
         }
@@ -48,9 +47,6 @@ async function initializeAuth() {
         console.log('Connected:', authenticatedWallet.isConnected);
         console.log('Authenticated:', authenticatedWallet.isAuthenticated);
         console.log('Account:', authenticatedWallet.account);
-        
-        // Check for existing session
-        await authenticatedWallet.checkExistingSession();
         
         // Check if wallet is authenticated
         if (!authenticatedWallet.isAuthenticated) {
@@ -320,7 +316,7 @@ async function signOut() {
         const dropdown = document.getElementById('userDropdown');
         if (dropdown) dropdown.style.display = 'none';
         
-        await authenticatedWallet.signOut();
+        authenticatedWallet.disconnect();
         redirectToHome();
         
     } catch (error) {

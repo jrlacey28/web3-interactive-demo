@@ -1,5 +1,116 @@
 /* Home Page Styles */
 
+/* User Dropdown Styles */
+.user-dropdown {
+    position: fixed;
+    top: 80px;
+    right: 30px;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    min-width: 280px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dropdown-content {
+    padding: 0;
+}
+
+.dropdown-header {
+    display: flex;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dropdown-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: white;
+    margin-right: 15px;
+}
+
+.dropdown-info {
+    flex: 1;
+}
+
+.dropdown-name {
+    color: white;
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin-bottom: 4px;
+}
+
+.dropdown-wallet {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+    font-family: monospace;
+}
+
+.dropdown-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 0;
+}
+
+.dropdown-menu {
+    padding: 10px 0;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    color: white;
+    text-decoration: none;
+    transition: background 0.2s ease;
+    cursor: pointer;
+}
+
+.dropdown-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.dropdown-item.danger {
+    color: #ff4757;
+}
+
+.dropdown-item.danger:hover {
+    background: rgba(255, 71, 87, 0.1);
+}
+
+.item-icon {
+    margin-right: 12px;
+    font-size: 1.1rem;
+    width: 20px;
+    text-align: center;
+}
+
+.item-text {
+    font-weight: 500;
+}
+
 /* Navigation Styles */
 .home-nav {
     position: fixed;

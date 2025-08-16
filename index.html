@@ -81,6 +81,43 @@
     </section>
 
 
+    <!-- User Dropdown Menu -->
+    <div class="user-dropdown" id="userDropdown" style="display: none;">
+        <div class="dropdown-content">
+            <div class="dropdown-header">
+                <div class="dropdown-avatar" id="dropdownAvatar">👤</div>
+                <div class="dropdown-info">
+                    <div class="dropdown-name" id="dropdownName">User</div>
+                    <div class="dropdown-wallet" id="dropdownWallet">0x0000...0000</div>
+                </div>
+            </div>
+            
+            <div class="dropdown-divider"></div>
+            
+            <div class="dropdown-menu">
+                <a href="dashboard.html" class="dropdown-item">
+                    <span class="item-icon">🏠</span>
+                    <span class="item-text">Dashboard</span>
+                </a>
+                <a href="my-worlds.html" class="dropdown-item">
+                    <span class="item-icon">🌍</span>
+                    <span class="item-text">My Worlds</span>
+                </a>
+                <a href="profile-setup.html" class="dropdown-item">
+                    <span class="item-icon">⚙️</span>
+                    <span class="item-text">Edit Profile</span>
+                </a>
+                
+                <div class="dropdown-divider"></div>
+                
+                <div class="dropdown-item danger" onclick="signOut()">
+                    <span class="item-icon">🚪</span>
+                    <span class="item-text">Disconnect</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Footer -->
     <footer class="footer">
         <div class="container">

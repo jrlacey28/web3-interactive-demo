@@ -30,9 +30,9 @@ async function handleWalletConnect() {
         
         // Check if already authenticated
         if (walletManager.isAuthenticated) {
-            // Already connected, redirect to dashboard
-            console.log('✅ Already authenticated, redirecting to dashboard');
-            window.location.href = 'dashboard.html';
+            // Already connected, show dropdown instead of redirecting
+            console.log('✅ Already authenticated, showing dropdown');
+            toggleUserDropdown();
             return;
         }
         
@@ -99,8 +99,74 @@ function showToast(message, type = 'info') {
     }, 4000);
 }
 
-// Make function globally available
+// Dropdown functionality
+function toggleUserDropdown() {
+    const dropdown = document.getElementById('userDropdown');
+    if (!dropdown) return;
+    
+    if (dropdown.style.display === 'none' || dropdown.style.display === '') {
+        dropdown.style.display = 'block';
+        
+        // Close on outside click
+        setTimeout(() => {
+            document.addEventListener('click', closeDropdownOnOutsideClick);
+        }, 100);
+    } else {
+        dropdown.style.display = 'none';
+        document.removeEventListener('click', closeDropdownOnOutsideClick);
+    }
+}
+
+function closeDropdownOnOutsideClick(e) {
+    const dropdown = document.getElementById('userDropdown');
+    const walletBtn = document.getElementById('walletBtn');
+    
+    if (dropdown && walletBtn && !dropdown.contains(e.target) && !walletBtn.contains(e.target)) {
+        dropdown.style.display = 'none';
+        document.removeEventListener('click', closeDropdownOnOutsideClick);
+    }
+}
+
+function updateDropdownInfo(manager) {
+    const dropdownName = document.getElementById('dropdownName');
+    const dropdownWallet = document.getElementById('dropdownWallet');
+    const dropdownAvatar = document.getElementById('dropdownAvatar');
+    
+    if (dropdownName) {
+        dropdownName.textContent = manager.username || 'User';
+    }
+    
+    if (dropdownWallet) {
+        dropdownWallet.textContent = manager.getShortAddress();
+    }
+    
+    if (dropdownAvatar && manager.username) {
+        dropdownAvatar.textContent = manager.username.charAt(0).toUpperCase();
+    }
+}
+
+function signOut() {
+    if (walletManager) {
+        walletManager.disconnect();
+        // Hide dropdown
+        const dropdown = document.getElementById('userDropdown');
+        if (dropdown) dropdown.style.display = 'none';
+        
+        // Reset wallet button
+        const walletBtn = document.getElementById('walletBtn');
+        if (walletBtn) {
+            walletBtn.textContent = 'Connect Wallet';
+            walletBtn.onclick = handleWalletConnect;
+        }
+        
+        showToast('👋 Wallet disconnected', 'info');
+    }
+}
+
+// Make functions globally available
 window.handleWalletConnect = handleWalletConnect;
+window.toggleUserDropdown = toggleUserDropdown;
+window.signOut = signOut;
 
 document.addEventListener('DOMContentLoaded', async function() {
     // Initialize wallet manager when page loads
@@ -113,14 +179,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             const displayName = walletManager.username || walletManager.getShortAddress();
             
             walletBtn.textContent = `👤 ${displayName}`;
-            walletBtn.onclick = () => {
-                // If has username, go to dashboard; otherwise go to profile setup
-                if (walletManager.username) {
-                    window.location.href = 'dashboard.html';
-                } else {
-                    window.location.href = 'profile-setup.html?from=auth';
-                }
-            };
+            walletBtn.onclick = toggleUserDropdown;
+            
+            // Update dropdown info
+            updateDropdownInfo(walletManager);
         }
     } catch (error) {
         console.log('Wallet manager not ready yet, will be available when user clicks connect');
