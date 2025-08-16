@@ -170,12 +170,83 @@ class MoralisAuth {
             }
 
             const data = await response.json();
+            
+            // If verification successful, create/update user in Moralis database
+            if (data.address) {
+                await this.createOrUpdateMoralisUser(data.address);
+            }
+            
             return { success: true, token: data.token || data.address };
 
         } catch (error) {
             console.warn('⚠️ Moralis verification error, using local verification:', error);
             return { success: true, token: 'local_' + Date.now() };
         }
+    }
+
+    // Create or update user in Moralis database
+    async createOrUpdateMoralisUser(address) {
+        try {
+            console.log('💾 Creating/updating user in Moralis database...');
+            
+            // Check if user exists in localStorage first
+            const users = JSON.parse(localStorage.getItem('siwe_users') || '{}');
+            const userData = users[address] || {};
+
+            const userPayload = {
+                address: address,
+                username: userData.username || null,
+                bio: userData.bio || null,
+                displayName: userData.displayName || userData.username || null,
+                createdAt: userData.createdAt || new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                // Add any other user data you want to store
+                metadata: {
+                    platform: 'GENESIS',
+                    version: '1.0.0'
+                }
+            };
+
+            // Use Moralis Web3 API to store user data
+            const response = await fetch('https://deep-index.moralis.io/api/v2/evm/users', {
+                method: 'POST', 
+                headers: {
+                    'X-API-Key': this.apiKey,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(userPayload)
+            });
+
+            if (response.ok) {
+                console.log('✅ User data stored in Moralis database');
+            } else {
+                console.warn('⚠️ Could not store in Moralis, keeping localStorage backup');
+            }
+
+        } catch (error) {
+            console.warn('⚠️ Moralis user storage error:', error);
+        }
+    }
+
+    // Fetch user data from Moralis database
+    async fetchMoralisUser(address) {
+        try {
+            const response = await fetch(`https://deep-index.moralis.io/api/v2/evm/users/${address}`, {
+                headers: {
+                    'X-API-Key': this.apiKey
+                }
+            });
+
+            if (response.ok) {
+                const userData = await response.json();
+                console.log('✅ User data fetched from Moralis database');
+                return userData;
+            }
+
+        } catch (error) {
+            console.warn('⚠️ Could not fetch from Moralis:', error);
+        }
+        return null;
     }
 
     async checkExistingSession() {
@@ -194,15 +265,20 @@ class MoralisAuth {
                 return false;
             }
 
-            // Restore session
+            // Load user data from siwe_users storage
+            const users = JSON.parse(localStorage.getItem('siwe_users') || '{}');
+            const userData = users[session.address] || {};
+            
+            // Restore session with user data
             this.isAuthenticated = true;
             this.isConnected = true;
             this.account = session.address;
             this.currentUser = {
                 walletAddress: session.address,
-                username: session.username || null,
-                bio: session.bio || null,
-                createdAt: session.createdAt || new Date().toISOString(),
+                username: userData.username || session.username || null,
+                bio: userData.bio || session.bio || null,
+                displayName: userData.displayName || userData.username || null,
+                createdAt: userData.createdAt || session.createdAt || new Date().toISOString(),
                 sessionToken: session.sessionToken || 'local_' + Date.now()
             };
 
@@ -234,6 +310,27 @@ class MoralisAuth {
             console.log('💾 Session saved');
         } catch (error) {
             console.error('❌ Failed to save session:', error);
+        }
+    }
+
+    // Update user profile data
+    updateUser(userData) {
+        if (this.currentUser) {
+            this.currentUser = {
+                ...this.currentUser,
+                ...userData
+            };
+            
+            // Update the session as well
+            const session = this.loadSession();
+            if (session) {
+                session.username = this.currentUser.username;
+                session.bio = this.currentUser.bio;
+                session.displayName = this.currentUser.displayName || this.currentUser.username;
+                this.saveSession(session);
+            }
+            
+            console.log('👤 User data updated:', this.currentUser);
         }
     }
 

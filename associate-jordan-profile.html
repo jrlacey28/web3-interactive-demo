@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Associate Jordan Profile - GENESIS</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            padding: 20px; 
+            background: #f5f5f5; 
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 30px; 
+            border-radius: 10px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+        }
+        .section { 
+            margin-bottom: 30px; 
+            padding: 20px; 
+            border: 1px solid #ddd; 
+            border-radius: 8px; 
+            background: #f9f9f9; 
+        }
+        .section h3 { 
+            color: #333; 
+            margin-top: 0; 
+        }
+        .data { 
+            background: #fff; 
+            padding: 10px; 
+            border-radius: 5px; 
+            font-family: monospace; 
+            font-size: 12px; 
+            overflow-x: auto; 
+            white-space: pre-wrap; 
+        }
+        button { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; 
+            border: none; 
+            padding: 12px 24px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            margin: 5px; 
+        }
+        button:hover { 
+            opacity: 0.9; 
+        }
+        .result { 
+            margin-top: 15px; 
+            padding: 10px; 
+            border-radius: 5px; 
+            font-weight: 600; 
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔗 Associate Jordan Profile with Wallet</h1>
+        <p>This tool will help you connect your "jordan" profile to your current wallet address.</p>
+
+        <div class="section">
+            <h3>📊 Current Data Analysis</h3>
+            <button onclick="analyzeData()">Analyze LocalStorage Data</button>
+            <div id="dataAnalysis"></div>
+        </div>
+
+        <div class="section">
+            <h3>🔗 Current Wallet Status</h3>
+            <button onclick="checkWallet()">Check Wallet Connection</button>
+            <div id="walletStatus"></div>
+        </div>
+
+        <div class="section">
+            <h3>👤 Jordan Profile Association</h3>
+            <button onclick="associateJordanProfile()">Associate Jordan Profile with Current Wallet</button>
+            <div id="associationResult"></div>
+        </div>
+
+        <div class="section">
+            <h3>🧪 Test Authentication</h3>
+            <button onclick="testAuth()">Test Profile Setup Page</button>
+            <div id="testResult"></div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="config/api-keys.js"></script>
+    <script src="js/moralis-auth.js"></script>
+    
+    <script>
+        function addResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${type}`;
+            resultDiv.textContent = message;
+            element.appendChild(resultDiv);
+        }
+
+        function addData(elementId, data) {
+            const element = document.getElementById(elementId);
+            const dataDiv = document.createElement('div');
+            dataDiv.className = 'data';
+            dataDiv.textContent = JSON.stringify(data, null, 2);
+            element.appendChild(dataDiv);
+        }
+
+        async function analyzeData() {
+            const element = document.getElementById('dataAnalysis');
+            element.innerHTML = '';
+
+            try {
+                // Check siwe_users
+                const siweUsers = JSON.parse(localStorage.getItem('siwe_users') || '{}');
+                addResult('dataAnalysis', `Found ${Object.keys(siweUsers).length} users in siwe_users`, 'info');
+                addData('dataAnalysis', siweUsers);
+
+                // Check moralis_session
+                const moralisSession = localStorage.getItem('moralis_session');
+                if (moralisSession) {
+                    addResult('dataAnalysis', 'Found Moralis session', 'info');
+                    addData('dataAnalysis', JSON.parse(moralisSession));
+                } else {
+                    addResult('dataAnalysis', 'No Moralis session found', 'info');
+                }
+
+                // Check user_worlds
+                const userWorlds = JSON.parse(localStorage.getItem('user_worlds') || '{}');
+                addResult('dataAnalysis', `Found worlds for ${Object.keys(userWorlds).length} users`, 'info');
+                addData('dataAnalysis', userWorlds);
+
+            } catch (error) {
+                addResult('dataAnalysis', `Error analyzing data: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkWallet() {
+            const element = document.getElementById('walletStatus');
+            element.innerHTML = '';
+
+            try {
+                if (!window.walletManager) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+
+                if (window.walletManager) {
+                    addResult('walletStatus', 'Wallet Manager: Available', 'success');
+                    addResult('walletStatus', `Authenticated: ${window.walletManager.isAuthenticated}`, 'info');
+                    addResult('walletStatus', `Connected: ${window.walletManager.isConnected}`, 'info');
+                    addResult('walletStatus', `Account: ${window.walletManager.account || 'None'}`, 'info');
+                    
+                    const user = window.walletManager.getCurrentUser();
+                    if (user) {
+                        addData('walletStatus', user);
+                    }
+                } else {
+                    addResult('walletStatus', 'Wallet Manager: Not Available', 'error');
+                }
+            } catch (error) {
+                addResult('walletStatus', `Error checking wallet: ${error.message}`, 'error');
+            }
+        }
+
+        async function associateJordanProfile() {
+            const element = document.getElementById('associationResult');
+            element.innerHTML = '';
+
+            try {
+                if (!window.walletManager || !window.walletManager.isAuthenticated) {
+                    addResult('associationResult', 'Please connect your wallet first', 'error');
+                    return;
+                }
+
+                const walletAddress = window.walletManager.account;
+                addResult('associationResult', `Current wallet: ${walletAddress}`, 'info');
+
+                // Load existing users
+                const users = JSON.parse(localStorage.getItem('siwe_users') || '{}');
+                
+                // Find jordan profile
+                let jordanProfile = null;
+                for (const [key, userData] of Object.entries(users)) {
+                    if (userData.username === 'jordan' || key === 'jordan') {
+                        jordanProfile = userData;
+                        addResult('associationResult', `Found Jordan profile: ${key}`, 'success');
+                        break;
+                    }
+                }
+
+                if (!jordanProfile) {
+                    addResult('associationResult', 'Jordan profile not found in localStorage', 'error');
+                    return;
+                }
+
+                // Associate jordan profile with current wallet
+                const updatedProfile = {
+                    ...jordanProfile,
+                    walletAddress: walletAddress,
+                    updatedAt: new Date().toISOString()
+                };
+
+                // Save under wallet address as key
+                users[walletAddress] = updatedProfile;
+                
+                // Keep the username key as well for backward compatibility
+                users['jordan'] = updatedProfile;
+                
+                localStorage.setItem('siwe_users', JSON.stringify(users));
+
+                // Update current user in wallet manager
+                window.walletManager.updateUser({
+                    username: 'jordan',
+                    bio: jordanProfile.bio,
+                    displayName: 'jordan'
+                });
+
+                addResult('associationResult', '✅ Jordan profile successfully associated with your wallet!', 'success');
+                addResult('associationResult', 'You can now access your dashboard and worlds', 'success');
+
+            } catch (error) {
+                addResult('associationResult', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAuth() {
+            const element = document.getElementById('testResult');
+            element.innerHTML = '';
+
+            try {
+                addResult('testResult', 'Testing authentication...', 'info');
+                
+                if (window.walletManager && window.walletManager.isAuthenticated) {
+                    const user = window.walletManager.getCurrentUser();
+                    addResult('testResult', `✅ Authenticated as: ${user.username || user.walletAddress}`, 'success');
+                    addResult('testResult', 'Ready to access profile setup page', 'success');
+                } else {
+                    addResult('testResult', 'Not authenticated - connect wallet first', 'error');
+                }
+
+            } catch (error) {
+                addResult('testResult', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-analyze on page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                analyzeData();
+                checkWallet();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

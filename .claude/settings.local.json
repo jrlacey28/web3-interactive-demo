@@ -45,7 +45,8 @@
       "Bash(git push:*)",
       "WebSearch",
       "WebFetch(domain:docs.moralis.com)",
-      "WebFetch(domain:developers.moralis.com)"
+      "WebFetch(domain:developers.moralis.com)",
+      "Bash(start associate-jordan-profile.html)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

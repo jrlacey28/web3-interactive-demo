@@ -32,13 +32,13 @@ async function initializeAuth() {
     try {
         console.log('🔐 Initializing profile setup authentication...');
         
-        // Wait for Moralis wallet manager to be ready
+        // Wait for modern Moralis auth to be ready
         if (typeof window.walletManager === 'undefined') {
             setTimeout(initializeAuth, 100);
             return;
         }
 
-        // Use the Moralis wallet system
+        // Use the modern Moralis auth system
         window.authenticatedWallet = window.walletManager;
             
         console.log('🔍 Checking wallet authentication state...');
@@ -48,21 +48,28 @@ async function initializeAuth() {
         console.log('Account:', window.authenticatedWallet?.account);
         console.log('Username:', window.authenticatedWallet?.getCurrentUser()?.username);
         
-        // Check for existing session
-        await window.authenticatedWallet.checkExistingSession();
-        
         // SIMPLIFIED CHECK: If we have an authenticated wallet, proceed
         if (window.authenticatedWallet && window.authenticatedWallet.isAuthenticated) {
-            console.log('✅ Wallet has account, proceeding with profile setup');
+            console.log('✅ Wallet authenticated, checking for existing profile...');
+            
+            // Check for existing profile using wallet address
+            const walletAddress = window.authenticatedWallet.account;
+            const existingProfile = checkForExistingProfile(walletAddress);
             
             // Check if this is edit mode or first-time setup
             const urlParams = new URLSearchParams(window.location.search);
             const editMode = urlParams.get('edit') === 'true';
-            const currentUsername = window.authenticatedWallet.getCurrentUser()?.username;
             
-            if (currentUsername && !editMode) {
-                console.log(`👤 User already has custom username: ${currentUsername}`);
-                showExistingProfileOptions(currentUsername);
+            if (existingProfile && !editMode) {
+                console.log(`👤 Found existing profile: ${existingProfile.username}`);
+                // Update the current user with existing profile data
+                window.authenticatedWallet.currentUser = {
+                    ...window.authenticatedWallet.currentUser,
+                    username: existingProfile.username,
+                    bio: existingProfile.bio,
+                    displayName: existingProfile.displayName
+                };
+                showExistingProfileOptions(existingProfile.username);
                 return;
             }
             
@@ -132,6 +139,37 @@ async function waitForAuthentication(maxWaitMs = 3000) {
         await new Promise(r => setTimeout(r, 300));
     }
     return window.authenticatedWallet?.isAuthenticated === true;
+}
+
+// Check for existing profile in localStorage
+function checkForExistingProfile(walletAddress) {
+    try {
+        console.log('🔍 Checking for existing profile for wallet:', walletAddress);
+        
+        // Check the siwe_users storage format
+        const users = JSON.parse(localStorage.getItem('siwe_users') || '{}');
+        
+        // First check if wallet address exists as a key
+        if (users[walletAddress]) {
+            console.log('✅ Found profile by wallet address:', users[walletAddress]);
+            return users[walletAddress];
+        }
+        
+        // Also check if any user has this wallet address
+        for (const [key, userData] of Object.entries(users)) {
+            if (userData.walletAddress === walletAddress) {
+                console.log('✅ Found profile by matching wallet address:', userData);
+                return userData;
+            }
+        }
+        
+        console.log('❌ No existing profile found for wallet:', walletAddress);
+        return null;
+        
+    } catch (error) {
+        console.error('❌ Error checking for existing profile:', error);
+        return null;
+    }
 }
 
 function updateWalletStatus() {
@@ -708,8 +746,8 @@ async function handleFormSubmit(event) {
         completeBtn.disabled = true;
         
         // Validate wallet connection
-        if (!window.authenticatedWallet || !window.authenticatedWallet.account) {
-            throw new Error('Wallet not connected');
+        if (!window.authenticatedWallet || !window.authenticatedWallet.isAuthenticated || !window.authenticatedWallet.account) {
+            throw new Error('Wallet not authenticated. Please reconnect your wallet.');
         }
         
         // Create user profile
