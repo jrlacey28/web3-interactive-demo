@@ -12,6 +12,12 @@ let profileData = {
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {
+    // Clear any previous redirect attempts
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('edit') === 'true') {
+        sessionStorage.removeItem('profile_redirect_attempted');
+    }
+    
     // Check if user is authenticated
     await initializeAuth();
     
@@ -32,14 +38,14 @@ async function initializeAuth() {
     try {
         console.log('🔐 Initializing profile setup authentication...');
         
-        // Wait for modern Moralis auth to be ready
-        if (typeof window.walletManager === 'undefined') {
+        // Wait for persistent wallet manager to be ready
+        if (typeof window.persistentWallet === 'undefined' && typeof window.walletManager === 'undefined') {
             setTimeout(initializeAuth, 100);
             return;
         }
 
-        // Use the modern Moralis auth system
-        window.authenticatedWallet = window.walletManager;
+        // Use the persistent wallet system (preferred) or fallback to wallet manager
+        window.authenticatedWallet = window.persistentWallet || window.walletManager;
             
         console.log('🔍 Checking wallet authentication state...');
         console.log('authenticatedWallet exists:', !!window.authenticatedWallet);
@@ -48,30 +54,25 @@ async function initializeAuth() {
         console.log('Account:', window.authenticatedWallet?.account);
         console.log('Username:', window.authenticatedWallet?.getCurrentUser()?.username);
         
+        // Check URL parameters first to avoid infinite redirects
+        const urlParams = new URLSearchParams(window.location.search);
+        const editMode = urlParams.get('edit') === 'true';
+        const fromAuth = urlParams.get('from') === 'auth';
+        
         // SIMPLIFIED CHECK: If we have an authenticated wallet, proceed
         if (window.authenticatedWallet && window.authenticatedWallet.isAuthenticated) {
             console.log('✅ Wallet authenticated, checking for existing profile...');
             
-            // Check for existing profile using wallet address
-            const walletAddress = window.authenticatedWallet.account;
-            const existingProfile = checkForExistingProfile(walletAddress);
+            // Get username from wallet manager
+            const username = window.authenticatedWallet.username || window.authenticatedWallet.getCurrentUser?.()?.username;
             
-            // Check if this is edit mode or first-time setup
-            const urlParams = new URLSearchParams(window.location.search);
-            const editMode = urlParams.get('edit') === 'true';
-            
-            if (existingProfile && !editMode) {
-                console.log(`👤 Found existing profile: ${existingProfile.username}`);
-                // Update the current user with existing profile data
-                window.authenticatedWallet.currentUser = {
-                    ...window.authenticatedWallet.currentUser,
-                    username: existingProfile.username,
-                    bio: existingProfile.bio,
-                    displayName: existingProfile.displayName
-                };
-                // Instead of showing popup, redirect to dashboard
-                console.log('ℹ️ Profile exists, redirecting to dashboard');
-                window.location.href = 'dashboard.html';
+            // If user has username and not in edit mode, redirect to dashboard (but only once)
+            if (username && !editMode && !sessionStorage.getItem('profile_redirect_attempted')) {
+                console.log(`👤 Found existing profile: ${username}, redirecting to dashboard`);
+                sessionStorage.setItem('profile_redirect_attempted', 'true');
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 100);
                 return;
             }
             
@@ -154,7 +155,8 @@ async function waitForAuthentication(maxWaitMs = 3000) {
 }
 
 // Check for existing profile in localStorage
-function checkForExistingProfile(walletAddress) {
+// Deprecated - using persistent wallet manager now
+// function checkForExistingProfile(walletAddress) {
     try {
         console.log('🔍 Checking for existing profile for wallet:', walletAddress);
         

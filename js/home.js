@@ -67,10 +67,19 @@ async function handleWalletConnect() {
             // Show success message
             showToast('🎉 Wallet connected! Setting up your profile...', 'success');
             
-            // Redirect to profile setup after short delay
+            // Update button to show dropdown after connection
             setTimeout(() => {
-                window.location.href = 'profile-setup.html?from=auth';
-            }, 1500);
+                updateWalletButtonForAuthenticated();
+            }, 1000);
+            
+            // Check if user has a username, if so redirect to dashboard, otherwise profile setup
+            setTimeout(() => {
+                if (walletManager.username) {
+                    window.location.href = 'dashboard.html';
+                } else {
+                    window.location.href = 'profile-setup.html?from=auth';
+                }
+            }, 2000);
             
         } else {
             throw new Error(result.error || 'Connection failed');
@@ -144,6 +153,34 @@ function closeDropdownOnOutsideClick(e) {
     }
 }
 
+function updateWalletButtonForAuthenticated() {
+    const walletBtn = document.getElementById('walletBtn');
+    if (!walletBtn || !walletManager) return;
+    
+    const displayName = walletManager.username || walletManager.getShortAddress();
+    walletBtn.textContent = `👤 ${displayName}`;
+    walletBtn.onclick = toggleUserDropdown;
+    
+    // Update dropdown info
+    updateDropdownInfo(walletManager);
+    
+    console.log('✅ Wallet button updated for authenticated user:', displayName);
+}
+
+function checkAuthenticationState() {
+    if (!walletManager) return;
+    
+    const walletBtn = document.getElementById('walletBtn');
+    if (!walletBtn) return;
+    
+    // If authenticated but button still shows "Connect Wallet", update it
+    if ((walletManager.isAuthenticated || walletManager.isConnected) && 
+        walletBtn.textContent === 'Connect Wallet') {
+        console.log('🔄 Authentication state changed, updating button');
+        updateWalletButtonForAuthenticated();
+    }
+}
+
 function updateDropdownInfo(manager) {
     const dropdownWalletAddress = document.getElementById('dropdownWalletAddress');
     const dropdownNetwork = document.getElementById('dropdownNetwork');
@@ -209,22 +246,33 @@ window.switchToArbitrum = switchToArbitrum;
 document.addEventListener('DOMContentLoaded', async function() {
     // Initialize wallet manager when page loads
     try {
+        console.log('🚀 Initializing home page wallet...');
         walletManager = await waitForWalletManager();
         
+        // Wait a bit more for persistent wallet to fully initialize
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        console.log('🔍 Checking authentication state:', {
+            isAuthenticated: walletManager.isAuthenticated,
+            isConnected: walletManager.isConnected,
+            account: walletManager.account,
+            username: walletManager.username
+        });
+        
         // Check if user is already authenticated and update UI
-        if (walletManager.isAuthenticated) {
-            const walletBtn = document.getElementById('walletBtn');
-            const displayName = walletManager.username || walletManager.getShortAddress();
-            
-            walletBtn.textContent = `👤 ${displayName}`;
-            walletBtn.onclick = toggleUserDropdown;
-            
-            // Update dropdown info
-            updateDropdownInfo(walletManager);
+        if (walletManager.isAuthenticated || walletManager.isConnected) {
+            console.log('✅ User authenticated, updating wallet button');
+            updateWalletButtonForAuthenticated();
+        } else {
+            console.log('⚪ User not authenticated, keeping connect button');
         }
     } catch (error) {
         console.log('Wallet manager not ready yet, will be available when user clicks connect');
     }
+    
+    // Also check periodically for authentication state changes
+    setInterval(checkAuthenticationState, 1000);
+}
     // Smooth scrolling for navigation links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
