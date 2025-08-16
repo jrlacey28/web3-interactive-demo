@@ -84,19 +84,25 @@
     <!-- User Dropdown Menu -->
     <div class="user-dropdown" id="userDropdown" style="display: none;">
         <div class="dropdown-content">
-            <div class="dropdown-header">
-                <div class="dropdown-avatar" id="dropdownAvatar">👤</div>
-                <div class="dropdown-info">
-                    <div class="dropdown-name" id="dropdownName">User</div>
-                    <div class="dropdown-wallet" id="dropdownWallet">0x0000...0000</div>
+            <!-- Wallet Connected Header -->
+            <div class="wallet-connected-header">
+                <div class="connection-status">
+                    <span class="status-text">Wallet Connected</span>
                 </div>
+                <div class="wallet-address" id="dropdownWalletAddress">0x0000...0000</div>
+                <div class="network-info" id="dropdownNetwork">Arbitrum Sepolia Testnet</div>
+            </div>
+            
+            <!-- Username Display -->
+            <div class="username-display" id="usernameDisplay" style="display: none;">
+                <span class="username-text" id="dropdownUsername">jordan</span>
             </div>
             
             <div class="dropdown-divider"></div>
             
             <div class="dropdown-menu">
                 <a href="dashboard.html" class="dropdown-item">
-                    <span class="item-icon">🏠</span>
+                    <span class="item-icon">📊</span>
                     <span class="item-text">Dashboard</span>
                 </a>
                 <a href="my-worlds.html" class="dropdown-item">
@@ -104,15 +110,19 @@
                     <span class="item-text">My Worlds</span>
                 </a>
                 <a href="profile-setup.html" class="dropdown-item">
-                    <span class="item-icon">⚙️</span>
+                    <span class="item-icon">✏️</span>
                     <span class="item-text">Edit Profile</span>
+                </a>
+                <a href="#" class="dropdown-item" onclick="switchToArbitrum()">
+                    <span class="item-icon">🔄</span>
+                    <span class="item-text">Switch to Arbitrum</span>
                 </a>
                 
                 <div class="dropdown-divider"></div>
                 
                 <div class="dropdown-item danger" onclick="signOut()">
-                    <span class="item-icon">🚪</span>
-                    <span class="item-text">Disconnect</span>
+                    <span class="item-icon">📴</span>
+                    <span class="item-text">Disconnect Wallet</span>
                 </div>
             </div>
         </div>

@@ -59,6 +59,13 @@ async function initializeAuth() {
 
         currentUser = authenticatedWallet.getCurrentUser();
         console.log('✅ User authenticated:', currentUser);
+        
+        // If no username, redirect to profile setup
+        if (!currentUser?.username) {
+            console.log('ℹ️ No username found, redirecting to profile setup');
+            window.location.href = 'profile-setup.html?from=auth';
+            return;
+        }
 
         updateUserUI();
         
@@ -76,6 +83,8 @@ function redirectToHome() {
 function updateUserUI() {
     if (!currentUser) return;
 
+    console.log('\ud83c\udfa8 Updating My Worlds UI for user:', currentUser);
+
     // Update user menu
     const userName = document.getElementById('userName');
     const userAvatar = document.getElementById('userAvatar');
@@ -92,8 +101,29 @@ function updateUserUI() {
 
     // Update public URL
     const publicUrl = document.getElementById('publicUrl');
-    if (publicUrl && currentUser.username) {
-        publicUrl.textContent = `genesis.app/world/${currentUser.username}`;
+    if (publicUrl) {
+        if (currentUser.username) {
+            publicUrl.textContent = `genesis.app/world/${currentUser.username}`;
+        } else {
+            publicUrl.textContent = 'Complete profile setup to get your URL';
+        }
+    }
+    
+    // Update main world info
+    const mainWorldTitle = document.getElementById('mainWorldTitle');
+    const mainWorldDescription = document.getElementById('mainWorldDescription');
+    const mainWorldAvatar = document.getElementById('mainWorldAvatar');
+    
+    if (mainWorldTitle && currentUser.username) {
+        mainWorldTitle.textContent = `${currentUser.username}'s World`;
+    }
+    
+    if (mainWorldDescription && currentUser.bio) {
+        mainWorldDescription.textContent = currentUser.bio;
+    }
+    
+    if (mainWorldAvatar && currentUser.username) {
+        mainWorldAvatar.textContent = currentUser.username.charAt(0).toUpperCase();
     }
 }
 

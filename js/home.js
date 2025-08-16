@@ -128,20 +128,40 @@ function closeDropdownOnOutsideClick(e) {
 }
 
 function updateDropdownInfo(manager) {
-    const dropdownName = document.getElementById('dropdownName');
-    const dropdownWallet = document.getElementById('dropdownWallet');
-    const dropdownAvatar = document.getElementById('dropdownAvatar');
+    const dropdownWalletAddress = document.getElementById('dropdownWalletAddress');
+    const dropdownNetwork = document.getElementById('dropdownNetwork');
+    const usernameDisplay = document.getElementById('usernameDisplay');
+    const dropdownUsername = document.getElementById('dropdownUsername');
     
-    if (dropdownName) {
-        dropdownName.textContent = manager.username || 'User';
+    // Update wallet address
+    if (dropdownWalletAddress) {
+        dropdownWalletAddress.textContent = manager.getShortAddress();
     }
     
-    if (dropdownWallet) {
-        dropdownWallet.textContent = manager.getShortAddress();
+    // Update network info (detect current chain)
+    if (dropdownNetwork) {
+        dropdownNetwork.textContent = 'Arbitrum Sepolia Testnet';
     }
     
-    if (dropdownAvatar && manager.username) {
-        dropdownAvatar.textContent = manager.username.charAt(0).toUpperCase();
+    // Show username if available
+    if (manager.username && usernameDisplay && dropdownUsername) {
+        dropdownUsername.textContent = manager.username;
+        usernameDisplay.style.display = 'block';
+    } else if (usernameDisplay) {
+        usernameDisplay.style.display = 'none';
+    }
+}
+
+function switchToArbitrum() {
+    // Add network switching functionality
+    if (window.ethereum) {
+        window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x66eee' }] // Arbitrum Sepolia
+        }).catch((error) => {
+            console.log('Network switch failed:', error);
+            showToast('\ud83d\udd04 Please switch to Arbitrum Sepolia manually', 'info');
+        });
     }
 }
 
@@ -167,6 +187,7 @@ function signOut() {
 window.handleWalletConnect = handleWalletConnect;
 window.toggleUserDropdown = toggleUserDropdown;
 window.signOut = signOut;
+window.switchToArbitrum = switchToArbitrum;
 
 document.addEventListener('DOMContentLoaded', async function() {
     // Initialize wallet manager when page loads

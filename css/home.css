@@ -6,13 +6,14 @@
     top: 80px;
     right: 30px;
     z-index: 1000;
-    background: rgba(0, 0, 0, 0.95);
+    background: rgba(99, 102, 241, 0.95);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 15px;
-    min-width: 280px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    border: 2px solid #22c55e;
+    border-radius: 20px;
+    min-width: 320px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
     animation: slideDown 0.2s ease;
+    overflow: hidden;
 }
 
 @keyframes slideDown {
@@ -30,42 +31,50 @@
     padding: 0;
 }
 
-.dropdown-header {
-    display: flex;
-    align-items: center;
+/* Wallet Connected Header */
+.wallet-connected-header {
+    background: rgba(99, 102, 241, 1);
     padding: 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.dropdown-avatar {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-    font-weight: 600;
+    text-align: center;
     color: white;
-    margin-right: 15px;
 }
 
-.dropdown-info {
-    flex: 1;
+.connection-status {
+    margin-bottom: 8px;
 }
 
-.dropdown-name {
-    color: white;
-    font-weight: 600;
+.status-text {
     font-size: 1.1rem;
+    font-weight: 600;
+    color: white;
+}
+
+.wallet-address {
+    font-family: monospace;
+    font-size: 1rem;
+    font-weight: 500;
+    color: white;
     margin-bottom: 4px;
 }
 
-.dropdown-wallet {
-    color: rgba(255, 255, 255, 0.7);
+.network-info {
     font-size: 0.9rem;
-    font-family: monospace;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 400;
+}
+
+/* Username Display */
+.username-display {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 15px 20px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.username-text {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: white;
 }
 
 .dropdown-divider {
@@ -75,40 +84,43 @@
 }
 
 .dropdown-menu {
-    padding: 10px 0;
+    padding: 8px 0;
+    background: rgba(255, 255, 255, 0.95);
 }
 
 .dropdown-item {
     display: flex;
     align-items: center;
-    padding: 12px 20px;
-    color: white;
+    padding: 14px 20px;
+    color: #374151;
     text-decoration: none;
     transition: background 0.2s ease;
     cursor: pointer;
+    font-weight: 500;
 }
 
 .dropdown-item:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(99, 102, 241, 0.1);
 }
 
 .dropdown-item.danger {
-    color: #ff4757;
+    color: #ef4444;
 }
 
 .dropdown-item.danger:hover {
-    background: rgba(255, 71, 87, 0.1);
+    background: rgba(239, 68, 68, 0.1);
 }
 
 .item-icon {
     margin-right: 12px;
     font-size: 1.1rem;
-    width: 20px;
+    width: 24px;
     text-align: center;
 }
 
 .item-text {
     font-weight: 500;
+    font-size: 0.95rem;
 }
 
 /* Navigation Styles */
@@ -155,8 +167,8 @@
 .wallet-btn,
 .auth-btn {
     padding: 10px 20px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid #22c55e;
+    background: rgba(34, 197, 94, 0.1);
     color: white;
     border-radius: 25px;
     cursor: pointer;

@@ -194,9 +194,23 @@
             
             console.log('✅ Message signed successfully');
             
-            // Check for existing user data
+            // Check for existing user data - prioritize jordan profile
             const users = JSON.parse(localStorage.getItem('siwe_users') || '{}');
-            const existingUser = users[address] || {};
+            let existingUser = users[address] || {};
+            
+            // Special case: if this wallet should be associated with jordan
+            // Check if jordan profile exists and should be linked to this wallet
+            const jordanProfile = Object.values(users).find(user => user.username === 'jordan');
+            if (jordanProfile && !existingUser.username) {
+                // Link this wallet to jordan's existing profile
+                existingUser = {
+                    ...jordanProfile,
+                    walletAddress: address
+                };
+                users[address] = existingUser;
+                localStorage.setItem('siwe_users', JSON.stringify(users));
+                console.log('\u2705 Linked wallet to existing jordan profile');
+            }
             
             // Create session data
             const sessionData = {
@@ -302,6 +316,9 @@
                         updatedAt: new Date().toISOString()
                     };
                     localStorage.setItem('siwe_users', JSON.stringify(users));
+                    
+                    // Update global state with new username
+                    window.WALLET_STATE.username = userData.username || window.WALLET_STATE.username;
                 }
             },
             
