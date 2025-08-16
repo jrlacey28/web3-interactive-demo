@@ -136,7 +136,7 @@
                         <p>Build a new interactive experience</p>
                     </div>
                     
-                    <div class="quick-action-card" onclick="window.location.href='profile-setup.html'">
+                    <div class="quick-action-card" onclick="window.location.href='profile-setup.html?edit=true'">
                         <div class="action-icon">⚙️</div>
                         <h4>Edit Profile</h4>
                         <p>Update your creator profile</p>
@@ -210,7 +210,7 @@
             <div class="dropdown-divider"></div>
             
             <div class="dropdown-menu">
-                <a href="profile-setup.html" class="dropdown-item">
+                <a href="profile-setup.html?edit=true" class="dropdown-item">
                     <span class="item-icon">⚙️</span>
                     <span class="item-text">Edit Profile</span>
                 </a>
@@ -249,5 +249,51 @@
     <script src="config/api-keys.js"></script>
     <script src="js/genesis-wallet-system.js"></script>
     <script src="js/genesis-dashboard.js"></script>
+    
+    <script>
+        // Global functions for dropdown menu
+        function showAnalytics() {
+            console.log('📊 Analytics feature coming soon');
+            showToast('📊 Analytics feature coming soon!', 'info');
+        }
+        
+        function showHelp() {
+            console.log('❓ Help feature coming soon');
+            showToast('❓ Help feature coming soon!', 'info');
+        }
+        
+        function signOut() {
+            if (window.genesis && window.genesis.clearSession) {
+                window.genesis.clearSession();
+                window.location.href = 'index.html';
+            }
+        }
+        
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            const bgColor = type === 'success' ? '#00ff88' : 
+                           type === 'error' ? '#ff4757' : '#667eea';
+            
+            toast.style.cssText = `
+                position: fixed; top: 20px; right: 20px; background: ${bgColor}; 
+                color: white; padding: 15px 20px; border-radius: 10px; z-index: 10001;
+                font-weight: 600; box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+                transform: translateX(100%); transition: transform 0.3s ease;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.style.transform = 'translateX(0)', 100);
+            setTimeout(() => {
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+        
+        // Make functions global
+        window.showAnalytics = showAnalytics;
+        window.showHelp = showHelp;
+        window.signOut = signOut;
+    </script>
 </body>
 </html>

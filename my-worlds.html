@@ -269,6 +269,47 @@
         </div>
     </div>
 
+    <!-- User Menu Dropdown -->
+    <div class="user-dropdown" id="userDropdown" style="display: none;">
+        <div class="dropdown-content">
+            <div class="dropdown-header">
+                <div class="dropdown-avatar" id="dropdownAvatar">👤</div>
+                <div class="dropdown-info">
+                    <div class="dropdown-name" id="dropdownName">User</div>
+                    <div class="dropdown-wallet" id="dropdownWallet">0x0000...0000</div>
+                </div>
+            </div>
+            
+            <div class="dropdown-divider"></div>
+            
+            <div class="dropdown-menu">
+                <a href="profile-setup.html?edit=true" class="dropdown-item">
+                    <span class="item-icon">⚙️</span>
+                    <span class="item-text">Edit Profile</span>
+                </a>
+                <a href="dashboard.html" class="dropdown-item">
+                    <span class="item-icon">🏠</span>
+                    <span class="item-text">Dashboard</span>
+                </a>
+                <div class="dropdown-item" onclick="showAnalytics()">
+                    <span class="item-icon">📊</span>
+                    <span class="item-text">Analytics</span>
+                </div>
+                <div class="dropdown-item" onclick="showHelp()">
+                    <span class="item-icon">❓</span>
+                    <span class="item-text">Help & Support</span>
+                </div>
+                
+                <div class="dropdown-divider"></div>
+                
+                <div class="dropdown-item danger" onclick="signOut()">
+                    <span class="item-icon">🚪</span>
+                    <span class="item-text">Sign Out</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Loading Screen -->
     <div class="loading-screen" id="loadingScreen">
         <div class="loading-content">
@@ -281,5 +322,51 @@
     <script src="config/api-keys.js"></script>
     <script src="js/genesis-wallet-system.js"></script>
     <script src="js/genesis-my-worlds.js"></script>
+    
+    <script>
+        // Global functions for dropdown menu
+        function showAnalytics() {
+            console.log('📊 Analytics feature coming soon');
+            showToast('📊 Analytics feature coming soon!', 'info');
+        }
+        
+        function showHelp() {
+            console.log('❓ Help feature coming soon');
+            showToast('❓ Help feature coming soon!', 'info');
+        }
+        
+        function signOut() {
+            if (window.genesis && window.genesis.clearSession) {
+                window.genesis.clearSession();
+                window.location.href = 'index.html';
+            }
+        }
+        
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            const bgColor = type === 'success' ? '#00ff88' : 
+                           type === 'error' ? '#ff4757' : '#667eea';
+            
+            toast.style.cssText = `
+                position: fixed; top: 20px; right: 20px; background: ${bgColor}; 
+                color: white; padding: 15px 20px; border-radius: 10px; z-index: 10001;
+                font-weight: 600; box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+                transform: translateX(100%); transition: transform 0.3s ease;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.style.transform = 'translateX(0)', 100);
+            setTimeout(() => {
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+        
+        // Make functions global
+        window.showAnalytics = showAnalytics;
+        window.showHelp = showHelp;
+        window.signOut = signOut;
+    </script>
 </body>
 </html>
