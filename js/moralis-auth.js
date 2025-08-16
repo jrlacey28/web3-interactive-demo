@@ -71,15 +71,20 @@ class MoralisAuth {
             );
 
             if (verifyResponse.success) {
+                // Check for existing user data
+                const users = JSON.parse(localStorage.getItem('siwe_users') || '{}');
+                const existingUser = users[address];
+
                 // Store authentication data
                 this.isAuthenticated = true;
                 this.isConnected = true;
                 this.account = address;
                 this.currentUser = {
                     walletAddress: address,
-                    username: null,
-                    bio: null,
-                    createdAt: new Date().toISOString(),
+                    username: existingUser?.username || null,
+                    bio: existingUser?.bio || null,
+                    displayName: existingUser?.displayName || existingUser?.username || null,
+                    createdAt: existingUser?.createdAt || new Date().toISOString(),
                     sessionToken: verifyResponse.token || Date.now().toString()
                 };
 
