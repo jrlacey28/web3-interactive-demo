@@ -42,7 +42,10 @@
       "Bash(start test-fresh-state.html)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "WebSearch",
+      "WebFetch(domain:docs.moralis.com)",
+      "WebFetch(domain:developers.moralis.com)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"
