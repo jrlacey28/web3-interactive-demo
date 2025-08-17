@@ -147,36 +147,20 @@
     <!-- GENESIS Wallet System -->
     <script src="config/api-keys.js"></script>
     <script src="js/genesis-wallet-system.js"></script>
+    <script src="js/wallet-ui-utils.js"></script>
     
     <!-- Home Page JavaScript -->
     <script>
-        // Clean home page implementation
-        document.addEventListener('DOMContentLoaded', async () => {
-            console.log('🏠 Initializing home page...');
-            
-            // Wait for GENESIS system
-            await waitForGenesis();
-            
-            // Update UI if already authenticated
-            if (window.genesis.isAuthenticated) {
-                updateWalletButton();
-            }
-            
-            console.log('✅ Home page ready');
-        });
-        
-        async function waitForGenesis() {
-            let attempts = 0;
-            while (!window.genesis && attempts < 50) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                attempts++;
-            }
-        }
-        
+        // Wallet button functionality
         async function handleWalletConnect() {
             const walletBtn = document.getElementById('walletBtn');
             
             try {
+                // Check if already connected - show dropdown instead of reconnecting
+                if (window.genesis.isAuthenticated) {
+                    toggleUserDropdown();
+                    return;
+                }
                 
                 walletBtn.disabled = true;
                 walletBtn.textContent = 'Connecting...';
@@ -184,15 +168,25 @@
                 const result = await window.genesis.connect();
                 
                 if (result.success) {
-                    console.log('Wallet connected successfully');
-                    updateWalletButton();
-                    showToast('🎉 Welcome back!', 'success');
+                    console.log('✅ Wallet connected:', result.address);
+                    
+                    if (result.hasProfile) {
+                        // User has profile, update button
+                        updateWalletButton();
+                        showToast('🎉 Welcome back!', 'success');
+                    } else {
+                        // New user, redirect to profile setup
+                        showToast('🎉 Wallet connected! Setting up your profile...', 'success');
+                        setTimeout(() => {
+                            window.location.href = 'profile-setup.html?from=auth';
+                        }, 1500);
+                    }
                 } else {
-                    throw new Error(result.error || 'Connection failed');
+                    throw new Error(result.error);
                 }
                 
             } catch (error) {
-                console.error('Wallet connection error:', error);
+                console.error('❌ Wallet connection failed:', error);
                 walletBtn.textContent = 'Connect Wallet';
                 showToast('❌ Failed to connect wallet', 'error');
             } finally {
@@ -208,6 +202,10 @@
             }
         }
         
+        function toggleUserDropdown() {
+            // For home page, just redirect to dashboard since no dropdown here
+            window.location.href = 'dashboard.html';
+        }
         
         function signOut() {
             window.genesis.clearSession();
@@ -218,17 +216,6 @@
             }
             
             showToast('👋 Wallet disconnected', 'info');
-        }
-        
-        function switchToArbitrum() {
-            if (window.ethereum) {
-                window.ethereum.request({
-                    method: 'wallet_switchEthereumChain',
-                    params: [{ chainId: '0x66eee' }]
-                }).catch(() => {
-                    showToast('🔄 Please switch to Arbitrum Sepolia manually', 'info');
-                });
-            }
         }
         
         function showToast(message, type = 'info') {
@@ -253,19 +240,29 @@
         }
         
         // Initialize wallet button on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            // Wait for genesis system to initialize
-            setTimeout(() => {
-                if (window.genesis && window.genesis.isAuthenticated) {
-                    updateWalletButton();
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Wait for genesis system to fully initialize
+            let attempts = 0;
+            while (attempts < 50) { // Try for up to 5 seconds
+                if (window.genesis && window.genesis.isAuthenticated !== undefined) {
+                    if (window.genesis.isAuthenticated) {
+                        updateWalletButton();
+                        console.log('✅ Session restored, wallet button updated');
+                    } else {
+                        console.log('ℹ️ No existing session found');
+                    }
+                    break;
                 }
-            }, 100);
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            console.log('🏠 Home page ready');
         });
         
         // Make functions global
         window.handleWalletConnect = handleWalletConnect;
         window.signOut = signOut;
-        window.switchToArbitrum = switchToArbitrum;
     </script>
 </body>
 </html>

@@ -174,6 +174,51 @@
     <div class="canvas" id="canvas"></div>
 
     <!-- User Dropdown Menu -->
+    <div class="user-dropdown" id="userDropdown" style="display: none;">
+        <div class="dropdown-content">
+            <!-- Wallet Connected Header -->
+            <div class="wallet-connected-header">
+                <div class="connection-status">
+                    <span class="status-text">Wallet Connected</span>
+                </div>
+                <div class="wallet-address" id="dropdownWalletAddress">0x0000...0000</div>
+                <div class="network-info" id="dropdownNetwork">Arbitrum Sepolia Testnet</div>
+            </div>
+            
+            <!-- Username Display -->
+            <div class="username-display" id="usernameDisplay" style="display: none;">
+                <span class="username-text" id="dropdownUsername">jordan</span>
+            </div>
+            
+            <div class="dropdown-divider"></div>
+            
+            <div class="dropdown-menu">
+                <a href="dashboard.html" class="dropdown-item">
+                    <span class="item-icon">📊</span>
+                    <span class="item-text">Dashboard</span>
+                </a>
+                <a href="my-worlds.html" class="dropdown-item">
+                    <span class="item-icon">🌍</span>
+                    <span class="item-text">My Worlds</span>
+                </a>
+                <a href="profile-setup.html?edit=true" class="dropdown-item">
+                    <span class="item-icon">✏️</span>
+                    <span class="item-text">Edit Profile</span>
+                </a>
+                <a href="#" class="dropdown-item" onclick="switchToArbitrum()">
+                    <span class="item-icon">🔄</span>
+                    <span class="item-text">Switch to Arbitrum</span>
+                </a>
+                
+                <div class="dropdown-divider"></div>
+                
+                <div class="dropdown-item danger" onclick="signOut()">
+                    <span class="item-icon">📴</span>
+                    <span class="item-text">Disconnect Wallet</span>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Core JavaScript Modules -->
     <script src="config/api-keys.js"></script>
@@ -219,9 +264,13 @@
         async function handleWalletConnect() {
             const walletBtn = document.getElementById('walletBtn');
             
+            // If already authenticated, toggle dropdown instead of reconnecting
+            if (window.genesis.isAuthenticated) {
+                toggleUserDropdown();
+                return;
+            }
+            
             try {
-                // Check if already connected - allow reconnection or show connection status
-                
                 walletBtn.disabled = true;
                 walletBtn.textContent = 'Connecting...';
                 
@@ -257,6 +306,56 @@
             if (walletBtn && window.genesis.isAuthenticated) {
                 const displayName = window.genesis.username || window.genesis.getShortAddress();
                 walletBtn.textContent = `${displayName}`;
+                
+                // Update dropdown info
+                updateDropdownInfo();
+            }
+        }
+        
+        function updateDropdownInfo() {
+            const dropdownWalletAddress = document.getElementById('dropdownWalletAddress');
+            const dropdownUsername = document.getElementById('dropdownUsername');
+            const usernameDisplay = document.getElementById('usernameDisplay');
+            
+            if (dropdownWalletAddress) {
+                dropdownWalletAddress.textContent = window.genesis.getShortAddress();
+            }
+            
+            if (window.genesis.username && usernameDisplay && dropdownUsername) {
+                dropdownUsername.textContent = window.genesis.username;
+                usernameDisplay.style.display = 'block';
+            } else if (usernameDisplay) {
+                usernameDisplay.style.display = 'none';
+            }
+        }
+        
+        function toggleUserDropdown() {
+            const dropdown = document.getElementById('userDropdown');
+            if (!dropdown) return;
+            
+            const isVisible = dropdown.style.display === 'block';
+            dropdown.style.display = isVisible ? 'none' : 'block';
+            
+            if (!isVisible) {
+                // Update dropdown info before showing
+                updateDropdownInfo();
+                
+                // Close on outside click
+                setTimeout(() => {
+                    document.addEventListener('click', closeDropdownOnOutsideClick);
+                }, 100);
+            }
+        }
+        
+        function closeDropdownOnOutsideClick(e) {
+            const dropdown = document.getElementById('userDropdown');
+            const walletBtn = document.getElementById('walletBtn');
+            
+            if (dropdown && walletBtn && 
+                !dropdown.contains(e.target) && 
+                !walletBtn.contains(e.target)) {
+                dropdown.style.display = 'none';
+                document.removeEventListener('click', closeDropdownOnOutsideClick);
             }
         }
         
@@ -327,19 +426,29 @@
         };
         
         // Initialize wallet button on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            // Wait for genesis system to initialize
-            setTimeout(() => {
-                if (window.genesis && window.genesis.isAuthenticated) {
-                    updateWalletButton();
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Wait for genesis system to fully initialize
+            let attempts = 0;
+            while (attempts < 50) { // Try for up to 5 seconds
+                if (window.genesis && window.genesis.isAuthenticated !== undefined) {
+                    if (window.genesis.isAuthenticated) {
+                        updateWalletButton();
+                        console.log('✅ Session restored, wallet button updated');
+                    } else {
+                        console.log('ℹ️ No existing session found');
+                    }
+                    break;
                 }
-            }, 100);
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
         });
         
         // Make functions global
         window.handleWalletConnect = handleWalletConnect;
         window.signOut = signOut;
         window.switchToArbitrum = switchToArbitrum;
+        window.toggleUserDropdown = toggleUserDropdown;
     </script>
 </body>
 </html>
