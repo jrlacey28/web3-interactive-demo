@@ -2,18 +2,40 @@
 let authenticatedWallet = null;
 let currentUser = null;
 
-// Wait for Moralis wallet manager to be available
-async function waitForWalletManager() {
-    console.log('⏳ Waiting for Moralis wallet manager...');
+// Toast notification function
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    const bgColor = type === 'success' ? '#00ff88' : 
+                   type === 'error' ? '#ff4757' : '#667eea';
+    
+    toast.style.cssText = `
+        position: fixed; top: 20px; right: 20px; background: ${bgColor}; 
+        color: white; padding: 15px 20px; border-radius: 10px; z-index: 10001;
+        font-weight: 600; box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        transform: translateX(100%); transition: transform 0.3s ease;
+    `;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => toast.style.transform = 'translateX(0)', 100);
+    setTimeout(() => {
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
+}
+
+// Wait for GENESIS wallet system to be available
+async function waitForGenesisSystem() {
+    console.log('⏳ Waiting for GENESIS wallet system...');
     let attempts = 0;
-    while (!window.walletManager && attempts < 50) {
+    while (!window.genesis && attempts < 50) {
         await new Promise(resolve => setTimeout(resolve, 100));
         attempts++;
     }
-    if (!window.walletManager) {
-        throw new Error('Moralis wallet manager not available after waiting');
+    if (!window.genesis) {
+        throw new Error('GENESIS wallet system not available after waiting');
     }
-    console.log('✅ Moralis wallet manager ready');
+    console.log('✅ GENESIS wallet system ready');
 }
 
 // Initialize authentication when DOM is ready
@@ -28,11 +50,11 @@ async function initializeCreatorAuth() {
     try {
         console.log('🎨 Initializing creator page authentication...');
         
-        // Wait for Moralis wallet manager to be available
-        await waitForWalletManager();
+        // Wait for GENESIS wallet system to be available
+        await waitForGenesisSystem();
 
-        // Use Moralis wallet system
-        authenticatedWallet = window.walletManager;
+        // Use GENESIS wallet system
+        authenticatedWallet = window.genesis;
         
         // Check for existing session
         await checkUserSession();
@@ -60,8 +82,8 @@ async function checkUserSession() {
     try {
         console.log('🔍 Checking existing user session...');
         
-        // Check for existing Moralis authentication
-        await authenticatedWallet.checkExistingSession();
+        // Check for existing GENESIS authentication
+        await authenticatedWallet.restoreSession();
         
         if (authenticatedWallet.isAuthenticated) {
             currentUser = authenticatedWallet.getCurrentUser();
@@ -101,10 +123,10 @@ async function handleCreatorWalletConnect() {
         walletBtn.disabled = true;
         walletBtn.textContent = 'Connecting...';
         
-        const result = await authenticatedWallet.authenticate();
+        const result = await authenticatedWallet.connect();
         
         if (result.success) {
-            currentUser = result.user;
+            currentUser = authenticatedWallet.getCurrentUser();
             updateCreatorUI();
             showAuthSuccessToast();
             
@@ -118,7 +140,7 @@ async function handleCreatorWalletConnect() {
         
     } catch (error) {
         console.error('❌ Wallet connection failed:', error);
-        authenticatedWallet.showToast('❌ Connection failed: ' + error.message, 'error');
+        showToast('❌ Connection failed: ' + error.message, 'error');
     } finally {
         const walletBtn = document.getElementById('walletBtn');
         walletBtn.disabled = false;
@@ -134,10 +156,10 @@ async function handleCreatorAuth() {
         
         // Note: With Moralis, connection and authentication happen together
         
-        const result = await authenticatedWallet.authenticate();
+        const result = await authenticatedWallet.connect();
         
         if (result.success) {
-            currentUser = result.user;
+            currentUser = authenticatedWallet.getCurrentUser();
             updateCreatorUI();
             showAuthSuccessToast();
             
@@ -151,7 +173,7 @@ async function handleCreatorAuth() {
         
     } catch (error) {
         console.error('❌ Authentication failed:', error);
-        authenticatedWallet.showToast('❌ Authentication failed: ' + error.message, 'error');
+        showToast('❌ Authentication failed: ' + error.message, 'error');
     }
 }
 
@@ -276,14 +298,14 @@ function showSessionRestoreToast() {
     if (!currentUser) return;
     
     const displayName = currentUser.username || 'Creator';
-    authenticatedWallet.showToast(`✅ Welcome back, ${displayName}! Your session has been restored.`, 'success');
+    showToast(`✅ Welcome back, ${displayName}! Your session has been restored.`, 'success');
 }
 
 function showAuthSuccessToast() {
     if (!currentUser) return;
     
     const displayName = currentUser.username || 'Creator';
-    authenticatedWallet.showToast(`🎉 Signed in as ${displayName}! You can now save and publish your creations.`, 'success');
+    showToast(`🎉 Signed in as ${displayName}! You can now save and publish your creations.`, 'success');
 }
 
 // ========================================
@@ -306,11 +328,11 @@ async function signOutUser() {
         console.log('🚪 Signing out from creator page...');
         document.querySelector('.modal-overlay')?.remove();
         
-        await authenticatedWallet.signOut();
+        await authenticatedWallet.clearSession();
         currentUser = null;
         updateCreatorUI();
         
-        authenticatedWallet.showToast('✅ Successfully signed out!', 'success');
+        showToast('✅ Successfully signed out!', 'success');
         
     } catch (error) {
         console.error('❌ Sign out failed:', error);
@@ -338,7 +360,7 @@ window.saveLayout = function() {
             originalSaveLayout.call(this, userMetadata);
         }
         
-        authenticatedWallet.showToast('💾 Layout saved to your profile!', 'success');
+        showToast('💾 Layout saved to your profile!', 'success');
     } else {
         // Show prompt to sign in first
         showSignInPrompt();
@@ -360,7 +382,7 @@ window.publishLayout = function() {
                 saveWorldToUsersList(worldName, currentUser);
             }
             
-            authenticatedWallet.showToast('🚀 World published! Others can now view your creation.', 'success');
+            showToast('🚀 World published! Others can now view your creation.', 'success');
         });
     } else {
         // Show prompt to sign in first
@@ -505,7 +527,7 @@ function handleNetworkChange(event) {
     if (authenticatedWallet.isAuthenticated) {
         // Just update the UI, don't disrupt the user's work
         const networkName = event.detail.networkName;
-        authenticatedWallet.showToast(`Switched to ${networkName}`, 'info');
+        showToast(`Switched to ${networkName}`, 'info');
     }
 }
 
