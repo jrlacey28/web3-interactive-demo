@@ -411,49 +411,9 @@ class MultiWalletUI {
     // ========================================
     
     updateDropdownWalletSection() {
-        const userDropdown = document.getElementById('userDropdown');
-        if (!userDropdown) return;
-        
-        // Find existing wallet section or create it
-        let walletSection = userDropdown.querySelector('.dropdown-wallet-section');
-        
-        if (!walletSection) {
-            walletSection = document.createElement('div');
-            walletSection.className = 'dropdown-wallet-section';
-            
-            // Insert before the last divider
-            const lastDivider = userDropdown.querySelector('.dropdown-divider:last-child');
-            if (lastDivider) {
-                userDropdown.insertBefore(walletSection, lastDivider);
-            } else {
-                userDropdown.appendChild(walletSection);
-            }
-        }
-        
-        const wallets = window.multiWalletManager.getAllWallets();
-        const secondaryWallets = wallets.filter(w => !w.isPrimary);
-        
-        walletSection.innerHTML = `
-            <div class="wallet-section-header">
-                <span class="wallet-section-title">Payment Wallets</span>
-                <button class="add-wallet-dropdown-btn" onclick="multiWalletUI.openModal()">
-                    + Add Wallet
-                </button>
-            </div>
-            ${secondaryWallets.length > 0 ? secondaryWallets.map(wallet => `
-                <div class="dropdown-wallet-item" onclick="multiWalletUI.copyWalletAddress('${wallet.address}')">
-                    <div class="dropdown-wallet-icon">${wallet.metadata?.icon || '🪙'}</div>
-                    <div class="dropdown-wallet-info">
-                        <p class="dropdown-wallet-label">${wallet.label}</p>
-                        <p class="dropdown-wallet-address">${window.multiWalletManager.formatAddress(wallet.address, wallet.type)}</p>
-                    </div>
-                </div>
-            `).join('') : `
-                <div style="text-align: center; padding: 10px; color: rgba(255,255,255,0.5); font-size: 11px;">
-                    No payment wallets added
-                </div>
-            `}
-        `;
+        // Disabled: Payment wallets section removed from dropdown per user request
+        // Wallets are now managed through the profile setup page
+        return;
     }
     
     // ========================================
