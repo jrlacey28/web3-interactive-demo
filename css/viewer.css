@@ -389,17 +389,17 @@
 }
 
 .floating-btn {
-  padding: 12px 20px;
+  padding: 16px 28px;
   border: none;
   border-radius: 25px;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 16px;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  min-width: 140px;
+  min-width: 180px;
   text-align: center;
 }
 
