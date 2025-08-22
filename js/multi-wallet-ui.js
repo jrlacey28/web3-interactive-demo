@@ -510,6 +510,19 @@ class MultiWalletUI {
 // Create global instance
 window.multiWalletUI = new MultiWalletUI();
 
+// Global function for opening the manage wallets modal
+window.openManageWalletsModal = function() {
+    if (window.multiWalletUI && window.multiWalletUI.isInitialized) {
+        window.multiWalletUI.openModal();
+    } else {
+        console.warn('Multi-wallet UI not yet initialized');
+        // Try to initialize and then open
+        window.multiWalletUI.initialize().then(() => {
+            window.multiWalletUI.openModal();
+        });
+    }
+};
+
 // Auto-initialize on DOM ready
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('🎨 Initializing Multi-Wallet UI...');
