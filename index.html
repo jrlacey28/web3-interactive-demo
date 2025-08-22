@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/home.css">
+    <link rel="stylesheet" href="css/multi-wallet.css">
 </head>
 <body class="home-page">
     <div class="bg" id="bg"></div>
@@ -117,6 +118,10 @@
                     <span class="item-icon">🔄</span>
                     <span class="item-text">Switch to Arbitrum</span>
                 </a>
+                <a href="#" class="dropdown-item" onclick="openAddWalletModal()">
+                    <span class="item-icon">➕</span>
+                    <span class="item-text">Add Wallet</span>
+                </a>
                 
                 <div class="dropdown-divider"></div>
                 
@@ -147,6 +152,10 @@
     <!-- GENESIS Wallet System -->
     <script src="config/api-keys.js"></script>
     <script src="js/genesis-wallet-system.js"></script>
+    <script src="js/multi-wallet-manager.js"></script>
+    <script src="js/bitcoin-wallet-integration.js"></script>
+    <script src="js/multi-wallet-ui.js"></script>
+    <script src="js/multi-wallet-security.js"></script>
     <script src="js/wallet-ui-utils.js"></script>
     
     <!-- Home Page JavaScript -->

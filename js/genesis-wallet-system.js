@@ -9,6 +9,7 @@ class GenesisWalletSystem {
         this.username = null;
         this.currentUser = null;
         this.sessionData = null;
+        this.multiWalletManager = null;
         
         console.log('🚀 Initializing GENESIS Wallet System...');
         this.initialize();
@@ -21,7 +22,44 @@ class GenesisWalletSystem {
         // Set up event listeners
         this.setupEventListeners();
         
+        // Initialize multi-wallet system
+        await this.initializeMultiWalletSystem();
+        
         console.log('✅ GENESIS Wallet System ready');
+    }
+    
+    // ========================================
+    // MULTI-WALLET SYSTEM INTEGRATION
+    // ========================================
+    
+    async initializeMultiWalletSystem() {
+        try {
+            // Wait for multi-wallet manager to be available
+            let attempts = 0;
+            while (!window.MultiWalletManager && attempts < 30) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            if (window.MultiWalletManager) {
+                this.multiWalletManager = new window.MultiWalletManager();
+                await this.multiWalletManager.initialize(this);
+                
+                // If authenticated, set up primary wallet
+                if (this.isAuthenticated && this.account) {
+                    this.multiWalletManager.setPrimaryWallet(this.account);
+                }
+                
+                // Make available globally
+                window.multiWalletManager = this.multiWalletManager;
+                
+                console.log('✅ Multi-wallet system initialized');
+            } else {
+                console.warn('⚠️ Multi-wallet system not available');
+            }
+        } catch (error) {
+            console.error('❌ Multi-wallet initialization failed:', error);
+        }
     }
     
     // ========================================
@@ -89,6 +127,11 @@ class GenesisWalletSystem {
                 console.log('✅ Existing profile loaded:', existingProfile.username);
             } else {
                 console.log('ℹ️ No existing profile found');
+            }
+            
+            // Set up primary wallet in multi-wallet system
+            if (this.multiWalletManager) {
+                this.multiWalletManager.setPrimaryWallet(address);
             }
             
             // Save session
