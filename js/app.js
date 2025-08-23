@@ -3435,13 +3435,179 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => syncAllHeaders(), 200);
     }, 1000);
     
-    // Load saved layout if it exists
-    const savedLayout = localStorage.getItem('web3DemoLayout');
-    if (savedLayout) {
-        // Could implement layout restoration here
-        console.log('Saved layout found:', savedLayout);
+    // Check if we're in edit mode (from My Worlds page)
+    const urlParams = new URLSearchParams(window.location.search);
+    const editWorldId = urlParams.get('edit');
+    const editingWorldData = localStorage.getItem('editingWorld');
+    
+    if (editWorldId && editingWorldData) {
+        console.log('🎨 Loading world for editing...', editWorldId);
+        try {
+            const editData = JSON.parse(editingWorldData);
+            if (editData.worldId === editWorldId) {
+                restoreLayoutFromData(editData.layoutData);
+                
+                // Update page title and save button text for editing mode
+                document.title = `Editing: ${editData.worldName} - GENESIS`;
+                const saveBtn = document.querySelector('.save-btn');
+                const publishBtn = document.querySelector('.publish-btn');
+                
+                if (saveBtn) {
+                    saveBtn.textContent = '💾 Save Changes';
+                }
+                if (publishBtn) {
+                    publishBtn.textContent = '🚀 Update World';
+                }
+                
+                console.log('✅ World loaded for editing:', editData.worldName);
+            }
+        } catch (error) {
+            console.error('❌ Failed to load world for editing:', error);
+        }
+    } else {
+        // Load saved layout if it exists (normal save/restore behavior)
+        const savedLayout = localStorage.getItem('web3DemoLayout');
+        if (savedLayout) {
+            console.log('✅ Saved layout found, restoring...', savedLayout);
+            try {
+                const layoutData = JSON.parse(savedLayout);
+                restoreLayoutFromData(layoutData);
+                
+                // Update save button to show it's been saved
+                const saveBtn = document.querySelector('.save-btn');
+                if (saveBtn) {
+                    saveBtn.textContent = '✅ Saved';
+                    saveBtn.classList.add('saved-state');
+                }
+            } catch (error) {
+                console.error('❌ Failed to restore saved layout:', error);
+            }
+        }
     }
 });
+
+// ========================================
+// LAYOUT RESTORATION FUNCTION
+// ========================================
+
+function restoreLayoutFromData(layoutData) {
+    console.log('🔄 Restoring layout from saved data...');
+    
+    // Clear existing widgets
+    const canvas = document.getElementById('canvas');
+    if (canvas) {
+        canvas.innerHTML = '';
+    }
+    
+    // Restore background if available
+    if (layoutData.background) {
+        applyBackground(layoutData.background);
+    }
+    
+    // Restore each widget
+    if (layoutData.widgets && Array.isArray(layoutData.widgets)) {
+        layoutData.widgets.forEach((widgetData, index) => {
+            try {
+                restoreWidgetFromData(widgetData);
+            } catch (error) {
+                console.error('❌ Failed to restore widget:', widgetData.id, error);
+            }
+        });
+    }
+    
+    console.log('✅ Layout restoration completed');
+}
+
+function restoreWidgetFromData(widgetData) {
+    const canvas = document.getElementById('canvas');
+    if (!canvas) return;
+    
+    // Create widget wrapper
+    const wrapper = document.createElement('div');
+    wrapper.className = 'widget-wrapper';
+    wrapper.id = widgetData.id || `widget-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Set position and size
+    wrapper.style.position = 'absolute';
+    wrapper.style.left = widgetData.x;
+    wrapper.style.top = widgetData.y;
+    wrapper.style.width = widgetData.width;
+    wrapper.style.height = widgetData.height;
+    wrapper.style.zIndex = widgetData.zIndex || '1000';
+    
+    // Create widget content based on type
+    const widgetContent = createWidgetContent(widgetData.type, widgetData.content);
+    wrapper.appendChild(widgetContent);
+    
+    // Add to canvas
+    canvas.appendChild(wrapper);
+    
+    // Make draggable if the makeDraggable function exists
+    if (typeof makeDraggable === 'function') {
+        makeDraggable(wrapper);
+    }
+}
+
+function createWidgetContent(type, content) {
+    const widget = document.createElement('div');
+    widget.className = 'widget';
+    widget.dataset.type = type;
+    
+    switch (type) {
+        case 'text':
+            widget.innerHTML = `
+                <div class="text-content" style="padding: 15px; background: rgba(255,255,255,0.9); border-radius: 10px; height: 100%; box-sizing: border-box;">
+                    <p style="margin: 0; color: #333; font-size: 16px;">${content?.text || 'Text Widget'}</p>
+                </div>
+            `;
+            break;
+            
+        case 'social-feed':
+            widget.innerHTML = `
+                <div class="social-feed" style="background: rgba(29,155,240,0.9); color: white; padding: 15px; border-radius: 10px; height: 100%; box-sizing: border-box;">
+                    <h3 style="margin: 0 0 10px 0; font-size: 16px;">📱 ${content?.platform || 'Social'} Feed</h3>
+                    <p style="margin: 0; font-size: 14px;">@${content?.username || 'genesis'}</p>
+                </div>
+            `;
+            break;
+            
+        case 'chat':
+            widget.innerHTML = `
+                <div class="chat-widget" style="background: rgba(88,101,242,0.9); color: white; padding: 15px; border-radius: 10px; height: 100%; box-sizing: border-box;">
+                    <h3 style="margin: 0 0 10px 0; font-size: 16px;">💬 ${content?.title || 'Live Chat'}</h3>
+                    <div style="font-size: 12px; opacity: 0.8;">Chat messages will appear here</div>
+                </div>
+            `;
+            break;
+            
+        case 'tip-jar':
+            widget.innerHTML = `
+                <div class="tip-jar" style="background: rgba(34,197,94,0.9); color: white; padding: 15px; border-radius: 10px; height: 100%; box-sizing: border-box; text-align: center;">
+                    <h3 style="margin: 0 0 10px 0; font-size: 16px;">💰 ${content?.title || 'Tip Jar'}</h3>
+                    <p style="margin: 0; font-size: 14px;">Support the creator</p>
+                </div>
+            `;
+            break;
+            
+        case 'countdown':
+            widget.innerHTML = `
+                <div class="countdown-widget" style="background: rgba(239,68,68,0.9); color: white; padding: 15px; border-radius: 10px; height: 100%; box-sizing: border-box; text-align: center;">
+                    <h3 style="margin: 0 0 10px 0; font-size: 16px;">⏰ ${content?.title || 'Countdown'}</h3>
+                    <div class="countdown-display" data-target="${content?.targetDate}" style="font-size: 18px; font-weight: bold;">00:00:00</div>
+                </div>
+            `;
+            break;
+            
+        default:
+            widget.innerHTML = `
+                <div class="generic-widget" style="background: rgba(102,126,234,0.9); color: white; padding: 15px; border-radius: 10px; height: 100%; box-sizing: border-box;">
+                    <h3 style="margin: 0; font-size: 16px;">${type} Widget</h3>
+                </div>
+            `;
+    }
+    
+    return widget;
+}
 
 // ========================================
 // LAYOUT SAVE AND PUBLISH FUNCTIONS

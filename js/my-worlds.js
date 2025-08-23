@@ -425,8 +425,27 @@ function viewSubWorld(worldId) {
 }
 
 function editSubWorld(worldId) {
-    // TODO: Implement sub-world editing
-    alert('Sub-world editing will be available soon!');
+    const world = userWorlds[worldId];
+    if (!world) {
+        alert('World not found!');
+        return;
+    }
+    
+    console.log('🎨 Loading world for editing:', world.name);
+    
+    // Save the world data to a temporary storage that the creator page can access
+    const editData = {
+        worldId: worldId,
+        worldName: world.name,
+        layoutData: world.content,
+        isEditing: true,
+        originalWorld: world
+    };
+    
+    localStorage.setItem('editingWorld', JSON.stringify(editData));
+    
+    // Redirect to creator page with edit parameter
+    window.location.href = `creator.html?edit=${worldId}`;
 }
 
 function deleteSubWorld(worldId) {

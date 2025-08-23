@@ -468,47 +468,166 @@ function handleWorldPublish() {
 
 function saveWorldToUsersList(worldName, user) {
     try {
+        // Check if we're in editing mode
+        const editingWorldData = localStorage.getItem('editingWorld');
+        let isEditingMode = false;
+        let editData = null;
+        
+        if (editingWorldData) {
+            try {
+                editData = JSON.parse(editingWorldData);
+                isEditingMode = true;
+            } catch (e) {
+                console.log('No valid editing data found');
+            }
+        }
+        
         // Get user's worlds
         const allWorlds = JSON.parse(localStorage.getItem('user_worlds') || '{}');
         if (!allWorlds[user.walletAddress]) {
             allWorlds[user.walletAddress] = {};
         }
         
-        // Create world data
-        const worldId = worldName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
-        const worldData = {
-            id: worldId,
-            type: 'sub',
-            name: worldName,
-            description: `Created with GENESIS world builder`,
-            theme: 'purple',
-            privacy: 'public',
-            template: 'custom',
-            banner: null,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            stats: {
-                views: 0,
-                likes: 0,
-                tips: 0
-            },
-            content: {
-                widgets: [],
-                layout: 'custom'
-            },
-            published: true,
-            layoutId: `${user.username}_${worldId}_${Date.now()}`
-        };
+        if (isEditingMode && editData) {
+            // Update existing world
+            const existingWorld = allWorlds[user.walletAddress][editData.worldId];
+            if (existingWorld) {
+                existingWorld.name = worldName;
+                existingWorld.content = captureWorldLayout();
+                existingWorld.updatedAt = new Date().toISOString();
+                
+                console.log('✅ World updated:', worldName);
+                
+                // Clear editing mode
+                localStorage.removeItem('editingWorld');
+                showToast('🔄 World updated successfully!', 'success');
+            } else {
+                throw new Error('Original world not found for editing');
+            }
+        } else {
+            // Create new world
+            const worldId = worldName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+            const worldData = {
+                id: worldId,
+                type: 'sub',
+                name: worldName,
+                description: `Created with GENESIS world builder`,
+                theme: 'purple',
+                privacy: 'public',
+                template: 'custom',
+                banner: null,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                stats: {
+                    views: 0,
+                    likes: 0,
+                    tips: 0
+                },
+                content: captureWorldLayout(),
+                published: true,
+                layoutId: `${user.username}_${worldId}_${Date.now()}`
+            };
+            
+            // Add to user's worlds
+            allWorlds[user.walletAddress][worldId] = worldData;
+            console.log('✅ New world created:', worldData);
+        }
         
-        // Add to user's worlds
-        allWorlds[user.walletAddress][worldId] = worldData;
         localStorage.setItem('user_worlds', JSON.stringify(allWorlds));
-        
-        console.log('✅ World saved to user worlds list:', worldData);
         
     } catch (error) {
         console.error('❌ Failed to save world to user list:', error);
     }
+}
+
+// Capture the current world layout for saving
+function captureWorldLayout() {
+    const widgets = [];
+    const wrappers = document.querySelectorAll('.widget-wrapper');
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    wrappers.forEach((wrapper, index) => {
+        const widget = wrapper.querySelector('.widget');
+        if (!widget) return;
+        
+        const widgetType = widget.dataset.type;
+        
+        // Convert pixel positions to percentages for responsive layout
+        const leftPx = parseInt(wrapper.style.left) || 0;
+        const topPx = parseInt(wrapper.style.top) || 0;
+        const widthPx = parseInt(wrapper.style.width) || 300;
+        const heightPx = parseInt(wrapper.style.height) || 200;
+        
+        const widgetData = {
+            id: wrapper.id,
+            type: widgetType,
+            x: ((leftPx / viewportWidth) * 100) + '%',
+            y: ((topPx / viewportHeight) * 100) + '%',
+            width: ((widthPx / viewportWidth) * 100) + '%',
+            height: ((heightPx / viewportHeight) * 100) + '%',
+            zIndex: wrapper.style.zIndex || 1000 + index,
+            
+            // Widget-specific data
+            content: getWidgetContent(widget, widgetType)
+        };
+        
+        widgets.push(widgetData);
+    });
+    
+    return {
+        widgets: widgets,
+        layout: 'custom',
+        background: getBackgroundData(),
+        createdAt: new Date().toISOString()
+    };
+}
+
+// Get widget-specific content
+function getWidgetContent(widget, widgetType) {
+    switch (widgetType) {
+        case 'text':
+            const textElement = widget.querySelector('p, h1, h2, h3, div');
+            return { text: textElement ? textElement.textContent : 'Text Widget' };
+        
+        case 'social-feed':
+            return { platform: 'twitter', username: 'genesis' };
+            
+        case 'chat':
+            return { title: 'Live Chat', platform: 'generic' };
+            
+        case 'tip-jar':
+            return { title: 'Tip Jar', enabled: true };
+            
+        case 'countdown':
+            const countdownElement = widget.querySelector('.countdown-display');
+            return { 
+                title: 'Countdown',
+                targetDate: countdownElement?.dataset.target || new Date(Date.now() + 86400000).toISOString()
+            };
+            
+        default:
+            return { type: widgetType };
+    }
+}
+
+// Get current background data
+function getBackgroundData() {
+    const body = document.body;
+    const bg = document.getElementById('bg');
+    
+    if (bg) {
+        const computedStyle = window.getComputedStyle(bg);
+        return {
+            type: 'gradient',
+            background: computedStyle.background || computedStyle.backgroundImage
+        };
+    }
+    
+    return {
+        type: 'default',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+    };
 }
 
 // Make functions globally available
