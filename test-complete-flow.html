@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Complete Flow - GENESIS</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f7fa;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+            display: inline-block;
+            text-decoration: none;
+        }
+        .btn:hover {
+            background: #5a67d8;
+        }
+        .success {
+            background: #00ff88;
+        }
+        .success:hover {
+            background: #00cc6a;
+        }
+        .step {
+            background: #f8f9ff;
+            border: 1px solid #e8f0ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .step h3 {
+            color: #667eea;
+            margin-top: 0;
+        }
+        .checklist {
+            list-style: none;
+            padding: 0;
+        }
+        .checklist li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .checklist li:before {
+            content: "☐ ";
+            margin-right: 8px;
+        }
+        .done:before {
+            content: "✅ ";
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Complete Flow Test</h1>
+        <p>Test all the fixes we implemented:</p>
+        
+        <div class="step">
+            <h3>Step 1: Test Creator Page (Blank Canvas)</h3>
+            <p>The creator page should start completely blank with no widgets.</p>
+            <a href="creator.html" class="btn" target="_blank">Open Creator Page</a>
+            <ul class="checklist">
+                <li>Creator page opens with blank canvas</li>
+                <li>No crypto widget appears automatically</li>
+                <li>Can drag crypto widget from sidebar</li>
+                <li>Crypto widget has proper "Send a Tip" appearance</li>
+                <li>Crypto widget has close button (×)</li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <h3>Step 2: Test Save & Restore</h3>
+            <p>Add widgets, save layout, refresh page to test persistence.</p>
+            <ul class="checklist">
+                <li>Add some widgets to creator</li>
+                <li>Click "Save Layout" button</li>
+                <li>Refresh the page (F5)</li>
+                <li>Widgets should restore with same appearance</li>
+                <li>All widgets should have close buttons</li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <h3>Step 3: Test World Publishing</h3>
+            <p>Publish a world and check if it appears in My Worlds.</p>
+            <ul class="checklist">
+                <li>Create some widgets in creator</li>
+                <li>Click "Publish" button</li>
+                <li>Enter a world name (e.g., "Test World")</li>
+                <li>Check browser console for debug logs</li>
+                <li>Confirm publishing success</li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <h3>Step 4: Test My Worlds Page</h3>
+            <p>Verify published worlds appear correctly.</p>
+            <a href="my-worlds.html" class="btn" target="_blank">Open My Worlds</a>
+            <ul class="checklist">
+                <li>Page loads without errors</li>
+                <li>User is authenticated</li>
+                <li>Published worlds appear in sub-worlds section</li>
+                <li>Can view, edit, and delete worlds</li>
+                <li>Check browser console for debug logs</li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <h3>Debug Tools</h3>
+            <p>Use these tools if there are issues:</p>
+            <a href="debug-user-data.html" class="btn" target="_blank">Debug Data</a>
+            <a href="create-test-subworld.html" class="btn" target="_blank">Create Test Data</a>
+            <button class="btn" onclick="clearAll()">Clear All Data</button>
+        </div>
+
+        <div class="step">
+            <h3>✅ Expected Results</h3>
+            <ul class="checklist done">
+                <li>Creator starts blank, no auto-widgets</li>
+                <li>Crypto widgets look consistent before/after save</li>
+                <li>All restored widgets have close buttons</li>
+                <li>Published worlds appear in My Worlds page</li>
+                <li>Can edit/view/delete published worlds</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function clearAll() {
+            if (confirm('Clear all localStorage data?')) {
+                localStorage.clear();
+                alert('All data cleared! Refresh the pages to test clean state.');
+            }
+        }
+    </script>
+</body>
+</html>

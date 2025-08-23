@@ -3640,15 +3640,23 @@ function createWidgetContent(type, content) {
             
         case 'crypto':
             widget.innerHTML = `
-                <div class="tip-container" style="background: rgba(0,212,255,0.9); color: white; padding: 15px; border-radius: 10px; height: 100%; box-sizing: border-box;">
-                    <div class="tip-header" style="font-size: 16px; font-weight: bold; margin-bottom: 15px;">💰 ${content?.title || 'Tips'}</div>
-                    <div class="tip-buttons" style="display: flex; gap: 8px; margin-bottom: 10px;">
-                        <button class="tip-btn" style="flex: 1; padding: 8px; background: rgba(255,255,255,0.2); border: none; border-radius: 6px; color: white; cursor: pointer;">$1</button>
-                        <button class="tip-btn" style="flex: 1; padding: 8px; background: rgba(255,255,255,0.2); border: none; border-radius: 6px; color: white; cursor: pointer;">$5</button>
-                        <button class="tip-btn" style="flex: 1; padding: 8px; background: rgba(255,255,255,0.2); border: none; border-radius: 6px; color: white; cursor: pointer;">$10</button>
+                <div class="simple-tip-widget">
+                    <div class="tip-header">
+                        <h3>Send a Tip</h3>
                     </div>
-                    <input type="text" placeholder="Custom amount" style="width: 100%; padding: 8px; margin-bottom: 10px; border: none; border-radius: 4px; box-sizing: border-box;">
-                    <button style="width: 100%; padding: 10px; background: #00ff88; border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer;">Send Tip</button>
+                    <div class="tip-amounts">
+                        <button class="tip-amount-btn" data-amount="1">$1</button>
+                        <button class="tip-amount-btn" data-amount="5">$5</button>
+                        <button class="tip-amount-btn" data-amount="10">$10</button>
+                    </div>
+                    <div class="tip-message">
+                        <textarea placeholder="Leave a message (optional)" maxlength="100"></textarea>
+                        <div class="char-count"><span>0</span>/100</div>
+                    </div>
+                    <button class="send-tip-btn">
+                        Send Tip
+                    </button>
+                    <div class="tip-result"></div>
                 </div>
             `;
             break;

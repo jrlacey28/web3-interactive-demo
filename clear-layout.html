@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Layout Data</title>
+</head>
+<body>
+    <h1>Clear Layout Data</h1>
+    <button onclick="clearData()">Clear Saved Layout</button>
+    <div id="result"></div>
+    
+    <script>
+        function clearData() {
+            localStorage.removeItem('web3DemoLayout');
+            document.getElementById('result').innerHTML = '<p style="color: green;">✅ Saved layout cleared! Try refreshing creator.html now.</p>';
+        }
+        
+        // Auto-clear on page load
+        clearData();
+    </script>
+</body>
+</html>

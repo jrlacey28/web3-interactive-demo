@@ -475,6 +475,8 @@ function handleWorldPublish() {
 
 function saveWorldToUsersList(worldName, user) {
     try {
+        console.log('🚀 DEBUG: saveWorldToUsersList called with:', { worldName, user });
+        
         // Check if we're in editing mode
         const editingWorldData = localStorage.getItem('editingWorld');
         let isEditingMode = false;
@@ -484,15 +486,21 @@ function saveWorldToUsersList(worldName, user) {
             try {
                 editData = JSON.parse(editingWorldData);
                 isEditingMode = true;
+                console.log('🔧 DEBUG: In editing mode, editData:', editData);
             } catch (e) {
                 console.log('No valid editing data found');
             }
+        } else {
+            console.log('📝 DEBUG: Creating new world (not editing mode)');
         }
         
         // Get user's worlds
         const allWorlds = JSON.parse(localStorage.getItem('user_worlds') || '{}');
+        console.log('📊 DEBUG: Current all worlds before save:', allWorlds);
+        
         if (!allWorlds[user.walletAddress]) {
             allWorlds[user.walletAddress] = {};
+            console.log('📝 DEBUG: Created new user worlds entry for:', user.walletAddress);
         }
         
         if (isEditingMode && editData) {
@@ -513,7 +521,12 @@ function saveWorldToUsersList(worldName, user) {
             }
         } else {
             // Create new world
-            const worldId = worldName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+            const worldId = worldName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase() + '_' + Date.now();
+            console.log('📝 DEBUG: Generated world ID:', worldId);
+            
+            const layoutData = captureWorldLayout();
+            console.log('🎨 DEBUG: Captured layout data:', layoutData);
+            
             const worldData = {
                 id: worldId,
                 type: 'sub',
@@ -530,18 +543,22 @@ function saveWorldToUsersList(worldName, user) {
                     likes: 0,
                     tips: 0
                 },
-                content: captureWorldLayout(),
+                content: layoutData,
                 published: true,
                 layoutId: `${user.username}_${worldId}_${Date.now()}`
             };
             
+            console.log('🌍 DEBUG: Created world data:', worldData);
+            
             // Add to user's worlds
             allWorlds[user.walletAddress][worldId] = worldData;
-            console.log('✅ New world created:', worldData);
+            console.log('✅ New world created and added to user worlds');
+            console.log('📊 DEBUG: User worlds after adding:', allWorlds[user.walletAddress]);
         }
         
         localStorage.setItem('user_worlds', JSON.stringify(allWorlds));
-        console.log('💾 Worlds saved to localStorage:', allWorlds);
+        console.log('💾 Worlds saved to localStorage successfully');
+        console.log('🔍 DEBUG: Final localStorage data:', JSON.parse(localStorage.getItem('user_worlds')));
         
     } catch (error) {
         console.error('❌ Failed to save world to user list:', error);
