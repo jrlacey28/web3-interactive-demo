@@ -3542,12 +3542,49 @@ function restoreWidgetFromData(widgetData) {
     const widgetContent = createWidgetContent(widgetData.type, widgetData.content);
     wrapper.appendChild(widgetContent);
     
+    // Create and add widget header with close button (like in createWidget)
+    const header = document.createElement('div');
+    header.className = 'widget-header';
+    const showCustomization = widgetData.type !== 'youtube' && widgetData.type !== 'video';
+    
+    // Get title based on widget type
+    let title = '';
+    switch(widgetData.type) {
+        case 'crypto': title = 'Tips'; break;
+        case 'twitter': title = 'Twitter'; break;
+        case 'instagram': title = 'Instagram'; break;
+        case 'discord': title = 'Discord'; break;
+        case 'youtube': title = 'YouTube'; break;
+        case 'livestream': title = 'Live Stream'; break;
+        case 'video': title = 'Video Upload'; break;
+        case 'social-feed': title = 'Social Feed'; break;
+        case 'chat': title = 'Live Chat'; break;
+        case 'tip-jar': title = 'Tip Jar'; break;
+        case 'countdown': title = 'Countdown'; break;
+        default: title = widgetData.type.charAt(0).toUpperCase() + widgetData.type.slice(1);
+    }
+    
+    header.innerHTML = `
+        <span>${title}</span>
+        <div class="header-controls">
+            ${showCustomization ? '<button class="style-btn" onclick="toggleStylePanel(\'' + wrapper.id + '\')" title="Customize">🎨</button>' : ''}
+            <button class="close" onclick="remove('${wrapper.id}')">×</button>
+        </div>
+    `;
+    
+    wrapper.appendChild(header);
+    
     // Add to canvas
     canvas.appendChild(wrapper);
     
     // Make draggable if the makeDraggable function exists
     if (typeof makeDraggable === 'function') {
         makeDraggable(wrapper);
+    }
+    
+    // Sync header width with widget
+    if (typeof syncHeaderWidth === 'function') {
+        syncHeaderWidth(wrapper);
     }
 }
 
@@ -3597,6 +3634,21 @@ function createWidgetContent(type, content) {
                 <div class="countdown-widget" style="background: rgba(239,68,68,0.9); color: white; padding: 15px; border-radius: 10px; height: 100%; box-sizing: border-box; text-align: center;">
                     <h3 style="margin: 0 0 10px 0; font-size: 16px;">⏰ ${content?.title || 'Countdown'}</h3>
                     <div class="countdown-display" data-target="${content?.targetDate}" style="font-size: 18px; font-weight: bold;">00:00:00</div>
+                </div>
+            `;
+            break;
+            
+        case 'crypto':
+            widget.innerHTML = `
+                <div class="tip-container" style="background: rgba(0,212,255,0.9); color: white; padding: 15px; border-radius: 10px; height: 100%; box-sizing: border-box;">
+                    <div class="tip-header" style="font-size: 16px; font-weight: bold; margin-bottom: 15px;">💰 ${content?.title || 'Tips'}</div>
+                    <div class="tip-buttons" style="display: flex; gap: 8px; margin-bottom: 10px;">
+                        <button class="tip-btn" style="flex: 1; padding: 8px; background: rgba(255,255,255,0.2); border: none; border-radius: 6px; color: white; cursor: pointer;">$1</button>
+                        <button class="tip-btn" style="flex: 1; padding: 8px; background: rgba(255,255,255,0.2); border: none; border-radius: 6px; color: white; cursor: pointer;">$5</button>
+                        <button class="tip-btn" style="flex: 1; padding: 8px; background: rgba(255,255,255,0.2); border: none; border-radius: 6px; color: white; cursor: pointer;">$10</button>
+                    </div>
+                    <input type="text" placeholder="Custom amount" style="width: 100%; padding: 8px; margin-bottom: 10px; border: none; border-radius: 4px; box-sizing: border-box;">
+                    <button style="width: 100%; padding: 10px; background: #00ff88; border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer;">Send Tip</button>
                 </div>
             `;
             break;

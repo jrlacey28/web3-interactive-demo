@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug User Data - GENESIS</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 20px;
+            background: #f5f7fa;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .data-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .data-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .data-content {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .clear-btn {
+            background: #ff4757;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        .clear-btn:hover {
+            background: #ff3838;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 GENESIS Debug - User Data</h1>
+        
+        <div class="data-section">
+            <div class="data-title">
+                User Worlds Data 
+                <button class="clear-btn" onclick="clearUserWorlds()">Clear User Worlds</button>
+            </div>
+            <div class="data-content" id="userWorldsData">Loading...</div>
+        </div>
+        
+        <div class="data-section">
+            <div class="data-title">
+                Web3 Demo Layout 
+                <button class="clear-btn" onclick="clearLayout()">Clear Layout</button>
+            </div>
+            <div class="data-content" id="layoutData">Loading...</div>
+        </div>
+        
+        <div class="data-section">
+            <div class="data-title">
+                Editing World Data 
+                <button class="clear-btn" onclick="clearEditingWorld()">Clear Editing Data</button>
+            </div>
+            <div class="data-content" id="editingWorldData">Loading...</div>
+        </div>
+        
+        <div class="data-section">
+            <div class="data-title">
+                All LocalStorage Keys
+            </div>
+            <div class="data-content" id="allKeysData">Loading...</div>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <button onclick="refreshData()" style="background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">🔄 Refresh Data</button>
+            <button onclick="clearAllData()" style="background: #ff4757; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-left: 10px;">🗑️ Clear All Data</button>
+        </div>
+    </div>
+
+    <script>
+        function loadData() {
+            // User Worlds Data
+            const userWorlds = localStorage.getItem('user_worlds');
+            document.getElementById('userWorldsData').textContent = userWorlds ? 
+                JSON.stringify(JSON.parse(userWorlds), null, 2) : 'No user worlds data found';
+            
+            // Layout Data
+            const layoutData = localStorage.getItem('web3DemoLayout');
+            document.getElementById('layoutData').textContent = layoutData ? 
+                JSON.stringify(JSON.parse(layoutData), null, 2) : 'No layout data found';
+            
+            // Editing World Data
+            const editingWorld = localStorage.getItem('editingWorld');
+            document.getElementById('editingWorldData').textContent = editingWorld ? 
+                JSON.stringify(JSON.parse(editingWorld), null, 2) : 'No editing world data found';
+            
+            // All LocalStorage Keys
+            const allKeys = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                const value = localStorage.getItem(key);
+                allKeys.push({
+                    key: key,
+                    type: typeof value,
+                    length: value ? value.length : 0,
+                    preview: value ? value.substring(0, 100) + (value.length > 100 ? '...' : '') : ''
+                });
+            }
+            document.getElementById('allKeysData').textContent = JSON.stringify(allKeys, null, 2);
+        }
+        
+        function refreshData() {
+            loadData();
+        }
+        
+        function clearUserWorlds() {
+            if (confirm('Are you sure you want to clear all user worlds data?')) {
+                localStorage.removeItem('user_worlds');
+                loadData();
+                alert('User worlds data cleared!');
+            }
+        }
+        
+        function clearLayout() {
+            if (confirm('Are you sure you want to clear layout data?')) {
+                localStorage.removeItem('web3DemoLayout');
+                loadData();
+                alert('Layout data cleared!');
+            }
+        }
+        
+        function clearEditingWorld() {
+            localStorage.removeItem('editingWorld');
+            loadData();
+            alert('Editing world data cleared!');
+        }
+        
+        function clearAllData() {
+            if (confirm('Are you sure you want to clear ALL localStorage data? This cannot be undone!')) {
+                localStorage.clear();
+                loadData();
+                alert('All data cleared!');
+            }
+        }
+        
+        // Load data when page loads
+        window.addEventListener('DOMContentLoaded', loadData);
+    </script>
+</body>
+</html>

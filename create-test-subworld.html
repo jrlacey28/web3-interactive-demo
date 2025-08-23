@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Test Sub-World</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f7fa;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+        .btn:hover {
+            background: #5a67d8;
+        }
+        .danger {
+            background: #ff4757;
+        }
+        .danger:hover {
+            background: #ff3838;
+        }
+        .success {
+            background: #00ff88;
+        }
+        .success:hover {
+            background: #00cc6a;
+        }
+        .info-box {
+            background: #f8f9ff;
+            border: 1px solid #e8f0ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .code {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Sub-World Creation</h1>
+        <p>This tool helps debug the sub-worlds issue by creating test data and checking localStorage.</p>
+        
+        <div class="info-box">
+            <h3>Current User State</h3>
+            <div id="userState">Loading...</div>
+        </div>
+        
+        <div class="info-box">
+            <h3>Current localStorage Data</h3>
+            <div class="code" id="currentData">Loading...</div>
+        </div>
+        
+        <div>
+            <button class="btn" onclick="createTestUser()">1. Create Test User</button>
+            <button class="btn" onclick="createTestSubWorld()">2. Create Test Sub-World</button>
+            <button class="btn success" onclick="checkData()">3. Check Data</button>
+            <button class="btn danger" onclick="clearAllData()">Clear All Data</button>
+        </div>
+        
+        <div>
+            <button class="btn" onclick="window.open('my-worlds.html', '_blank')">Open My Worlds Page</button>
+            <button class="btn" onclick="window.open('debug-user-data.html', '_blank')">Open Debug Tool</button>
+        </div>
+        
+        <div id="result" class="info-box" style="display: none;">
+            <h3>Result</h3>
+            <div id="resultContent"></div>
+        </div>
+    </div>
+
+    <!-- Load GENESIS system -->
+    <script src="config/api-keys.js"></script>
+    <script src="js/genesis-wallet-system.js"></script>
+
+    <script>
+        let currentUser = null;
+        
+        window.addEventListener('DOMContentLoaded', async () => {
+            await checkCurrentState();
+        });
+        
+        async function checkCurrentState() {
+            try {
+                // Wait for GENESIS system
+                let attempts = 0;
+                while (!window.genesis && attempts < 50) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
+                }
+                
+                if (window.genesis) {
+                    if (window.genesis.isAuthenticated) {
+                        currentUser = window.genesis.getCurrentUser();
+                        document.getElementById('userState').innerHTML = `
+                            <strong>✅ Authenticated User:</strong><br>
+                            Username: ${currentUser.username || 'Not set'}<br>
+                            Wallet: ${currentUser.walletAddress || 'Not available'}<br>
+                            Bio: ${currentUser.bio || 'Not set'}
+                        `;
+                    } else {
+                        document.getElementById('userState').innerHTML = '❌ No authenticated user found';
+                    }
+                } else {
+                    document.getElementById('userState').innerHTML = '❌ GENESIS system not available';
+                }
+                
+                checkData();
+            } catch (error) {
+                document.getElementById('userState').innerHTML = '❌ Error: ' + error.message;
+            }
+        }
+        
+        function createTestUser() {
+            // Create a test user state
+            const testUser = {
+                username: 'jordan',
+                walletAddress: '0x1234567890123456789012345678901234567890',
+                bio: 'Test user for debugging'
+            };
+            
+            // Store in GENESIS format (simulate authentication)
+            localStorage.setItem('genesis_user_data', JSON.stringify(testUser));
+            
+            // Also create the user profile data
+            const profiles = JSON.parse(localStorage.getItem('user_profiles') || '{}');
+            profiles[testUser.walletAddress] = testUser;
+            localStorage.setItem('user_profiles', JSON.stringify(profiles));
+            
+            currentUser = testUser;
+            showResult('✅ Test user created: ' + testUser.username);
+            checkData();
+        }
+        
+        function createTestSubWorld() {
+            if (!currentUser || !currentUser.walletAddress) {
+                showResult('❌ Please create a test user first');
+                return;
+            }
+            
+            // Create test sub-world
+            const testWorldId = 'test-world-' + Date.now();
+            const testWorld = {
+                id: testWorldId,
+                type: 'sub',
+                name: 'Test Sub-World',
+                description: 'This is a test sub-world for debugging',
+                theme: 'purple',
+                privacy: 'public',
+                template: 'custom',
+                banner: null,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                stats: {
+                    views: 0,
+                    likes: 0,
+                    tips: 0
+                },
+                content: {
+                    widgets: [
+                        {
+                            id: 'test-widget-1',
+                            type: 'crypto',
+                            x: '10%',
+                            y: '10%',
+                            width: '300px',
+                            height: '200px',
+                            content: { title: 'Tips' }
+                        }
+                    ],
+                    layout: 'custom',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                },
+                published: true,
+                layoutId: `${currentUser.username}_${testWorldId}_${Date.now()}`
+            };
+            
+            // Add to user_worlds
+            const allWorlds = JSON.parse(localStorage.getItem('user_worlds') || '{}');
+            if (!allWorlds[currentUser.walletAddress]) {
+                allWorlds[currentUser.walletAddress] = {};
+            }
+            
+            // Ensure main world exists
+            if (!allWorlds[currentUser.walletAddress].main) {
+                allWorlds[currentUser.walletAddress].main = {
+                    id: 'main',
+                    type: 'main',
+                    name: `${currentUser.username}'s World`,
+                    description: 'Welcome to my creator space!',
+                    theme: 'purple',
+                    privacy: 'public',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    stats: { views: 0, likes: 0, tips: 0 },
+                    content: { widgets: [], layout: 'default' }
+                };
+            }
+            
+            allWorlds[currentUser.walletAddress][testWorldId] = testWorld;
+            localStorage.setItem('user_worlds', JSON.stringify(allWorlds));
+            
+            showResult('✅ Test sub-world created: ' + testWorld.name);
+            checkData();
+        }
+        
+        function checkData() {
+            const userWorlds = localStorage.getItem('user_worlds');
+            const genesisData = localStorage.getItem('genesis_user_data');
+            const profiles = localStorage.getItem('user_profiles');
+            
+            let dataText = '';
+            
+            if (genesisData) {
+                dataText += '=== GENESIS User Data ===\n' + JSON.stringify(JSON.parse(genesisData), null, 2) + '\n\n';
+            }
+            
+            if (profiles) {
+                dataText += '=== User Profiles ===\n' + JSON.stringify(JSON.parse(profiles), null, 2) + '\n\n';
+            }
+            
+            if (userWorlds) {
+                const worldsData = JSON.parse(userWorlds);
+                dataText += '=== User Worlds ===\n' + JSON.stringify(worldsData, null, 2) + '\n\n';
+                
+                // Show summary
+                Object.keys(worldsData).forEach(address => {
+                    const userWorldsData = worldsData[address];
+                    const subWorlds = Object.values(userWorldsData).filter(w => w.type === 'sub');
+                    dataText += `Address ${address}: ${subWorlds.length} sub-worlds\n`;
+                    subWorlds.forEach(w => {
+                        dataText += `  - ${w.name} (${w.type})\n`;
+                    });
+                });
+            } else {
+                dataText += '=== No user_worlds data found ===\n';
+            }
+            
+            document.getElementById('currentData').textContent = dataText || 'No data found';
+        }
+        
+        function clearAllData() {
+            if (confirm('Are you sure you want to clear ALL localStorage data?')) {
+                localStorage.clear();
+                currentUser = null;
+                showResult('🗑️ All data cleared');
+                checkData();
+                checkCurrentState();
+            }
+        }
+        
+        function showResult(message) {
+            document.getElementById('resultContent').textContent = message;
+            document.getElementById('result').style.display = 'block';
+            setTimeout(() => {
+                document.getElementById('result').style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

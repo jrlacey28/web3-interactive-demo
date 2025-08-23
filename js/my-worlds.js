@@ -49,6 +49,8 @@ async function initializeAuth() {
         
         // Wait for GENESIS wallet system to be ready
         authenticatedWallet = await waitForGenesisSystem();
+        console.log('🔍 DEBUG: GENESIS system ready:', authenticatedWallet);
+        console.log('🔍 DEBUG: Is authenticated:', authenticatedWallet.isAuthenticated);
         
         if (!authenticatedWallet.isAuthenticated) {
             console.log('❌ User not authenticated, redirecting to home');
@@ -58,6 +60,11 @@ async function initializeAuth() {
 
         currentUser = authenticatedWallet.getCurrentUser();
         console.log('✅ User authenticated:', currentUser);
+        console.log('🔍 DEBUG: Current user details:', {
+            username: currentUser?.username,
+            walletAddress: currentUser?.walletAddress,
+            bio: currentUser?.bio
+        });
         
         // If no username, redirect to profile setup
         if (!currentUser?.username) {
@@ -131,20 +138,35 @@ function updateUserUI() {
 // ========================================
 async function loadUserWorlds() {
     try {
-        if (!currentUser) return;
+        console.log('🔍 DEBUG: Loading user worlds, currentUser:', currentUser);
+        
+        if (!currentUser) {
+            console.log('❌ DEBUG: No current user found, cannot load worlds');
+            return;
+        }
+
+        console.log('🔍 DEBUG: Current user wallet address:', currentUser.walletAddress);
 
         // Get user's worlds from localStorage
         const allWorlds = JSON.parse(localStorage.getItem('user_worlds') || '{}');
+        console.log('🔍 DEBUG: All worlds in localStorage:', allWorlds);
+        
         const userWorldsData = allWorlds[currentUser.walletAddress] || {};
+        console.log('🔍 DEBUG: User worlds data for address:', currentUser.walletAddress, userWorldsData);
         
         // Ensure user has a main world
         if (!userWorldsData.main) {
+            console.log('🔍 DEBUG: No main world found, creating one');
             await createMainWorld();
         }
 
         userWorlds = userWorldsData;
         console.log('📊 Loaded user worlds data:', userWorlds);
-        console.log('🔍 Sub-worlds found:', Object.values(userWorlds).filter(world => world.type === 'sub'));
+        
+        const subWorldsArray = Object.values(userWorlds).filter(world => world.type === 'sub');
+        console.log('🔍 Sub-worlds found:', subWorldsArray);
+        console.log('🔍 DEBUG: Total worlds in userWorlds:', Object.keys(userWorlds));
+        console.log('🔍 DEBUG: World types:', Object.values(userWorlds).map(w => w.type));
         
         updateMainWorldDisplay();
         updateSubWorldsDisplay();
