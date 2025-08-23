@@ -383,6 +383,13 @@ window.publishLayout = function() {
             }
             
             showToast('🚀 World published! Others can now view your creation.', 'success');
+            
+            // After 2 seconds, redirect to My Worlds to see the published world
+            setTimeout(() => {
+                if (confirm('World published successfully! Would you like to go to My Worlds to see it?')) {
+                    window.location.href = 'my-worlds.html';
+                }
+            }, 2000);
         });
     } else {
         // Show prompt to sign in first
@@ -534,6 +541,7 @@ function saveWorldToUsersList(worldName, user) {
         }
         
         localStorage.setItem('user_worlds', JSON.stringify(allWorlds));
+        console.log('💾 Worlds saved to localStorage:', allWorlds);
         
     } catch (error) {
         console.error('❌ Failed to save world to user list:', error);

@@ -3428,17 +3428,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Create a demo crypto widget after a short delay
-    setTimeout(() => {
-        createWidget('crypto', 100, 100);
-        // Sync all headers after widgets are created
-        setTimeout(() => syncAllHeaders(), 200);
-    }, 1000);
-    
-    // Check if we're in edit mode (from My Worlds page)
+    // Only create demo widget if not loading saved/editing data
     const urlParams = new URLSearchParams(window.location.search);
     const editWorldId = urlParams.get('edit');
     const editingWorldData = localStorage.getItem('editingWorld');
+    const savedLayout = localStorage.getItem('web3DemoLayout');
+    
+    // Only show demo widget if starting completely fresh (no saved data, no editing)
+    if (!editWorldId && !editingWorldData && !savedLayout) {
+        console.log('ℹ️ Starting with blank canvas - no demo widget');
+        // Sync headers anyway in case other widgets are added later
+        setTimeout(() => syncAllHeaders(), 200);
+    }
+    
+    // Check if we're in edit mode (from My Worlds page) - variables already declared above
     
     if (editWorldId && editingWorldData) {
         console.log('🎨 Loading world for editing...', editWorldId);

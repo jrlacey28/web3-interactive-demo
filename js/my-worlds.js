@@ -5,20 +5,19 @@ let userWorlds = {};
 let selectedTemplate = 'gallery';
 let selectedTheme = 'purple';
 
-// Wait for persistent wallet manager to be available
-async function waitForWalletManager() {
-    console.log('⏳ Waiting for persistent wallet manager...');
+// Wait for GENESIS wallet system to be available
+async function waitForGenesisSystem() {
+    console.log('⏳ Waiting for GENESIS wallet system...');
     let attempts = 0;
-    while (!window.persistentWallet && !window.walletManager && attempts < 50) {
+    while (!window.genesis && attempts < 50) {
         await new Promise(resolve => setTimeout(resolve, 100));
         attempts++;
     }
-    const manager = window.persistentWallet || window.walletManager;
-    if (!manager) {
-        throw new Error('Persistent wallet manager not available after waiting');
+    if (!window.genesis) {
+        throw new Error('GENESIS wallet system not available after waiting');
     }
-    console.log('✅ Persistent wallet manager ready');
-    return manager;
+    console.log('✅ GENESIS wallet system ready');
+    return window.genesis;
 }
 
 // Initialize when DOM is ready
@@ -48,8 +47,8 @@ async function initializeAuth() {
     try {
         console.log('🔐 Initializing my-worlds authentication...');
         
-        // Wait for persistent wallet manager to be ready
-        authenticatedWallet = await waitForWalletManager();
+        // Wait for GENESIS wallet system to be ready
+        authenticatedWallet = await waitForGenesisSystem();
         
         if (!authenticatedWallet.isAuthenticated) {
             console.log('❌ User not authenticated, redirecting to home');
@@ -144,6 +143,9 @@ async function loadUserWorlds() {
         }
 
         userWorlds = userWorldsData;
+        console.log('📊 Loaded user worlds data:', userWorlds);
+        console.log('🔍 Sub-worlds found:', Object.values(userWorlds).filter(world => world.type === 'sub'));
+        
         updateMainWorldDisplay();
         updateSubWorldsDisplay();
         
@@ -245,7 +247,8 @@ function updateSubWorldsDisplay() {
     if (!subWorldsGrid || !emptyState) return;
 
     // Get sub-worlds (exclude main world)
-    const subWorlds = Object.values(userWorlds).filter(world => world.type !== 'main');
+    const subWorlds = Object.values(userWorlds).filter(world => world.type === 'sub');
+    console.log('🎨 Displaying sub-worlds:', subWorlds);
     
     if (subWorlds.length === 0) {
         subWorldsGrid.style.display = 'none';
